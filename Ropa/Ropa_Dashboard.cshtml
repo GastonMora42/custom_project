@@ -1,0 +1,104 @@
+﻿@{
+        if (WebSecurity.IsAuthenticated == false)
+    {
+        Response.Redirect("~/Account/Login.cshtml");
+    }
+
+    var Usuario = WebSecurity.CurrentUserName;
+    var result = Request.QueryString["resultado"];
+    Layout = "_RopaSiteLayout.cshtml";
+    var db = Database.Open("IntranetConnection");
+    var products = db.Query("SELECT dbo.NOMINA_ROPA_CATEGORIAS.ID_CATEGORIA,   dbo.NOMINA_ROPA_CATEGORIAS.CATEGORIA_DESC FROM dbo.NOMINA_ROPA_CATEGORIAS ORDER BY   dbo.NOMINA_ROPA_CATEGORIAS.CATEGORIA_DESC");
+    int fila;
+    fila = 1;
+
+    if (result=="1"){
+        result = @"<button class='command-button success'><i class='icon-checkmark on-left'></i><h5>El movimiento se borro correctamente !!</h5></button>";
+    }
+
+    var controles = db.Query(@"SELECT 
+                                CTRLSAL.DESCRIPCION,
+                                CTRLSAL.PROVEEDOR,
+                                CTRLSAL.CANTIDAD
+                            FROM
+                                dbo.ROPA_LISTADO_NOMINA_CONTROLES_SALIDAS CTRLSAL ORDER BY CTRLSAL.PROVEEDOR");  
+}
+    <div id="Message" class="row">  @Html.Raw(result)
+    </div>
+<div class="row">
+    
+    @foreach(var row in products)
+    {
+       if (fila % 5 == 0)
+       {
+            <a href="Ropa_Todos.cshtml?Bienselected=@row.CATEGORIA_DESC">
+                <div class="span2">
+                    <button class="shortcut link">
+                        @row.CATEGORIA_DESC
+                    </button>
+                </div>
+                @Html.Raw("</div><div class='row'>")
+            </a>
+               fila = 0;
+            }
+            else
+            {
+            <a href="Ropa_Todos.cshtml?Bienselected=@row.CATEGORIA_DESC">
+                <div class="span2">
+                    <button class="shortcut link">
+                        @row.CATEGORIA_DESC
+                    </button>
+                </div>
+            </a>
+ }
+ fila += 1;
+
+}
+    <a href="Ropa_Todos.cshtml?Bienselected=Todos">
+        <div class="span2">
+            <button class="shortcut link">
+                                 TODOS
+            </button>
+        </div>
+    </a>
+
+</div> <!-- End of row -->
+<div class="row">
+    <h5>Detalle de Personal salidas > 1 - Ultimos 3 meses</h5>
+<table class="table striped hovered dataTable" id="example">
+    <thead>
+    <tr>
+        <th class="text-center">EMPLEADO</th>
+        <th class="text-center">CANTIDAD</th>
+        <th class="text-center">ARTICULO</th>
+    </tr>
+    </thead>
+    <tbody>
+        @foreach(var row in controles)
+        {
+        
+        <tr>
+             <td style="text-align:center">@row.PROVEEDOR</td>
+            <td class="text-alert" style="text-align:right ;font-weight: 700;color: #f00 ">@string.Format("{0:n}", @row.CANTIDAD * -1) </td>             
+            <td style="text-align:center">@row.DESCRIPCION</td> 
+
+            </tr>
+    }
+                </tbody>
+</table>
+</div> <!-- End of row -->
+
+<script>
+    $(document).ready(function () {
+        $("#Message").delay(3000).slideUp(300);
+                    $('#example').dataTable({
+            "paging": true,
+            "ordering": false,
+            "info":     true,
+            "lengthChange": true,
+            "pageLength": 50,
+            "lengthMenu": [ [10, 25, 50, -1], [10, 25, 50, "All"] ]
+        });
+    });
+
+</script>

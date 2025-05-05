@@ -1,0 +1,15 @@
+﻿@{
+    var socio_id = Request.QueryString["q"];
+    var db = Database.Open("IntranetConnection");
+    var sql = @"SELECT 
+                COUNT(dbo.LA_SARITA_SOCIOS_CABALLOS.IDCABALLO)  
+                FROM 
+                dbo.LA_SARITA_SOCIOS_CABALLOS 
+                WHERE 
+                FECHA_BAJA IS NULL 
+                AND dbo.LA_SARITA_SOCIOS_CABALLOS .IDSOCIO = @0 ";
+    var cantsocio = db.QueryValue(sql,socio_id);
+    Json.Write(cantsocio, Response.Output);
+}
+
+

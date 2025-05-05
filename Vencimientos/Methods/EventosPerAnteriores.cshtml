@@ -1,0 +1,14 @@
+@{
+    var db = Database.Open("IntranetConnectionNew");
+
+    var periodossql = @"SELECT TOP 6
+                            dbo.PERIODOS.PERIODO
+                            FROM
+                            dbo.PERIODOS
+                            ORDER BY
+                            dbo.PERIODOS.FECHAFINMES DESC ";
+
+    var periodosQuery= db.Query(periodossql);
+    
+    Json.Write(periodosQuery, Response.Output);
+}  

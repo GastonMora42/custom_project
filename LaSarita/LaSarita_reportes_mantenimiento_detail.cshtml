@@ -1,0 +1,295 @@
+@{
+    if (WebSecurity.IsAuthenticated == false)
+    {
+        Response.Redirect("~/Account/Login.cshtml");
+    }
+    var Usuario = WebSecurity.CurrentUserName;
+    var db = Database.Open("IntranetConnection");
+    var userprofilesql = @"SELECT 
+                    UTABLE.EsAdmin
+                    FROM
+                    dbo.USERS_TABLE UTABLE
+                    WHERE
+                    UTABLE.Usuario= '" + Usuario + "'";
+    var userprofile = db.QueryValue(userprofilesql);    
+
+    var Fecha_desde = Request.QueryString["Fechadesde"].AsDateTime();
+
+    var sqlriego = @"SELECT 
+                  LST.FECHA,
+                  LST.BOCA_RIEGO,
+                  LST.CAMBIO,
+                  LST.USUARIO,
+                  LST.LUGAR,LST.DESCRIPCION
+                FROM
+                  dbo.LA_SARITA_TAREAS LST
+                WHERE
+                  LST.TAREA = 'RIEGO' AND LST.FECHA >= @0 ORDER BY LST.FECHA DESC";
+    var riego = db.Query(sqlriego, Fecha_desde);
+    var sqlare = @"SELECT 
+                  LST.FECHA,
+                  LST.USUARIO,
+                  LST.LUGAR,LST.DESCRIPCION
+                FROM
+                  dbo.LA_SARITA_TAREAS LST
+                WHERE
+                  LST.TAREA = 'ARENADO' AND LST.FECHA >= @0 ORDER BY LST.FECHA DESC";
+    var arenado = db.Query(sqlare, Fecha_desde);
+            var sqlcorte = @"SELECT 
+                  LST.FECHA,
+                  LST.USUARIO,
+                  LST.LUGAR,LST.DESCRIPCION
+                FROM
+                  dbo.LA_SARITA_TAREAS LST
+                WHERE
+                  LST.TAREA = 'CORTE_CESPED' AND LST.FECHA >= @0 ORDER BY LST.FECHA DESC";
+    var cortecesped = db.Query(sqlcorte, Fecha_desde);
+        var sqlfer = @"SELECT 
+                  LST.FECHA,
+                  LST.USUARIO,
+                  LST.LUGAR,LST.DESCRIPCION
+                FROM
+                  dbo.LA_SARITA_TAREAS LST
+                WHERE
+                  LST.TAREA = 'FERTILIZACION' AND LST.FECHA >= @0 ORDER BY LST.FECHA DESC";
+    var fertilizacion = db.Query(sqlfer, Fecha_desde);
+        var sqlfum = @"SELECT 
+                  LST.FECHA,
+                  LST.USUARIO,
+                  LST.LUGAR,LST.DESCRIPCION
+                FROM
+                  dbo.LA_SARITA_TAREAS LST
+                WHERE
+                  LST.TAREA = 'FUMIGADO' AND LST.FECHA >= @0 ORDER BY LST.FECHA DESC";
+    var fumigado = db.Query(sqlfum, Fecha_desde);
+        var sqlres = @"SELECT 
+                  LST.FECHA,
+                  LST.USUARIO,
+                  LST.LUGAR,LST.DESCRIPCION
+                FROM
+                  dbo.LA_SARITA_TAREAS LST
+                WHERE
+                  LST.TAREA = 'RESEMBRADO' AND LST.FECHA >= @0 ORDER BY LST.FECHA DESC";
+    var resembrado = db.Query(sqlres, Fecha_desde);
+        var sqlair = @"SELECT 
+                  LST.FECHA,
+                  LST.USUARIO,
+                  LST.LUGAR,LST.DESCRIPCION
+                FROM
+                  dbo.LA_SARITA_TAREAS LST
+                WHERE
+                  LST.TAREA = 'AIREADORA' AND LST.FECHA >= @0 ORDER BY LST.FECHA DESC";
+    var aireadora = db.Query(sqlair, Fecha_desde);
+
+
+
+}
+
+<ul class="nav nav-pills" id="myTab" role="tablist">
+   <li class="nav-item" role="presentation">
+    <button class="nav-link active"  id="riego-tab" data-bs-toggle="tab" data-bs-target="#riego" type="button" role="tab" >RIEGO</button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link " id="aireadora-tab" data-bs-toggle="tab" data-bs-target="#aireadora" type="button" role="tab">AIREADORA</button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" id="arenado-tab" data-bs-toggle="tab" data-bs-target="#arenado" type="button" role="tab" >ARENADO</button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" id="corte_cesped-tab" data-bs-toggle="tab" data-bs-target="#corte_cesped" type="button" role="tab" >CORTE DE CESPED</button>
+  </li>
+      <li class="nav-item" role="presentation">
+    <button class="nav-link" id="fertiliz-tab" data-bs-toggle="tab" data-bs-target="#fertiliz" type="button" role="tab" >FERTILIZACION</button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" id="fumigado-tab" data-bs-toggle="tab" data-bs-target="#fumigado" type="button" role="tab" >FUMIGADO</button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" id="resembrado-tab" data-bs-toggle="tab" data-bs-target="#resembrado" type="button" role="tab" >RESEMBRADO</button>
+  </li>
+
+</ul>
+<div class="tab-content" id="myTabContent">
+  <div class="tab-pane fade" id="riego" role="tabpanel" aria-labelledby="riego-tab">
+        <table class="table table-striped table-hover table-sm" style="font-size:14px;" id="tableId">
+        <thead>
+            <tr style="background-color:rgb(160,31,111);color:white;font-size:15px;" >
+                
+                <th class="text-center">Fecha</th>
+                <th class="text-center">Boca Riego</th>
+                <th class="text-center">Cambio</th>
+                <th class="text-center">Usuario</th>
+                <th class="text-center">Lugar</th><th class="text-center">Descripcion</th>
+            </tr>
+        </thead>
+            <tbody>
+            @foreach(var row in riego)
+            {      
+            <tr style="font-size:12px; vertical-align: middle;" >
+                 <td class="text-primary" style="text-align:center;font-weight:500 "> @string.Format("{0:dd/MM/yy}", @row.FECHA)</td>   
+                <td class="text-primary" style="text-align:center;font-weight:500 "> @row.BOCA_RIEGO</td>   
+                <td class="text-primary" style="text-align:center;font-weight:500 "> @row.CAMBIO</td>   
+                 <td class="text-primary" style="text-align:center;font-weight:500 "> @row.USUARIO</td>   
+            <td class="text-primary" style="text-align:center;font-weight:500 "> @row.LUGAR</td><td class="text-primary" style="text-align:center;font-weight:500 "> @row.DESCRIPCION</td> 
+ 
+            </tr>   
+                }    
+        </tbody>
+
+        </table>
+  </div>
+ <div class="tab-pane fade" id="aireadora" role="tabpanel" aria-labelledby="aireadora-tab">
+        <table class="table table-striped table-hover table-sm" style="font-size:14px;" id="tableId">
+        <thead>
+            <tr style="background-color:rgb(160,31,111);color:white;font-size:15px;" >
+                
+                <th class="text-center">Fecha</th>
+                <th class="text-center">Usuario</th>
+                <th class="text-center">Lugar</th><th class="text-center">Descripcion</th>
+            </tr>
+        </thead>
+            <tbody>
+            @foreach(var row in aireadora)
+            {      
+            <tr style="font-size:12px; vertical-align: middle;" >
+                 <td class="text-primary" style="text-align:center;font-weight:500 "> @string.Format("{0:dd/MM/yy}", @row.FECHA)</td>   
+                 <td class="text-primary" style="text-align:center;font-weight:500 "> @row.USUARIO</td>   
+            <td class="text-primary" style="text-align:center;font-weight:500 "> @row.LUGAR</td><td class="text-primary" style="text-align:center;font-weight:500 "> @row.DESCRIPCION</td> 
+ 
+            </tr>   
+                }     
+        </tbody>
+
+        </table>
+
+  </div>
+   <div class="tab-pane fade" id="arenado" role="tabpanel" aria-labelledby="arenado-tab">
+        <table class="table table-striped table-hover table-sm" style="font-size:14px;" id="tableId">
+        <thead>
+            <tr style="background-color:rgb(160,31,111);color:white;font-size:15px;" >
+                
+                <th class="text-center">Fecha</th>
+                <th class="text-center">Usuario</th>
+                <th class="text-center">Lugar</th><th class="text-center">Descripcion</th>
+            </tr>
+        </thead>
+            <tbody>
+            @foreach(var row in arenado)
+            {      
+            <tr style="font-size:12px; vertical-align: middle;" >
+                 <td class="text-primary" style="text-align:center;font-weight:500 "> @string.Format("{0:dd/MM/yy}", @row.FECHA)</td>   
+                 <td class="text-primary" style="text-align:center;font-weight:500 "> @row.USUARIO</td>   
+            <td class="text-primary" style="text-align:center;font-weight:500 "> @row.LUGAR</td><td class="text-primary" style="text-align:center;font-weight:500 "> @row.DESCRIPCION</td> 
+ 
+            </tr>   
+                }     
+        </tbody>
+
+        </table>
+
+  </div>  
+
+       <div class="tab-pane fade" id="corte_cesped" role="tabpanel" aria-labelledby="corte_cesped-tab">
+        <table class="table table-striped table-hover table-sm" style="font-size:14px;" id="tableId">
+        <thead>
+            <tr style="background-color:rgb(160,31,111);color:white;font-size:15px;" >
+                
+                <th class="text-center">Fecha</th>
+                <th class="text-center">Usuario</th>
+                <th class="text-center">Lugar</th><th class="text-center">Descripcion</th>
+            </tr>
+        </thead>
+            <tbody>
+            @foreach(var row in cortecesped)
+            {      
+            <tr style="font-size:12px; vertical-align: middle;" >
+                 <td class="text-primary" style="text-align:center;font-weight:500 "> @string.Format("{0:dd/MM/yy}", @row.FECHA)</td>   
+                 <td class="text-primary" style="text-align:center;font-weight:500 "> @row.USUARIO</td>   
+            <td class="text-primary" style="text-align:center;font-weight:500 "> @row.LUGAR</td><td class="text-primary" style="text-align:center;font-weight:500 "> @row.DESCRIPCION</td> 
+ 
+            </tr>   
+                }     
+        </tbody>
+
+        </table>
+
+  </div>  
+            
+           <div class="tab-pane fade" id="fertiliz" role="tabpanel" aria-labelledby="fertiliz-tab">
+        <table class="table table-striped table-hover table-sm" style="font-size:14px;" id="tableId">
+        <thead>
+            <tr style="background-color:rgb(160,31,111);color:white;font-size:15px;" >
+                
+                <th class="text-center">Fecha</th>
+                <th class="text-center">Usuario</th>
+                <th class="text-center">Lugar</th><th class="text-center">Descripcion</th>
+            </tr>
+        </thead>
+            <tbody>
+            @foreach(var row in fertilizacion)
+            {      
+            <tr style="font-size:12px; vertical-align: middle;" >
+                 <td class="text-primary" style="text-align:center;font-weight:500 "> @string.Format("{0:dd/MM/yy}", @row.FECHA)</td>   
+                 <td class="text-primary" style="text-align:center;font-weight:500 "> @row.USUARIO</td>   
+            <td class="text-primary" style="text-align:center;font-weight:500 "> @row.LUGAR</td><td class="text-primary" style="text-align:center;font-weight:500 "> @row.DESCRIPCION</td> 
+ 
+            </tr>   
+                }     
+        </tbody>
+
+        </table>
+
+  </div>  
+    <div class="tab-pane fade" id="fumigado" role="tabpanel" aria-labelledby="fumigado-tab">
+        <table class="table table-striped table-hover table-sm" style="font-size:14px;" id="tableId">
+        <thead>
+            <tr style="background-color:rgb(160,31,111);color:white;font-size:15px;" >
+                
+                <th class="text-center">Fecha</th>
+                <th class="text-center">Usuario</th>
+                <th class="text-center">Lugar</th>
+                <th class="text-center">Descripcion</th>
+            </tr>
+        </thead>
+            <tbody>
+            @foreach(var row in fumigado)
+            {      
+            <tr style="font-size:12px; vertical-align: middle;" >
+                 <td class="text-primary" style="text-align:center;font-weight:500 "> @string.Format("{0:dd/MM/yy}", @row.FECHA)</td>   
+                 <td class="text-primary" style="text-align:center;font-weight:500 "> @row.USUARIO</td>   
+            <td class="text-primary" style="text-align:center;font-weight:500 "> @row.LUGAR</td><td class="text-primary" style="text-align:center;font-weight:500 "> @row.DESCRIPCION</td> 
+ 
+            </tr>   
+                }     
+        </tbody>
+
+        </table>
+
+  </div> 
+           <div class="tab-pane fade" id="resembrado" role="tabpanel" aria-labelledby="resembrado-tab">
+        <table class="table table-striped table-hover table-sm" style="font-size:14px;" id="tableId">
+        <thead>
+            <tr style="background-color:rgb(160,31,111);color:white;font-size:15px;" >
+                
+                <th class="text-center">Fecha</th>
+                <th class="text-center">Usuario</th>
+                <th class="text-center">Lugar</th><th class="text-center">Descripcion</th>
+            </tr>
+        </thead>
+            <tbody>
+            @foreach(var row in resembrado)
+            {      
+            <tr style="font-size:12px; vertical-align: middle;" >
+                 <td class="text-primary" style="text-align:center;font-weight:500 "> @string.Format("{0:dd/MM/yy}", @row.FECHA)</td>   
+                 <td class="text-primary" style="text-align:center;font-weight:500 "> @row.USUARIO</td>   
+            <td class="text-primary" style="text-align:center;font-weight:500 "> @row.LUGAR</td><td class="text-primary" style="text-align:center;font-weight:500 "> @row.DESCRIPCION</td> 
+ 
+            </tr>   
+                }     
+        </tbody>
+
+        </table>
+
+  </div>  
+
+</div>

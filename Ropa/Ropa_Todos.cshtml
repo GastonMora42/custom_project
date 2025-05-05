@@ -1,0 +1,87 @@
+﻿@{
+    Layout = "_RopaSiteLayout.cshtml";
+    var strsql = "";
+    var Bienelegido = Request.QueryString["Bienselected"];
+    var db = Database.Open("IntranetConnection");
+    Page.Title = "Detalle por Categoría";
+    if (Bienelegido=="Todos")
+    {
+     strsql = "SELECT * FROM NOMINA_ROPA_INVENTARIO ORDER BY NOMINA_ROPA_INVENTARIO.DESCRIPCION";  
+    }
+    else
+    {
+       strsql = "SELECT * FROM NOMINA_ROPA_INVENTARIO WHERE NOMINA_ROPA_INVENTARIO.CATEGORIA_DESC = '" + Bienelegido + "' ORDER BY NOMINA_ROPA_INVENTARIO.DESCRIPCION";
+       }
+    var products = db.Query(strsql);    
+}
+
+<table class="table striped hovered dataTable" id="datatable-buttons">
+    <thead>
+    <tr>
+        <th class="text-left">MOVIMIENTOS</th>
+        <th class="text-left">CODIGO</th>
+        <th class="text-left">DESCRIPCION</th>
+        <th class="text-left">ADMINISTRACION</th>
+        <th class="text-left">NESTOR</th>
+        <th class="text-left">PLOTTIER</th>
+        <th class="text-left">TOTAL</th>
+        <th class="text-left">PTO REPOSICION</th>
+        <th class="text-left">DESCRIPCION_UNIDAD</th>
+        
+    </tr>
+                </thead>
+    <tbody>
+        @foreach(var row in products)
+        {
+        
+        <tr>
+            <td style="text-align:center"><a href="Ropa_detalle_movimientos.cshtml?Bienselected=@row.ID_PRODUCTO"><span class="icon-plus fg-green" style="font-size: 16px;"></span></a></td>
+            <td>@row.CODIGO</td>
+            <td>@row.DESCRIPCION</td>
+            <td style="text-align:center">@string.Format("{0:n}", @row.ADMINISTRACION)</td>
+            <td style="text-align:center">@string.Format("{0:n}", @row.NESTOR)</td>
+            <td style="text-align:center">@string.Format("{0:n}", @row.PLOTTIER)</td>
+            <td style="text-align:center">@string.Format("{0:n}", @row.TOTAL)</td>
+            <td style="font-size: 16px;text-align:center;">
+            @if (row.TOTAL > row.MINIMO)
+            {
+                <span class="icon-arrow-up-3 fg-green"></span>
+            }
+            else if (row.TOTAL == row.MINIMO){
+                <span class="icon-arrow-right-3 fg-blue"></span>
+            }
+            else
+            {
+                <span class="icon-arrow-down-3 fg-red"></span>
+            }
+            </td>
+            <td>@row.DESCRIPCION_UNIDAD</td> 
+        </tr>
+    }
+                </tbody>
+</table>
+
+    <script>
+        $(document).ready(function() {
+            // Default Datatable
+
+            //Buttons examples
+            var table = $('#datatable-buttons').DataTable({
+                "lengthChange": true,
+                "paging": true,
+                "pageLength": 50,
+                "lengthMenu": [ [10, 25, 50, -1], [10, 25, 50, "All"] ],
+                "ordering": false,
+                "order": [[0, 'desc' ]],
+                buttons: [
+                { extend: 'copy', className: 'button primary' },
+                { extend: 'excel', className: 'button primary' },
+                { extend: 'pdf' , className:'button primary'}]
+            });
+
+            table.buttons().container()
+                .appendTo('#datatable-buttons_wrapper .col-md-6:eq(0)');
+            
+    } );
+</script>
+

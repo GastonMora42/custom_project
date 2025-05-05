@@ -1,0 +1,149 @@
+﻿@{
+
+    var db = Database.Open("IntranetConnection");
+    var result = "";
+    var categorias = db.Query("SELECT ropcat.ID_CATEGORIA,ropcat.CATEGORIA_DESC FROM dbo.NOMINA_ROPA_CATEGORIAS ropcat ORDER BY ropcat.CATEGORIA_DESC");
+    var unidadesmedida = db.Query (@"SELECT 
+                                  dbo.NOMINA_ROPA_UNIDADES_MEDIDA.ID_UNID_MEDIDA,
+                                  dbo.NOMINA_ROPA_UNIDADES_MEDIDA.DESCRIPCION_UNIDAD
+                                FROM
+                                  dbo.NOMINA_ROPA_UNIDADES_MEDIDA 
+                                 ORDER BY
+                                 dbo.NOMINA_ROPA_UNIDADES_MEDIDA.DESCRIPCION_UNIDAD");
+
+
+    Validation.RequireField("descripcion", "Debe ingresar la descripcion del artículo");
+    Validation.RequireField("codigo", "Debe ingresar el codigo del artículo");
+    Validation.Add("categoria",Validator.Range(1,999999999,"Debe seleccionar una categoria"));
+    Validation.Add("uni_medida",Validator.Range(1,999999999,"Debe seleccionar una unidad de medida"));
+
+    
+    var Description = Request.Form["descripcion"];
+    var codigo = Request.Form["codigo"];
+    var uni_medida = Request.Form["uni_medida"];
+    var categoria = Request.Form["categoria"];
+    var minimo = Request.Form["minimo"];
+    if (IsPost && Validation.IsValid()) {
+    // Process information here
+    var insertQuery =
+    "INSERT INTO dbo.NOMINA_ROPA_ARTICULOS(DESCRIPCION,CODIGO,CATEGORIAS,UNIDAD_MEDIDA,MINIMO) VALUES  (@0, @1, @2,@3,@4)";
+    db.Execute(insertQuery, Description,codigo, categoria,uni_medida,minimo);
+
+
+      result += @"<button class='button success''>Alta de articulo " + Description + " realizada con exito !!</button>";
+
+      Description = "";
+
+}
+
+}
+<script>
+    $(function(){
+        $('#notify_btn_2').on('click', function(){
+    
+            setTimeout(function(){
+                $.Notify({type: 'success', caption: 'Success', content: "Alta de Articulo realizada!!!"});
+            }, 3000);
+        });
+    });
+</script>
+<style type="text/css">
+    .field-validation-error {
+      font-weight:bold;
+      color:red;
+      background-color:yellow;
+     }
+    .validation-summary-errors{
+      border:2px dashed red;
+      color:red;
+      background-color:yellow;
+      font-weight:bold;
+      margin:12px;
+    }
+    .center {
+        vertical-align: central;
+        font-weight: 600;
+        color: #0026ff;
+        font-size: 16px;
+    }
+</style>
+<form data-role="validator" method="post" action="">
+    <fieldset>
+        <legend>Alta de Artículos</legend>
+        <table id="example" class="table striped dataTable" style="width:70%;margin-right:auto;margin-left:auto;">
+            <tr>
+                <td class="center">DESCRIPCION</td>
+                <td>                
+                    <div class="input-control text">
+                    <input type="text" placeholder="Ingresar descripcion" name="descripcion" value="@Request["descripcion"]" />
+                    @Html.ValidationMessage("descripcion")
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td class="center">CODIGO</td>
+                <td>                
+                    <div class="input-control text">
+                    <input type="text" placeholder="Ingresar Codigo" name="codigo" value="@Request["codigo"]" />
+                    @Html.ValidationMessage("codigo")
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td class="center">MINIMO</td>
+                <td>                
+                    <div class="input-control text" data-role="input-control">
+                    <input type="text" name="minimo" placeholder="mínimo de stock deseado" value="1">
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td class="center">CATEGORIA</td>
+                <td>                
+                    <div class="input-control select">
+                    <select name="categoria">
+                        <option value="0">Seleccionar ....</option>
+                        @foreach(var row in categorias)
+                        {                     
+                            <option value="@row.ID_CATEGORIA">@row.CATEGORIA_DESC</option>
+                        }
+                    </select>
+                    @Html.ValidationMessage("categoria")
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td class="center">UNIDAD DE MEDIDA</td>
+                <td>                
+                    <div class="input-control select">
+                    <select name="uni_medida">
+                        <option value="0">Seleccionar ....</option>
+                        @foreach(var row in unidadesmedida)
+                        {
+                            <option value="@row.ID_UNID_MEDIDA">@row.DESCRIPCION_UNIDAD</option>
+                        }
+                    </select>
+                    @Html.ValidationMessage("uni_medida")
+                </div></td>
+            </tr>
+
+            <tr>
+                <td></td>
+                <td>        
+                    <button class="command-button button-large primary" id="notify_btn_2">
+                                    DAR DE ALTA
+                    </button>
+                </td>
+            </tr>
+        </table>
+                <div class="row">
+                @Html.Raw(result)
+
+                </div>
+
+
+    </fieldset>
+
+</form>
+</div> <!-- End of row -->
+

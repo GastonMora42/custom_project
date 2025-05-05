@@ -1,0 +1,256 @@
+﻿@{
+    WebSecurity.RequireAuthenticatedUser();
+
+      Page.Title = "Administrar cuenta";
+
+    var action = Request.Form["action"];
+
+    bool hasLocalAccount = OAuthWebSecurity.HasLocalAccount(WebSecurity.CurrentUserId);
+
+    string successMessage = "";
+    var message = Request.QueryString["message"];
+    if (message == "ChangedPassword")
+    {
+        successMessage = "Su contraseña ha cambiado.";
+    }
+    else if (message == "SetPassword")
+    {
+        successMessage = "Su contraseña se ha establecido.";
+    }
+    else if (message == "RemovedLogin")
+    {
+        successMessage = "Se ha quitado el inicio de sesión externo.";
+    }
+
+    var externalLogins =
+        (from account in OAuthWebSecurity.GetAccountsFromUserName(WebSecurity.CurrentUserName)
+         let clientData = OAuthWebSecurity.GetOAuthClientData(account.Provider)
+         select new { Provider = account.Provider, ProviderDisplayName = clientData.DisplayName, UserId = account.ProviderUserId })
+        .ToList();
+    bool canRemoveLogin = externalLogins.Count > 1 || hasLocalAccount;
+
+    // Validación de la instalación
+    if (hasLocalAccount)
+    {
+        Validation.RequireField("currentPassword", "El campo de contraseña actual es obligatorio.");
+        Validation.Add("currentPassword",
+            Validator.StringLength(
+                maxLength: Int32.MaxValue,
+                minLength: 6,
+                errorMessage: "La contraseña actual debe contener al menos 6 caracteres"));
+    }
+    Validation.RequireField("newPassword", "El campo de contraseña nueva es obligatorio.");
+    Validation.Add("confirmPassword",
+        Validator.Required("El campo de confirmar contraseña es obligatorio."),
+        Validator.EqualsTo("newPassword", "La nueva contraseña y la contraseña de confirmación no coinciden."));
+    Validation.Add("newPassword",
+        Validator.StringLength(
+            maxLength: Int32.MaxValue,
+            minLength: 6,
+            errorMessage: "La contraseña nueva debe contener al menos 6 caracteres"));
+
+    if (IsPost)
+    {
+        AntiForgery.Validate();
+        if (action == "password")
+        {
+            // Controlar operaciones de contraseña de cuenta local
+            var currentPassword = Request.Form["currentPassword"];
+            var newPassword = Request.Form["newPassword"];
+            var confirmPassword = Request.Form["confirmPassword"];
+
+            if (Validation.IsValid())
+            {
+                if (hasLocalAccount)
+                {
+                    if (WebSecurity.ChangePassword(WebSecurity.CurrentUserName, currentPassword, newPassword))
+                    {
+                        Response.Redirect("~/Account/Manage?message=ChangedPassword");
+                        return;
+                    }
+                    else
+                    {
+                        ModelState.AddFormError("Se ha producido un error al intentar cambiar la contraseña. Póngase en contacto con el propietario del sitio.");
+                    }
+                }
+                else
+                {
+                    bool requireEmailConfirmation = !WebMail.SmtpServer.IsEmpty();
+                    try
+                    {
+                        WebSecurity.CreateAccount(WebSecurity.CurrentUserName, newPassword, requireEmailConfirmation);
+                        Response.Redirect("~/Account/Manage?message=SetPassword");
+                        return;
+                    }
+                    catch (System.Web.Security.MembershipCreateUserException e)
+                    {
+                        ModelState.AddFormError(e.Message);
+                    }
+                }
+            }
+            else
+            {
+                ModelState.AddFormError("El cambio de contraseña no se realizó correctamente. Corrija los errores e inténtelo de nuevo.");
+            }
+        }
+        else if (action == "removeLogin")
+        {
+            // Quitar inicio de sesión externo
+            var provider = Request.Form["provider"];
+            var userId = Request.Form["userId"];
+
+            message = null;
+            var ownerAccount = OAuthWebSecurity.GetUserName(provider, userId);
+            // Solo quitar el inicio de sesión externo si es propiedad del usuario que ha iniciado sesión y no es la última credencial de inicio de sesión de los usuarios
+            if (ownerAccount == WebSecurity.CurrentUserName && canRemoveLogin)
+            {
+                OAuthWebSecurity.DeleteAccount(provider, userId);
+                message = "RemovedLogin";
+            }
+            Response.Redirect(Href("~/Account/Manage", new { message }));
+            return;
+        }
+        else
+        {
+            // Suponer que se trata de una solicitud de inicio de sesión externo
+            string provider = Request.Form["provider"];
+            if (!provider.IsEmpty())
+            {
+                OAuthWebSecurity.RequestAuthentication(provider, Href("~/Account/RegisterService", new { returnUrl = Href("~/Account/Manage") }));
+                return;
+            }
+        }
+    }
+}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+
+    <link href="~/css/metro-bootstrap.css" rel="stylesheet">
+    <link href="~/css/metro-bootstrap-responsive.css" rel="stylesheet">
+    <link href="~/css/iconFont.css" rel="stylesheet">
+    <link href="~/css/docs.css" rel="stylesheet">
+    <link href="~/js/prettify/prettify.css" rel="stylesheet">
+
+    <!-- Load JavaScript Libraries -->
+    <link href="~/Content/themes/base/jquery.ui.all.css" rel="stylesheet" type="text/css" />
+
+    <script src="~/js/jquery/jquery.min.js"></script>
+    <script src="~/js/jquery/jquery.widget.min.js"></script>
+    <script src="~/js/jquery/jquery.mousewheel.js"></script>
+    <script src="~/js/holder/holder.js"></script>
+    <script src="~/Scripts/jquery.validate.min.js"></script>
+    <script src="~/Scripts/jquery.validate.unobtrusive.min.js"></script>
+    <!-- Metro UI CSS JavaScript plugins -->
+    <script src="~/js/load-metro.js"></script>
+
+    <!-- Local JavaScript -->
+    <script src="~/js/docs.js"></script>
+    <script src="~/js/github.info.js"></script>
+    <style>
+        /* styles for validation helpers */
+        .field-validation-error {
+            color: #e80c4d;
+            font-weight: bold;
+        }
+
+        .field-validation-valid {
+            display: none;
+        }
+
+        input.input-validation-error {
+            border: 1px solid #e80c4d;
+        }
+
+        input[type="checkbox"].input-validation-error {
+            border: 0 none;
+        }
+
+        .validation-summary-errors {
+            color: #e80c4d;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
+        .validation-summary-valid {
+            display: none;
+        }
+    </style>
+    <title>Intranet Confluencia</title>
+</head>
+<body class="metro">
+    <header class="bg-dark" data-load="../header.cshtml"></header>
+
+    <div class="container">
+        <h3>
+            <a href="javascript:history.back()"><i class="icon-arrow-left-3 fg-darker smaller"></i></a>
+            Cambiar Mi Contraseña<small class="on-right"></small>
+        </h3>
+
+        <h2 id="__table__"></h2>
+        <div class="example">
+
+                        @if (!successMessage.IsEmpty())
+                        {
+                            <h3 class="message-success">
+                                @successMessage
+                            </h3>
+                        }
+
+                                           
+
+                <form method="post">
+                    @AntiForgery.GetHtml()
+                    @Html.ValidationSummary(excludeFieldErrors: true)
+
+                    <fieldset>
+                        <legend>
+                            @if (hasLocalAccount)
+                        {
+                                <text> Formulario de cambio de contraseña</text>
+                        }
+                        else
+                        {
+                                <text> Formulario de establecimiento de contraseña</text>
+                        }
+                        </legend>
+                        <ol>
+                            @if (hasLocalAccount)
+                        {
+                                <li class="current-password">
+                                    <label for="currentPassword" @if (!ModelState.IsValidField("currentPassword")) { <text> class="error-label" </text>   }>Contraseña actual</label>
+                                    <input type="password" id="currentPassword" name="currentPassword" @Validation.For("currentPassword") />
+                                    @Html.ValidationMessage("currentPassword")
+                                </li>
+                        }
+                            <li class="new-password">
+                                <label for="newPassword" @if (!ModelState.IsValidField("newPassword")) { <text> class="error-label" </text>   }>Nueva contraseña</label>
+                                <input type="password" id="newPassword" name="newPassword" @Validation.For("newPassword") />
+                                @Html.ValidationMessage("newPassword")
+                            </li>
+                            <li class="confirm-password">
+                                <label for="confirmPassword" @if (!ModelState.IsValidField("confirmPassword")) { <text> class="error-label" </text>   }>Confirmar la nueva contraseña</label>
+                                <input type="password" id="confirmPassword" name="confirmPassword" @Validation.For("confirmPassword") />
+                                @Html.ValidationMessage("confirmPassword")
+                            </li>
+                        </ol>
+                        
+
+                            <button type="submit" name="action" value="password">Cambiar contraseña</button>
+                        <br/><br />
+                            <p>
+                                Haga clic <a href="~/Account/PasswordChange.cshtml" title="Página de contraseña olvidada">aquí</a> si olvidó su contraseña.
+                            </p>
+                    
+      
+                    </fieldset>
+                </form>
+
+</div>
+    </div> <!-- End of container -->
+    <script src="~/js/hitua.js"></script>
+</body>
+</html>

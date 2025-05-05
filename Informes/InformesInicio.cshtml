@@ -1,0 +1,32 @@
+@{
+var Usuario = WebSecurity.CurrentUserName;
+
+    Layout = "~/Inicio/_ConfluenciaLayout.cshtml";
+    var db = Database.Open("IntranetConnectionNew");
+
+var sql =@"SELECT   LSS.IDSOCIO,
+                    LSS.NOMBRES,
+                    LSS.APELLIDO,
+                    LSS.APODO,
+                    LSS.COBRO,
+                    LSS.NOMBRES + ' ' + LSS.APELLIDO + CASE WHEN LSS.APODO IS NULL THEN '' ELSE ' ( ' + LSS.APODO + ' )' END AS 'DATOS_SOCIO' 
+                    FROM LA_SARITA_LIST_SOCIOS LSS 
+                    WHERE 
+                    LSS.COBRO = 1 
+                    ORDER BY 
+                    LSS.NOMBRES,
+                    LSS.APELLIDO";
+var socios = db.Query(sql);
+
+  
+
+}
+<div class="row g-2 mb-3">
+    <div class="col-lg-3 col-md-6 col-sm-6"><span class="icon-list-item d-none">Cemento</span>
+         <div class="border border-300 rounded-2 p-3 mb-4 text-center bg-white dark__bg-1000 shadow-sm">
+          <img class="me-2" src="~/assets/img/reportblue.png" alt="" width="80" />
+           <a class="btn btn-outline-primary mt-2 text-center w-100 " href="Cemento/InformeCemento.cshtml" >Cemento</a>
+        </div>
+    </div>
+ 
+</div>

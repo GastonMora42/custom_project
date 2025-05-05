@@ -1,0 +1,18 @@
+@{
+    var Usuario = WebSecurity.CurrentUserName;
+    var db = Database.Open("IntranetConnectionNew");
+
+    if(IsPost){
+        var sql = @"UPDATE 
+                    dbo.RECIBOS_DETALLE
+                    SET
+                    DETALLE = @0
+                    WHERE
+                    IDRECIBO = @1";
+
+        var idmov = Request["idevento_edit"];
+        var movcajaobs = Request["detalle_edit"].ToUpper();
+      
+        db.Execute(sql, movcajaobs, idmov);
+    }
+}

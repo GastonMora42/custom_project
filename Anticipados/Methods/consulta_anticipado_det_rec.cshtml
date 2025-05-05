@@ -1,0 +1,576 @@
+@{
+    var Usuario = WebSecurity.CurrentUserName;
+    
+        var db = Database.Open("IntranetConnectionNew");
+        var numrecibo = Request.QueryString["num_comp"];
+        var sqlRecibo =@"SELECT DISTINCT  
+                        REC_CLI.IDRECCLI,
+                        REC_CLI.RECIBO,
+                        CONVERT(VARCHAR(10),REC_CLI.FECHA_RECIBO,103) AS 'FECHA_RECIBO',
+                        REC_CLI.FECHA_CONSUMO,
+                        REC_CLI.NOMBRE,
+                        REC_CLI.TELEFONOS,
+                        REC_CLI.LUGAR_OBRA,
+                        REC_CLI.OBSERVACIONES 
+                        FROM 
+                        RECIBOS_CLIENTE REC_CLI 
+                        WHERE 
+                        REC_CLI.RECIBO = " + numrecibo;
+        var recibo = db.Query(sqlRecibo);
+
+        var statusquery = "SELECT sta.IDSTATUS, sta.STATUS FROM dbo.COMP_ANTICIPADOS_CAB_STATUS sta ORDER BY sta.STATUS";
+        var statuslist = db.Query(statusquery);
+
+
+        var sqlcabeanticipado = @"SELECT DISTINCT
+                                COMP_ANTICIPADOS_CAB.IDCAB,
+                                COMP_ANTICIPADOS_CAB.FECHA,
+                                COMP_ANTICIPADOS_CAB.TIPO_COMP,
+                                COMP_ANTICIPADOS_CAB.N_COMP,
+                                COMP_ANTICIPADOS_CAB.OBSERVACIONES,
+                                STA.STATUS,
+                                COMP_ANTICIPADOS_CAB.OBSERVACIONES_STATUS,
+                                STA.STYLE,
+                                COMP_ANTICIPADOS_CAB.STATUS,
+                                COMP_ANTICIPADOS_CAB.FECHA_STATUS,
+                                COMP_ANTICIPADOS_CAB.STATUS_CTRL_POR,
+                                COMP_ANTICIPADOS_CAB.FECHA_CTRL_FISICO
+                              FROM
+                                COMP_ANTICIPADOS_CAB
+                                LEFT OUTER JOIN dbo.COMP_ANTICIPADOS_CAB_STATUS STA ON (COMP_ANTICIPADOS_CAB.STATUS=STA.IDSTATUS)
+                              WHERE
+                                COMP_ANTICIPADOS_CAB.N_COMP = '" + numrecibo  + "'";
+
+        var cabanticipado = db.QuerySingle(sqlcabeanticipado); 
+        var idcab = cabanticipado.IDCAB;
+        var fechacab = cabanticipado.FECHA;
+        var tipocompcab = cabanticipado.TIPO_COMP;
+        var ncompcab = cabanticipado.N_COMP;
+        var observcab = cabanticipado.OBSERVACIONES;
+        var status = cabanticipado.STATUS;
+        var statusobserv = cabanticipado.OBSERVACIONES_STATUS;
+        var statusstyle = cabanticipado.STYLE;
+        var statusfecha = cabanticipado.FECHA_STATUS;
+        var statusctrlpor = cabanticipado.STATUS_CTRL_POR;
+        var ctrlfisico = cabanticipado.FECHA_CTRL_FISICO;
+
+        if (statusfecha==null) {
+          statusfecha = fechacab;
+
+        }
+
+
+
+        var sqlVenta =@"SELECT   *
+                        FROM 
+                        RECIBOS_VENTA REC_VENTA WHERE REC_VENTA.RECIBO = " + numrecibo;
+        var venta = db.Query(sqlVenta);
+        var sqlTotalVenta =@"SELECT   
+                        SUM(REC_VENTA.TOTAL) AS 'TOTAL'
+                        FROM 
+                        RECIBOS_VENTA REC_VENTA 
+                        WHERE 
+                        REC_VENTA.RECIBO = " + numrecibo + " GROUP BY REC_VENTA.RECIBO";
+        var TotalVenta= db.QueryValue(sqlTotalVenta);
+
+
+        
+        var sqlDatosDetalle =@"SELECT   *
+                        FROM 
+                        RECIBOS_DETALLE REC_VENTA WHERE REC_VENTA.NUMERO = " + numrecibo;
+        var DatosDetalle = db.Query(sqlDatosDetalle);
+
+        var sqlTotalDatosDetalle =@"SELECT  SUM(REC_VENTA.IMPORTE) AS 'TOTAL_COBRO'
+                        FROM 
+                        RECIBOS_DETALLE REC_VENTA WHERE REC_VENTA.NUMERO = " + numrecibo + " GROUP BY REC_VENTA.NUMERO";
+        var TotalDatosDetalle = db.QueryValue(sqlTotalDatosDetalle);
+
+        var Acancelar= TotalVenta - TotalDatosDetalle;
+
+     
+    
+    }
+
+
+<div class="card mb-4">
+            <div class="card-body">
+
+              <div class="row">
+                @foreach(var row in recibo)
+                {  
+                <div class="col-md-2 col-lg-2 mb-2 mb-lg-0">
+                  <h5 class="mb-2 fs-0">Cliente</h5>
+                  <h6 class="mb-2">@row.NOMBRE</h6>
+                  <h6 class="mb-0 fs--1"> <strong>Telefono: </strong><a href="#">@row.TELEFONOS</a></h6>
+                </div>
+                <div class="col-md-2 col-lg-2 mb-2 mb-lg-0">
+                  <h5 class="mb-2 fs-0">Lugar de Entrega</h5>
+                  <h6 class="mb-2">@row.LUGAR_OBRA</h6>
+                </div>
+                <div class="col-md-2 col-lg-2">
+                  <h5 class="mb-2 fs-0">Fecha Recibo</h5>
+                  <h6 class="mb-2">@row.FECHA_RECIBO</h6>
+                </div>
+                }
+                
+                  <div class="col-md-3 col-lg-3">
+                  <h5 class="mb-2 fs-0">Observaciones</h5>
+                  <h6 class="mb-2">@observcab </h6>
+                </div>
+                
+                <div class="col-md-2 col-lg-2">
+                 <a class="btn btn-outline-primary btn-lg me-1 mb-1" type="button" href="~/Tesoreria/ReciboConsulta/consultarecibo.cshtml?num_recibo=@numrecibo"># @numrecibo</a>
+                 <button class="btn btn-outline-@statusstyle btn-lg me-1 mb-1" type="button">@status</button>
+                </div>
+
+              </div>
+            </div>
+  </div>
+
+<div class="row mb-3">
+            <div class="col-xl-5 pe-xl-2">
+              <div class="card mb-3 h-lg-100">
+                <div class="card-header">
+                  <div class="d-flex mb-1">
+                    <div class="col-auto align-self-center">
+                      <h5 class="mb-0" data-anchor="data-anchor" id="basic-example">Datos de la Venta<a class="anchorjs-link " aria-label="Anchor" data-anchorjs-icon="#" href="#basic-example" style="padding-left: 0.375em;"></a></h5>
+                    </div>
+
+                  </div>
+                </div>
+                <div class="card-body bg-light">
+                  <div class="tab-content" id="detconsumos">
+
+                    <table class="table table-sm table-responsive table-centered border table-nowrap mb-lg-0"style="font-size:85%;">
+                        <thead class="bg-light">
+                            <tr>
+                                <th style="text-align: center;">#</th>
+                                <th style="text-align: center;">Cantidad</th>
+                                <th style="text-align: center;">Tipo</th>
+                                <th style="text-align: center;">Precio Unit.</th>
+                                <th style="text-align: center;">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            
+                            @foreach(var row in venta)
+                            {      
+                            
+                            <tr>
+                                <td style="text-align: center;font-weight: 600;">@row.RENGLON</td>
+                                <td style="text-align: right;">@string.Format("{0:n}", @row.CANTIDAD)</td>
+                                <td style="text-align: center;">@row.TIPO</td>
+                                <td style="text-align: right;">@string.Format("{0:n}", @row.PRECIO_UNIT)</td>
+                                <td style="text-align: right;">@string.Format("{0:n}", @row.TOTAL)</td>
+                                
+                            </tr>
+                            }
+                            <tr> 
+
+                                <td style="text-align: center;font-weight: 600;">TOTAL</td>
+                                <td style="text-align: right;"></td>
+                                <td style="text-align: center;"></td>
+                                <td style="text-align: right;"></td>
+                                <td style="text-align: right;font-weight: 600;color: dodgerblue;" id="totalventa">@string.Format("{0:n}", TotalVenta)</td>
+                                
+                            </tr>
+                        </tbody>
+                    </table>
+
+                  </div>
+                </div>
+              </div>
+            </div>
+      <div class="col-xl-7 pe-xl-2">
+              <div class="card mb-3 h-lg-100">
+                <div class="card-header">
+                <div class="d-flex mb-1">
+                    <div class="me-auto p-2"><h5>Aplicaciones</h5></div>
+                      <button class="btn btn-primary me-2 mb-2" type="button" data-id="@idcab" href="#" type="text" data-bs-toggle="modal" data-bs-target="#staticBackdrop">Aplicar </button>
+               
+                  </div>
+                </div>
+                <div class="card-body bg-light">
+                  <div class="tab-content" >
+                   <table class="table table table-sm table-responsive table-centered border table-nowrap mb-lg-0" style="font-size:85%;">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th style="text-align: center;"></th>
+                                    <th style="text-align: center;">Remito #</th>
+                                    <th style="text-align: center;">Art.</th>
+
+                                    <th style="text-align: center;"></th>
+                                    <th style="text-align: center;">Cant</th>
+                                    <th style="text-align: center;">Importe</th>
+                                    <th style="text-align: center;">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody id="remitosimputados">
+
+
+                            </tbody>
+                        </table>
+
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<div class="card mb-3">
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-2 col-lg-2 mb-2 mb-lg-0">
+                  <button class="btn btn-outline-@statusstyle btn-lg me-1 mb-1" type="button">@status</button>
+                </div>
+                <div class="col-md-2 col-lg-2 mb-2 mb-lg-0">
+                  <h5 class="mb-2 fs-0">Ctrl Status</h5>
+                  <h6 class="mb-2">@statusctrlpor</h6>
+
+                </div>
+                <div class="col-md-2 col-lg-2">
+                  <h5 class="mb-2 fs-0">Fecha Status</h5>
+                  @if (@statusfecha== null)
+                  {
+                    <h6 class="mb-2"> - </h6>
+                  }  
+                  else
+                  {
+                      <h6 class="mb-2"> @string.Format("{0:dd/MM/yyyy}", @statusfecha)</h6>
+                  }                
+                </div>
+                <div class="col-md-2 col-lg-2">
+                  <h5 class="mb-2 fs-0">Fecha Ctrl F&iacutesico</h5>
+                  @if (@ctrlfisico== null)
+                  {
+                    <h6 class="mb-2"> - </h6>
+                  }  
+                  else
+                  {
+                      <h6 class="mb-2"> @string.Format("{0:dd/MM/yyyy}", ctrlfisico)</h6>
+                  }                
+                </div>
+                <div class="col-md-2 col-lg-2">
+                  <h5 class="mb-2 fs-0">Observ. Status</h5>
+                  <h6 class="mb-2" id="observaciones">@statusobserv </h6>
+                </div>
+                
+                <div class="col-md-1 col-lg-1">
+                 <button class="btn btn-info btn-lg me-2 mb-2" type="button" data-id="@idcab" href="#" type="text" data-bs-toggle="modal" data-bs-target="#error-modal2" onclick="cargardatosmodal()">CONTROL</button>
+                </div>
+                
+                            
+              </div>
+            </div>
+  </div>
+</div>
+
+  <div class="modal fade" id="error-modal2" tabindex="-1" aria-hidden="true" style="display: none;">
+                    <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 700px">
+                      <div class="modal-content position-relative">
+                        <div class="position-absolute top-0 end-0 mt-2 me-2 z-1">
+
+                          <button class="btn-close btn btn-sm btn-circle d-flex flex-center transition-base" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body p-0">
+                          <div class="rounded-top-3 py-3 ps-4 pe-6 bg-light">
+                            <h4 class="mb-1" id="modalExampleDemoLabel">Modificar Status Pendiente </h4>
+                          </div>
+                          <div class="p-4 pb-0">
+                            <form id="edit-status" action="Methods/updatestatusrecibo.cshtml" method="post" dataType: "text/plain">
+                                <input class="form-control" id="row_num" name="row_num" type="hidden" value="@idcab"> 
+                              <div class="mb-3">
+                                  <label class="col-form-label" for="tipoctrl">Status:</label>
+
+                                  <select class="form-select" id="tipoctrl" name="tipoctrl">
+                                  <option value="4" selected>CONSUMIDO COMPLETO </option>
+                                  @foreach(var row in statuslist)
+                                  {  
+                                  <option value="@row.IDSTATUS">@row.STATUS</option>
+                                  }
+                                  </select>
+                              </div>
+                              
+                                <div class="mb-3">
+                                  <label class="col-form-label" for="message-text">Control Realizado por:</label>
+
+                                  <select class="form-select" id="Ctrlrealizadopor" name="Ctrlreailizadopor">
+                                  <option value="" selected readonly disabled>Seleccionar ...</option>
+                                    <option value="Andrea" >Andrea</option>
+                                    <option value="Aldana" >Aldana</option>
+                                  </select>
+                              </div>
+                              <div class="mb-3">
+                                <label class="col-form-label" for="fechactrlfisico">Ctrl F&iacutesico:</label>
+                           
+                                <input type="date" class="form-control" id="fechactrlfisico" name="fechactrlfisico" value="@ctrlfisico"  >
+
+ 
+                                
+                              </div>
+                              <div class="mb-3">
+
+                                <label class="col-form-label" for="observaciones">Observaciones:</label>
+
+                                <input class="form-control" id="observaciones" name="observaciones" value="@observcab">
+                              </div>
+                               <div class="mb-3" id="observctrl">
+                                <label class="col-form-label" for="observacionesctrl">Observ. Ctrl:</label>
+                                <input class="form-control" id="observacionesctrl" name="observacionesctrl" value="@statusobserv">
+                                <div class="invalid-feedback">Please provide a valid city.</div>
+                              </div>
+                            
+                          </div>
+                        </div>
+                        <div class="modal-footer">
+
+                          <button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Close</button>
+
+                          <button class="btn btn-primary" type="submit" onclick="updatestatus()">Modificar </button>
+                        </div>
+                        </form>
+                      </div>
+                    </div>
+                  </div>
+
+
+
+<script>
+function cargardatosmodal(){
+  $("#message-text").val($("#observaciones").text());
+}
+
+function cambiaobservctrlview(){
+  
+  if ($("#tipoctrl").val()!="3"){
+    $('#observctrl').val('');
+    $('#observctrl').hide();
+    
+    $('#observacionesctrl').prop('required',false);
+  }else{
+    $('#observctrl').val('');
+    $('#observctrl').show();
+    $('#observacionesctrl').prop('required',true);
+  }
+}
+
+function modificaobservaciones(){
+         // get the table row ID that was passed to the modal
+        row_id = $('#row_num').val();
+        row = $('#'+row_id);
+        // get the table row to update
+        c = row.children();
+        var nvotexto = "<a data-id=" + row_id + " href='#'' type='text' data-bs-toggle='modal' data-bs-target='#error-modal2'>" + $('#message-text').val() + "</a>"
+        $(c[5]).text(nvotexto);
+        $(c[5]).html($(c[5]).text()); // price
+        
+        $('#error-modal2').modal('toggle');
+        row = $('#'+row_id);
+        $('#'+row_id).css('background-color','PapayaWhip');
+        setTimeout(() => { $('#'+row_id).css('background-color','transparent')}, 3500);
+
+}
+
+$(".edit_account").click(function(e){
+      $("#message-text").val("");
+        row = $(e.target).parent().parent();
+        console.log(row.attr('id'));
+        // pass table row ID to the modal
+        row = $('#'+row.attr('id'));
+        c = row.children();
+        console.log($(c[5]).text());
+        $('#row_num').val(row.attr('id'));
+        $("#message-text").val($(c[5]).text());
+});
+
+
+
+function updatestatus(){
+  console.log($("#edit-status").serialize())
+  $.ajax({
+                type: "POST",
+                url: $("#edit-status").attr('action'),
+                data: $("#edit-status").serialize(),
+                dataType: "html",
+                success: function(response) {
+                  location.reload();
+                    $('#error-modal2').modal('toggle');
+                    
+                },
+                  error: function(xhr, textStatus, error){
+                  console.log(xhr.statusText);
+                  console.log(textStatus);
+                  console.log(error);
+
+                                      $('#error-modal2').modal('toggle');
+                  
+              }
+            });
+        }
+
+function remitosimputados(reciboselnum) {
+            
+            $('#remitosimputados').load("Methods/detalledeconsumos?num_recibo="+ reciboselnum);
+    }
+
+
+$(document).ready(function () {
+
+      remitosimputados(@numrecibo);
+
+var venta = $("#totalventa").html() * 1;
+var cobro = $("#totalcobro").html() * 1 ;
+var acancelar = (venta - cobro);
+
+
+});
+
+</script>
+
+
+<div class="modal fade" id="staticBackdrop" data-bs-keyboard="false" data-bs-backdrop="static" tabindex="-1"
+    aria-labelledby="staticBackdropLabel" style="display: none;" aria-hidden="true">
+    <div class="modal-dialog modal-xl mt-6" role="document">
+        <div class="modal-content border-0">
+            <div class="position-absolute top-0 end-0 mt-3 me-3 z-1">
+                <button class="btn-close btn btn-sm btn-circle d-flex flex-center transition-base"
+                    data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="bg-light rounded-top-3 py-3 ps-4 pe-6">
+                    <h4 class="mb-1" id="staticBackdropLabel">Imputar Remitos</h4>
+                    
+                </div>
+                <div class="p-4">
+                    <div class="row">
+                        <div class="col-lg-4">
+                            <h6 class="mt-5 mt-lg-0">Cantidades Imputadas</h6>
+                            <div id="cant_imputados"></div>
+                            
+                        </div>
+
+
+                        <div class="col-lg-8">
+                            <div class="d-flex"><span class="fa-stack ms-n1 me-3"><svg
+                                        class="svg-inline--fa fa-circle fa-w-16 fa-stack-2x text-200" aria-hidden="true"
+                                        focusable="false" data-prefix="fas" data-icon="circle" role="img"
+                                        xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" data-fa-i2svg="">
+                                        <path fill="currentColor"
+                                            d="M256 8C119 8 8 119 8 256s111 248 248 248 248-111 248-248S393 8 256 8z">
+                                        </path>
+                                    </svg>
+                                    <!-- <i class="fas fa-circle fa-stack-2x text-200"></i> Font Awesome fontawesome.com --><svg
+                                        class="svg-inline--fa fa-tag fa-w-16 fa-inverse fa-stack-1x text-primary"
+                                        data-fa-transform="shrink-2" aria-hidden="true" focusable="false"
+                                        data-prefix="fas" data-icon="tag" role="img" xmlns="http://www.w3.org/2000/svg"
+                                        viewBox="0 0 512 512" data-fa-i2svg="" style="transform-origin: 0.5em 0.5em;">
+                                        <g transform="translate(256 256)">
+                                            <g transform="translate(0, 0)  scale(0.875, 0.875)  rotate(0 0 0)">
+                                                <path fill="currentColor"
+                                                    d="M0 252.118V48C0 21.49 21.49 0 48 0h204.118a48 48 0 0 1 33.941 14.059l211.882 211.882c18.745 18.745 18.745 49.137 0 67.882L293.823 497.941c-18.745 18.745-49.137 18.745-67.882 0L14.059 286.059A48 48 0 0 1 0 252.118zM112 64c-26.51 0-48 21.49-48 48s21.49 48 48 48 48-21.49 48-48-21.49-48-48-48z"
+                                                    transform="translate(-256 -256)"></path>
+                                            </g>
+                                        </g>
+                                    </svg>
+                                    <!-- <i class="fa-inverse fa-stack-1x text-primary fas fa-tag" data-fa-transform="shrink-2"></i> Font Awesome fontawesome.com --></span>
+                                <div class="flex-1">
+                                    <h5 class="mb-2 fs-0">Buscar Comprobantes</h5>
+                                    <div class="d-flex">
+                                      <div class="col-md-2">
+                                        <input class="form-control" id="inputcomp" type="text" onchange="buscarcomprobantes()"> 
+                                      </div>
+                                      
+                                      <div class="col-md-6">
+                                          <select class="form-select" id="listcomprobantes" onchange="buscacomprobanteaimputar(this.value)">
+                                              <option selected="0">Seleccionar ..</option>
+                                              <option>...</option>
+                                          </select>
+                                      </div>
+                                    </div>
+                                    <hr class="my-4">
+                                </div>
+                            </div>
+                            <div class="d-flex"><span class="fa-stack ms-n1 me-3"><svg
+                                        class="svg-inline--fa fa-circle fa-w-16 fa-stack-2x text-200" aria-hidden="true"
+                                        focusable="false" data-prefix="fas" data-icon="circle" role="img"
+                                        xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" data-fa-i2svg="">
+                                        <path fill="currentColor"
+                                            d="M256 8C119 8 8 119 8 256s111 248 248 248 248-111 248-248S393 8 256 8z">
+                                        </path>
+                                    </svg>
+                                    <!-- <i class="fas fa-circle fa-stack-2x text-200"></i> Font Awesome fontawesome.com --><svg
+                                        class="svg-inline--fa fa-align-left fa-w-14 fa-inverse fa-stack-1x text-primary"
+                                        data-fa-transform="shrink-2" aria-hidden="true" focusable="false"
+                                        data-prefix="fas" data-icon="align-left" role="img"
+                                        xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" data-fa-i2svg=""
+                                        style="transform-origin: 0.4375em 0.5em;">
+                                        <g transform="translate(224 256)">
+                                            <g transform="translate(0, 0)  scale(0.875, 0.875)  rotate(0 0 0)">
+                                                <path fill="currentColor"
+                                                    d="M12.83 352h262.34A12.82 12.82 0 0 0 288 339.17v-38.34A12.82 12.82 0 0 0 275.17 288H12.83A12.82 12.82 0 0 0 0 300.83v38.34A12.82 12.82 0 0 0 12.83 352zm0-256h262.34A12.82 12.82 0 0 0 288 83.17V44.83A12.82 12.82 0 0 0 275.17 32H12.83A12.82 12.82 0 0 0 0 44.83v38.34A12.82 12.82 0 0 0 12.83 96zM432 160H16a16 16 0 0 0-16 16v32a16 16 0 0 0 16 16h416a16 16 0 0 0 16-16v-32a16 16 0 0 0-16-16zm0 256H16a16 16 0 0 0-16 16v32a16 16 0 0 0 16 16h416a16 16 0 0 0 16-16v-32a16 16 0 0 0-16-16z"
+                                                    transform="translate(-224 -256)"></path>
+                                            </g>
+                                        </g>
+                                    </svg>
+                                    <!-- <i class="fa-inverse fa-stack-1x text-primary fas fa-align-left" data-fa-transform="shrink-2"></i> Font Awesome fontawesome.com --></span>
+                                <div class="flex-1">
+                                    <h5 class="mb-2 fs-0">Detalle del Comprobante</h5>
+                                      <div id="Comp_Imputar_sel"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+
+  function CompImputados(){
+            var x = document.getElementById("cant_imputados");
+            x.style.display = "none";
+
+
+            $('#cant_imputados').load("Methods/Remitos_cant_imputado.cshtml?remsel="+$('#numremito').val() , function(responseTxt, statusTxt, xhr){
+            if(statusTxt == "success")
+                x.style.display = "block";
+
+            if(statusTxt == "error")
+                console.log(statusTxt);
+        });  
+
+  }
+
+function buscacomprobanteaimputar(comp){
+  console.log(comp);
+            var x = document.getElementById("Comp_Imputar_sel");
+            x.style.display = "none";
+            $('#Comp_Imputar_sel').load("Methods/Comprobante_a_imputar.cshtml?remsel="+ comp , function(responseTxt, statusTxt, xhr){
+            if(statusTxt == "success")
+                x.style.display = "block";
+
+            if(statusTxt == "error")
+                console.log(statusTxt);
+        }); 
+
+
+}
+
+    
+     function buscarcomprobantes() {
+          var comp = $('#inputcomp').val();
+          $.post("Methods/Comprobantesfiltrados?compsel="+ comp, { 
+          'compsel' : 194 },
+          function(data) {
+            var sel = $("#listcomprobantes");
+            sel.empty();
+            for (var i=0; i<data.length; i++) {
+            sel.append('<option value="' + data[i].IDCAB + '">' + data[i].N_COMP + '</option>');
+            }
+          }, "json");
+
+    }
+</script>
+

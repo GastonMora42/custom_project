@@ -1,0 +1,11 @@
+    <nav class="navbar navbar-expand-lg " style="background-color:rgb(160,31,111);margin-bottom:20px;">
+        <div class="container-fluid">
+    <a class="navbar-brand" href="LaSarita_Dashboard.cshtml" style="color: white;">
+      <img src="LaSarita2.jpg" alt="" width="40" height="34" class="d-inline-block align-text-top">
+      La Sarita
+    </a>
+
+        <a class="navbar-brand" style="color: white;" href="LaSarita_Dashboard.cshtml">Inicio</a>
+        <a class="navbar-brand" style="color: white;" href="LaSaritaSocios.cshtml">s</a>
+        </div>
+    </nav>

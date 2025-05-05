@@ -1,0 +1,45 @@
+﻿@{
+    if (WebSecurity.IsAuthenticated == false)
+    {
+        Response.Redirect("~/Account/Login.cshtml");
+    }
+
+    var Usuario = WebSecurity.CurrentUserName;
+    var strsql = "";
+    var interno = Request.QueryString["interno"];
+    var db = Database.Open("IntranetConnectionNew");
+    strsql = @"SELECT 
+              ROPA.ARTICULO,
+              ROPA.CANTIDAD,
+              ROPA.FECHA,
+                dbo.NOMINA_ROPA_ARTICULOS.DESCRIPCION
+                FROM
+                dbo.NOMINA_ROPA_ITEMS ROPA
+                INNER JOIN dbo.NOMINA_ROPA_ARTICULOS ON (ROPA.ARTICULO = dbo.NOMINA_ROPA_ARTICULOS.ID_PRODUCTO)
+            WHERE
+              ROPA.PROVEEDOR = '" + interno + "' ORDER BY  ROPA.FECHA DESC";
+    var products = db.Query(strsql);    
+}
+
+<table class="table striped" id="DetalleEMpleado" style="width: 70%;margin-left:auto;margin-right:auto;color: #000">
+<thead>
+<tr>
+    <th class="text-center">FECHA</th>    
+    <th class="text-center">ITEM</th>
+    <th class="text-center">CANTIDAD</th>
+</tr>
+</thead>
+     <tbody>
+@foreach(var row in products)
+{      
+    <tr>
+        <td class="text-center">@string.Format("{0:dd/MM/yy}", @row.FECHA)</td>
+                <td class="text-center">@row.DESCRIPCION</td>
+        <td class="text-right">@string.Format("{0:n}", @row.CANTIDAD)</td>       
+
+    </tr>
+    }
+    </tbody>
+
+
+</table>

@@ -1,0 +1,16 @@
+﻿@{
+    var db = Database.Open("IntranetConnection");
+    string proveedorelegido = Request.QueryString["q"];
+    var stringquery = @" SELECT 
+                            dbo.BIENES_DE_USO.VTV
+                            FROM
+                              dbo.BIENES_DE_USO
+                            WHERE
+                              dbo.BIENES_DE_USO.INTERNO ='" + proveedorelegido + "'";
+
+    var movimientos = db.Query(stringquery);
+}
+        @foreach(var row in movimientos)
+        {    
+            @row.VTV
+        }

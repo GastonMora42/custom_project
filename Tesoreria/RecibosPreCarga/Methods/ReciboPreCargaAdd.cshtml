@@ -1,0 +1,66 @@
+@{
+    if(IsPost){
+    var Usuario = WebSecurity.CurrentUserName;
+    var db = Database.Open("IntranetConnection");
+    var fechaconsumo = Request.Form["fechaconsumo"] ;
+    DateTime dt = new DateTime();
+    dt = Convert.ToDateTime(fechaconsumo);
+    fechaconsumo = dt.ToString("yyyy-MM-dd");
+
+    var fechahasta = Request.Form["fechahasta"] ;
+    DateTime dt1 = new DateTime();
+    dt1 = Convert.ToDateTime(fechahasta);
+    fechahasta  = dt.ToString("yyyy-MM-dd");
+    
+    var telefono = Request.Form["telefono"];  
+    var cliente = Request.Form["cliente"];
+    var lugarobra = Request.Form["lugarobra"];    
+    var productos = Request.Form["productosven"];
+    var observacionesrec = Request.Form["observacionesrec"];
+    
+    // Process information here
+            var insertQuery =
+                    @"
+                        DECLARE @IDREC INT
+                        DECLARE @MyTableVar table( IDREC int, NUMERO int)   
+                        INSERT dbo.RECIBOS_CLIENTES_PRE_CARGA 
+                                            (RECIBO
+                                            ,FECHA_RECIBO
+                                            ,FECHA_CONSUMO
+                                            ,NOMBRE
+                                            ,TELEFONOS
+                                            ,LUGAR_OBRA
+                                            ,OBSERVACIONES)
+                            OUTPUT INSERTED.IDRECCLI, INSERTED.RECIBO
+                                INTO @MyTableVar  
+                        VALUES (0, @0, @1, @2, @3, @4, @5)  
+                        
+                        --Display the result set of the table variable.  
+                        SELECT IDREC FROM @MyTableVar ";
+           db.Execute(insertQuery, fechaconsumo,fechahasta,cliente,telefono,lugarobra,observacionesrec, Usuario);
+           var idreccli = db.QuerySingle("SELECT TOP 1 IDRECCLI FROM dbo.RECIBOS_CLIENTES_PRE_CARGA ORDER BY IDRECCLI DESC") ;
+
+           string idrec = idreccli[0].ToString(); 
+           Response.Write(idrec);
+
+           
+           string newText = productos.Replace("idreclcli",idrec);
+          
+           var insertQueryProductos = @"INSERT INTO [dbo].[RECIBOS_VENTA_PRE_CARGA]
+                                        ([IDRECIBO_PRE_CARGA]
+                                        ,[RENGLON]
+                                        ,[TIPO]
+                                        ,[OBSPRODUCTO]
+                                        ,[CANTIDAD]
+                                        ,[PRECIO_UNIT]
+                                        ,[TOTAL])
+                                            VALUES " + newText ;
+           db.Execute(insertQueryProductos);
+          Response.Write(insertQueryProductos);    
+    }       
+      
+}
+
+
+
+

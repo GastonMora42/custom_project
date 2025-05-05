@@ -1,0 +1,64 @@
+﻿@{
+    Layout = "_RepSiteLayout.cshtml";
+    var strsql = "";
+    var Bienelegido = Request.QueryString["Bienselected"];
+    var db = Database.Open("IntranetConnection");
+       strsql = "SELECT dbo.REPUESTOS_ITEMS.FECHA,dbo.REPUESTOS_ARTICULOS.CODIGO,  dbo.REPUESTOS_ARTICULOS.DESCRIPCION,dbo.REPUESTOS_ITEMS.CANTIDAD,dbo.REPUESTOS_ITEMS.PROVEEDOR,  dbo.REPUESTOS_ITEMS.USUARIO,dbo.REPUESTOS_ITEMS.ARTICULO,dbo.REPUESTOS_TIPOS_MOVIMIENTOS.DESCR_MOVIMIENTO FROM dbo.REPUESTOS_ITEMS INNER JOIN dbo.REPUESTOS_TIPOS_MOVIMIENTOS ON (dbo.REPUESTOS_ITEMS.ID_TIPO_MOV = dbo.REPUESTOS_TIPOS_MOVIMIENTOS.ID_TIPOMOV)   INNER JOIN dbo.REPUESTOS_ARTICULOS ON (dbo.REPUESTOS_ITEMS.ARTICULO = dbo.REPUESTOS_ARTICULOS.ID_PRODUCTO)WHERE dbo.REPUESTOS_ITEMS.ARTICULO = '" + Bienelegido + "' ORDER BY dbo.REPUESTOS_ITEMS.FECHA DESC ";
+
+    var products = db.Query(strsql);    
+}
+
+<h4>
+    <a href="javascript:history.back()"><i class="icon-arrow-left-3 fg-darker smaller"></i></a>
+            Detalle de Movimientos<small class="on-right"></small>
+</h4>
+<table class="table striped hovered dataTable" id="example">
+    <thead>
+    <tr>
+        <th class="text-center">FECHA</th>
+        <th class="text-center">TIPO_MOVIMIENTO</th>
+        <th class="text-center">CODIGO</th>
+        <th class="text-center">DESCRIPCION</th>
+        <th class="text-center">CANTIDAD</th>
+        <th class="text-center">PROVEEDOR</th>
+        <th class="text-center">USUARIO</th>
+
+    </tr>
+                </thead>
+    <tbody>
+        @foreach(var row in products)
+        {
+        
+        <tr>
+            <td class="text-center">
+                @string.Format("{0:dd/MM/yy}", @row.FECHA)
+            </td>
+            <td>@row.DESCR_MOVIMIENTO</td>
+            <td>@row.CODIGO</td>
+            <td>@row.DESCRIPCION</td>
+            @if (@row.CANTIDAD>0)
+            {
+                <td class="text-info" style="text-align:right ">@string.Format("{0:n}", @row.CANTIDAD)</td>
+                            }
+else
+{
+                <td class="text-alert" style="text-align:right ">@string.Format("{0:n}", @row.CANTIDAD)</td>}
+            <td>@row.PROVEEDOR</td>
+            <td>@row.USUARIO</td>
+        </tr>
+    }
+                </tbody>
+</table>
+            <script>
+                        $(document).ready(function() {
+                    $('#example').dataTable({
+                        paging: true,
+                        "order": [],
+                        "pageLength": 50,
+                        "lengthMenu": [[10, 25, 50, -1], [10, 25, 50, "All"]]
+                    });
+                
+                } );
+            </script>
+
+

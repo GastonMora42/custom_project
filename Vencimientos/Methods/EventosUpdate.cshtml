@@ -1,0 +1,31 @@
+@{
+    var Usuario = WebSecurity.CurrentUserName;
+    if(IsPost){
+        var db = Database.Open("IntranetConnection");
+        var sql = @"UPDATE 
+                    dbo.VENCIMIENTOS
+                    SET
+                    CONCEPTO = @0,
+                    DETALLE = @1,
+                    FECHA = @2,
+                    EMPID = @3,
+                    IMPORTE = @4,
+                    RESPONSABLE = @5,
+                    RUBROID = @6
+                    WHERE
+                    dbo.VENCIMIENTOS.IDVENC = @7";
+
+        var idvenc = Request["idevento_edit"];
+        var concepto  = Request["concepto_edit"];
+        var detalle =  Request["detalle_edit"];
+        var fecha = Request["fechavto_edit"]; 
+        var empresa = Request["empresa_sel_modal_edit"];
+        var importe = Request["importe_edit"]; 
+        var responsable = Request["responsable_edit"]; 
+        var rubro = Request["rubro_edit"]; 
+
+        DateTime myDate = DateTime.Parse(fecha);
+       
+        db.Execute(sql, concepto, detalle, myDate, empresa, importe, responsable, rubro, idvenc);
+    }
+}

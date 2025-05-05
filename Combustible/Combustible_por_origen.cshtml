@@ -1,0 +1,61 @@
+﻿@{
+    Layout = "_CombustibleSiteLayout.cshtml";
+    Page.Title = "Detalle Egresos por Origen";
+            if (WebSecurity.IsAuthenticated == false)
+    {
+        Response.Redirect("~/Account/Login.cshtml");
+    }
+
+    var Usuario = WebSecurity.CurrentUserName;
+    var db = Database.Open("IntranetConnectionNew");
+    var strsql2 = "dbo.COMBUSTIBLE_CONSUMOS_POR_ORIGEN"; 
+    var bienes = db.Query(strsql2);  
+    }
+
+<table id="datatable-buttons" class="table striped hovered dataTable" style="font-size:85%">
+    <thead>
+    <tr> 
+        <th class="text-center">FECHA</th>
+        <th class="text-center">AÑELO</th>
+        <th class="text-center">PIN</th>
+        <th class="text-center">PLOTTIER</th>     
+        <th class="text-center">XO48</th>
+        <th class="text-center">CHULENGO AÑELO</th>
+    </tr>
+    </thead>
+    <tbody>
+        @foreach(var row in bienes)
+        {      
+        <tr>
+            <td class="text-center">@string.Format("{0:dd/MM/yy}", @row.FECHA)</td>
+            <td class="text-right">@string.Format("{0:n}", @row.AÑELO)</td>
+            <td class="text-right">@string.Format("{0:n}", @row.PIN)</td>
+            <td class="text-right">@string.Format("{0:n}", @row.PLOTTIER)</td>
+            <td class="text-right">@string.Format("{0:n}", @row.X048)</td>   
+            <td class="text-right">@string.Format("{0:n}", @row.CHULENGO_AÑELO)</td>        
+         </tr>   
+         }
+    </tbody>
+</table>
+    <script>
+        $(document).ready(function() {
+            // Default Datatable
+
+            //Buttons examples
+            var table = $('#datatable-buttons').DataTable({
+                lengthChange: false,
+                search: false,
+                "order": [],
+                buttons: [
+                { extend: 'copy', className: 'button primary' },
+                { extend: 'excel', className: 'button primary' },
+                { extend: 'pdf' , className:'button primary'}]
+            });
+
+            table.buttons().container()
+                .appendTo('#datatable-buttons_wrapper .col-md-6:eq(0)');
+            
+    } );
+</script>
+
+

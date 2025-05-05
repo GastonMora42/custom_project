@@ -1,0 +1,300 @@
+<div class="content">
+    <!-- Start Content-->
+    <div class="container-fluid">
+
+          <div class="row mt-5 mt-lg-0 mt-xl-5 mt-xxl-0">
+            <!-- Carga de datos del Recibo-->
+            <div class="col-lg-6 col-xl-12 col-xxl-6 h-100">
+              <div class="d-flex mb-4"><span class="fa-stack me-2 ms-n1"><i class="fas fa-circle fa-stack-2x text-300"></i><i class="fa-inverse fa-stack-1x text-primary fas fa-tasks"></i></span>
+                <div class="col">
+                  <h5 class="mb-0 text-primary position-relative"><span class="bg-200 dark__bg-1100 pe-3">Pre Carga de Recibo</span><span class="border position-absolute top-50 translate-middle-y w-100 start-0 z-n1"></span></h5>
+                  <p class="mb-0">Datos de Cliente y Productos</p>
+                </div>
+              </div>
+              <div class="card theme-wizard mb-5 mb-lg-0 mb-xl-5 mb-xxl-0 h-100">
+                <div class="card-header bg-light pt-3 pb-2">
+                  <ul class="nav nav-pills mb-3" role="tablist" id="pill-tab2">
+                    <li class="nav-item" role="presentation">
+                      <button class="nav-link active" data-wizard-step="data-wizard-step" data-bs-toggle="pill" data-bs-target="#form-wizard-progress-tab1" type="button" role="tab" aria-controls="form-wizard-progress-tab1" aria-selected="true"><span class="fas fa-user me-2" data-fa-transform="shrink-2"></span><span class="d-none d-md-inline-block fs--1">Datos Cliente</span></button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                      <button class="nav-link" data-wizard-step="data-wizard-step" data-bs-toggle="pill" data-bs-target="#form-wizard-progress-tab2" type="button" role="tab" aria-controls="form-wizard-progress-tab2" aria-selected="false"><span class="fas fa-cart-plus me-2" data-fa-transform="shrink-2"></span><span class="d-none d-md-inline-block fs--1">Productos / Servicios</span></button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                      <button class="nav-link" data-wizard-step="data-wizard-step" data-bs-toggle="pill" data-bs-target="#form-wizard-progress-tab4" type="button" role="tab" aria-controls="form-wizard-progress-tab4" aria-selected="false"><span class="fas fa-thumbs-up me-2" data-fa-transform="shrink-2"></span><span class="d-none d-md-inline-block fs--1">Confirmar</span></button>
+                    </li>
+                  </ul>
+                </div>
+                <div class="progress" role="progressbar" style="height: 2px;" aria-valuenow="33" aria-valuemin="0" aria-valuemax="100">
+                  <div class="progress-bar"></div>
+                </div>
+                <div class="card-body py-4">
+                  <div class="tab-content">
+                    <div class="tab-pane active px-sm-3 px-md-5" role="tabpanel" aria-labelledby="form-wizard-progress-tab1" id="form-wizard-progress-tab1">
+                                <form novalidate="novalidate">
+                                <input type="hidden" value="0" id="cantidadlineas">
+                                    <div class="form-check">
+                                        <span
+                                            class="badge rounded-pill badge-subtle-danger">Al
+                                            ingresar n&uacutemero de
+                                            Tel&eacutefono realiza la
+                                            b&uacutesqueda del Cliente </span>
+                                    </div>
+                                    <div class="row g-2">
+                                        <div class="col-4">
+                                            <div class="mb-3">
+                                                <label class="form-label"
+                                                    for="form-wizard-progress-wizard-telefono">Telefono</label>
+                                                <input class="form-control"
+                                                   type="text"
+                                                    id="telefono"
+                                                    name="telefono"
+                                                    placeholder="xxx-xxxxxxx"
+                                                    required="required"
+                                                    id="form-wizard-progress-wizard-telefono"
+                                                    data-wizard-validate-telefono="true" onchange="busquedacliente()"/>
+                                                <div class="invalid-feedback">Please
+                                                    enter telefono</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-8">
+                                            <div class="mb-3">
+                                                <label class="form-label"
+                                                    for="cliente">Cliente</label>
+                                                <input class="form-control"
+                                                    type="text"
+                                                    name="cliente" id="cliente"
+                                                    placeholder="Nombre del Cliente"
+                                                    required="required"
+                                                    id="cliente"
+                                                    data-wizard-validate-cliente="true" />
+                                                <div class="invalid-feedback">Ingresar Cliente</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label"
+                                            for="form-wizard-progress-wizard-name">Lugar
+                                            de Obra</label>
+                                        <input class="form-control" type="text"
+                                            name="lugarobra" id="lugarobra"
+                                            placeholder="Ingrese lugar de la Obra"
+                                            id="form-wizard-progress-wizard-name" />
+                                    </div>
+
+                                    <div class="row g-2">
+                                        <div class="col-3">
+                                            <div class="mb-3">
+                                                <label class="form-label" for="form-wizard-progress-wizard-fecharecibo">Fecha Recibo</label>
+                                                <input style="background-color:#fafafa;font-size:smaller; font-weight: 500;text-align: center;color: blue;"  class="form-control" name="fechaconsumo" id="fechaconsumo" readonly/>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="mb-3">
+                                                <label class="form-label"
+                                                    for="form-wizard-progress-wizard-confirm-password">A
+                                                    consumir</label>
+                                                <select class="form-select "
+                                                    id="aconsumirantes"
+                                                    name="aconsumirantes"
+                                                    onchange="updatefechahasta()"
+                                                    style="background-color:#fafafa;font-size:smaller; font-weight: 500;text-align: center;color: blue;"
+                                                    value="Antes de los 30 días">
+                                                    <option value="30" selected>Antes
+                                                        de los 30 d&iacuteas</option>
+                                                    <option value="60">Antes de
+                                                        los 60 d&iacuteas</option>
+                                                    <option value="7">Antes de
+                                                        los 7 d&iacuteas</option>
+                                                </select>
+
+                                            </div>
+                                        </div>
+                                        <div class="col-3">
+                                            <div class="mb-3">
+                                                <label class="form-label"
+                                                    for="form-wizard-progress-wizard-confirm-password">Fecha
+                                                    Hasta</label>
+                                                <input
+                                                    style="background-color:#fafafa;font-size:smaller; font-weight: 500;text-align: center;color: blue;"
+                                                    class="form-control"
+                                                    type="text"
+                                                    name="fechahasta"
+                                                    id="fechahasta" readonly />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label"
+                                            for="form-wizard-progress-wizard-address">Observaciones</label>
+                                        <textarea class="form-control" rows="4"
+                                            id="form-wizard-progress-wizard-address"
+                                            placeholder="Observaciones del Recibo"></textarea>
+                                    </div>
+
+                                </form>
+                    </div>
+                    <div class="tab-pane px-sm-3 px-md-5" role="tabpanel" aria-labelledby="form-wizard-progress-tab2" id="form-wizard-progress-tab2">
+                      <form>
+                        <div class="mb-3">
+                          <label class="form-label" for="form-wizard-progress-gender">Producto y/o Servicio</label>
+                          <select class="form-select" id="ListProductos" name="ListProductos" onchange="updatetotal()"  style="font-weight: 300;text-align: left;">
+                          <option value=0 selected disabled>Seleccione Producto ..</option>
+                              @foreach (var row in ListProductQuery)
+                              { <option value=@row.IMPUTACION>@row.PRODUCTO</option> }
+                          </select>
+                        </div>
+                        <div class="mb-3">
+                          <label class="form-label" for="form-wizard-progress-wizard-observaciones">Observaciones</label>
+                          <input class="form-control" type="text" id="observpro" name="observpro" placeholder="observaciones" id="form-wizard-progress-wizard-observaciones" />
+                        </div>
+                        <div class="row g-2">
+                                        <div class="col-4">
+                                            <div class="mb-3">
+                                                <label class="form-label"
+                                                    for="form-wizard-progress-wizard-fecharecibo">Cantidad
+                                                    </label>
+                                                <input
+                                                    style="background-color:#fafafa;font-weight: 600;text-align: center;color: blue;"
+                                                    class="form-control"
+                                                    name="cantidad"
+                                                    id="cantidad" onchange="updatetotal()" />
+                                            </div>
+                                        </div>
+                                        <div class="col-4">
+                                            <div class="mb-3">
+                                                <label class="form-label"
+                                                    for="form-wizard-progress-wizard-confirm-password">Precio</label>
+                                                <input
+                                                    style="background-color:#fafafa;font-weight: 600;text-align: center;color: blue;"
+                                                    class="form-control"
+                                                    name="precio"
+                                                    id="precio" onchange="updatetotal()" />
+
+                                            </div>
+                                        </div>
+                                        <div class="col-4">
+                                            <div class="mb-3">
+                                                <label class="form-label"
+                                                    for="form-wizard-progress-wizard-confirm-password">Total</label>
+                                                <input
+                                                    style="background-color:#fafafa;font-weight: 600;text-align: center;color: blue;"
+                                                    class="form-control"
+                                                    type="text"
+                                                    name="totalprodserv"
+                                                    id="totalprodserv" 
+                                                    readonly />
+                                            </div>
+                                        </div>
+                                    </div>
+                                  
+
+                                                         <div class="row mb-2">
+                                        <div class="col-sm-6">
+
+                                        </div>
+                                        <div class="col-sm-6">
+                                            <div class="float-sm-end">
+
+                                                <button type="button"
+                                                    class="btn btn-success mb-2 btn-sm"
+                                                    onclick="agregarfila()"><i
+                                                        class="fas fa-receipt"></i>
+                                                    <i class="fas fa-plus"></i></button>
+
+                                            </div>
+                                        </div><!-- end col-->
+                                    </div>
+                      </form>
+                    </div>
+
+                    <div class="tab-pane text-center px-sm-3 px-md-5" role="tabpanel" aria-labelledby="form-wizard-progress-tab4" id="form-wizard-progress-tab4">
+                      <h4 class="mb-1">Verifique los datos del Recibo !!  <i class="fas fa-arrow-right text-900 text-primary"></i> </h4>
+                      <p>Si los datos son correctos</p><a class="btn text-primary bg-primary-subtle btn-outline-primary px-5 my-3" > Cargar Recibo <i class="fas fa-file-upload"></i></a>
+                    </div>
+                  </div>
+                </div>
+                <div class="card-footer bg-light">
+                  <div class="px-sm-3 px-md-5">
+                    <ul class="pager wizard list-inline mb-0">
+                      <li class="previous">
+                        <button class="btn btn-link ps-0" type="button"><span class="fas fa-chevron-left me-2" data-fa-transform="shrink-3"></span>Prev</button>
+                      </li>
+                      <li class="next">
+                        <button class="btn btn-primary px-5 px-sm-6" type="submit">Next<span class="fas fa-chevron-right ms-2" data-fa-transform="shrink-3"> </span></button>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- Datos del recibo-->
+            <div class="col-lg-6 col-xl-12 col-xxl-6 h-100">
+              <div class="d-flex mb-4"><span class="fa-stack me-2 ms-n1"><i class="fas fa-circle fa-stack-2x text-300"></i><i class="fa-inverse fa-stack-1x text-primary fas fa-receipt"></i></span>
+                <div class="col">
+                  <h5 class="mb-0 text-primary position-relative"><span class="bg-200 dark__bg-1100 pe-3">Recibo</span><span class="border position-absolute top-50 translate-middle-y w-100 start-0 z-n1"></span></h5>
+                  <p class="mb-0">Datos Cargados</p>
+                </div>
+              </div>
+              <div class="card theme-wizard mb-1">
+
+                <div class="card-body py-2">
+                  <div class="row align-items-center">
+                    <div class="col">
+                      <h6 class="text-500">Recibo a</h6>
+                      <h6 id="cliente_recibo">Cliente:</h6>
+                      <h6 id="telefono_recibo">Tel:</h6>
+                      <h6 id="lugarobra_recibo">Lugar de Obra:</h6>
+                    </div>
+                    <div class="col-sm-auto ms-auto">
+                      <div class="table-responsive">
+                        <table class="table table-sm table-borderless fs--1">
+                          <tbody>
+                            <tr>
+                              <th class="text-sm-end">Fecha Recibo:</th>
+                              <td> <p id="fecharecibo"></p></td>
+                            </tr>
+                            <tr>
+                              <th class="text-sm-end">A consumir:</th>
+                              <td > <p id="aconsumirrecibo"></p> </td>
+                            </tr>
+                            <tr>
+                              <th class="text-sm-end">Fecha Hasta:</th>
+                              <td > <p id="fechahastarecibo"></p></td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="table-responsive scrollbar mt-2 fs--1">
+                    <table class="table table-striped border-bottom table-sm" id="myTable">
+                      <thead data-bs-theme="light">
+                        <tr class="bg-primary text-white dark__bg-1000">
+                          <th class="border-0"></th>
+                          <th class="border-0">#</th>
+                          <th class="border-0">Producto / Servicio</th>
+                          <th class="border-0">Obser.</th>
+                          <th class="border-0 text-center">Cantidad</th>
+                          <th class="border-0 text-end">Precio</th>
+                          <th class="border-0 text-end">Importe</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+
+                      </tbody>
+                      <tfoot>
+                        <tr class="border-top border-bottom">
+                          <td colspan=5></td>
+                          <td style="text-align: center;font-weight;700;color:navy;">TOTAL:</td>
+                          <td class="fw-semi-bold" style="text-align: right;"><h5  id="totalventarecibo"></h5></td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+    </div> 
+</div><!-- content -->

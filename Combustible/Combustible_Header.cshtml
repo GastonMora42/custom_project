@@ -1,0 +1,41 @@
+﻿@{
+    var Usuario = WebSecurity.CurrentUserName;
+    var db = Database.Open("IntranetConnection");
+    var products = db.QueryValue("SELECT dbo.USERS_TABLE.EsAdmin FROM dbo.USERS_TABLE WHERE dbo.USERS_TABLE.Usuario ='" + Usuario + "'");
+
+}
+
+@if (WebSecurity.IsAuthenticated)
+{
+    <div class="container">
+        <div class="navigation-bar dark">
+            <div class="navigation-bar-content container">
+                 <a href="~/index.cshtml" class="element"><span class="icon-home"></span></a><span class="element-divider"></span>
+                <a href="~/Combustible/Combustible_Dashboard.cshtml" class="element">Combustible Confluencia </a>
+                <span class="element-divider"></span>
+                <a class="element1 pull-menu" href="#"></a>
+                <ul class="element-menu">
+                    <li>
+                        <a class="dropdown-toggle" href="#">Movimientos</a>
+                        <ul class="dropdown-menu dark" data-role="dropdown">
+                            <li><a class="dropdown-item" href="~/Combustible/Combustible_ingresos.cshtml">Ingresos</a></li>
+                            <li><a class="dropdown-item" href="~/Combustible/Combustible_egresos.cshtml">Egresos</a></li>
+                            <li><a class="dropdown-item" href="~/Combustible/Combustible_aforadores.cshtml">Aforadores</a></li>
+                        </ul>
+                    </li>
+                    <li>
+                        <a href="#" class="dropdown-toggle">Reportes</a>
+                        <ul class="dropdown-menu dark" data-role="dropdown">
+                            <li><a class="dropdown-item" href="~/Combustible/Combustible_por_equipo.cshtml">Movimientos</a></li>
+                            <li><a class="dropdown-item" href="~/Combustible/Combustible_por_origen.cshtml">Por Origen x Día</a></li>
+                            <li><a class="dropdown-item" href="~/Combustible/Combustible_por_origen_month.cshtml">Por Origen x Mes</a></li>
+                            <li><a class="dropdown-item" href="~/Combustible/Combustible_rank_x_fecha.cshtml">Rank x Rubro y Periodo</a></li>
+                            <li><a class="dropdown-item" href="~/Combustible/Combustible_Reportes_ingresos.cshtml">Ingresos Comb</a></li>
+
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+}

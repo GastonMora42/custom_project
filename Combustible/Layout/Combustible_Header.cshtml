@@ -1,0 +1,52 @@
+﻿@{
+    var Usuario = WebSecurity.CurrentUserName;
+    var db = Database.Open("IntranetConnection");
+    var products = db.QueryValue("SELECT dbo.USERS_TABLE.EsAdmin FROM dbo.USERS_TABLE WHERE dbo.USERS_TABLE.Usuario ='" + Usuario + "'");
+
+}
+
+@if (WebSecurity.IsAuthenticated)
+{
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+  <div class="container-fluid">
+              <a href="~/index.cshtml" class="element"><span class="icon-home"></span></a><span class="element-divider"></span>
+    <a class="navbar-brand" href="~/Combustible/Combustible_Dashboard.cshtml">Combustible Confluencia</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+        <li class="nav-item dropdown ">
+                    <a class="nav-link dropdown-toggle active" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+            Movimientos
+          </a>
+                        <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                            <li><a class="dropdown-item" href="~/Combustible/Ingresos/Combustible_ingresos.cshtml">Ingresos</a></li>
+                            <li><a class="dropdown-item" href="~/Combustible/Egresos/Combustible_egresos.cshtml">Egresos</a></li>
+                            <li><a class="dropdown-item" href="~/Combustible/Aforadores/Combustible_aforadores.cshtml">Aforadores</a></li>
+                        </ul>
+        </li>
+                              <li class="nav-item dropdown ">
+                        <a class="nav-link dropdown-toggle active" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">Reportes</a>
+                        <ul class="dropdown-menu dark" data-role="dropdown">
+                            <li><a class="dropdown-item" href="~/Combustible/Reportes/Combustible_por_equipo.cshtml">Movimientos</a></li>
+                            <li><a class="dropdown-item" href="~/Combustible/Reportes/Combustible_por_origen.cshtml">Por Origen x Día</a></li>
+                            <li><a class="dropdown-item" href="~/Combustible/Reportes/Combustible_por_origen_month.cshtml">Por Origen x Mes</a></li>
+                            <li><a class="dropdown-item" href="~/Combustible/Reportes/Combustible_rank_x_fecha.cshtml">Rank Cons. x Rubro</a></li>
+                            <li><a class="dropdown-item" href="~/Combustible/Reportes/Combustible_Reportes_ingresos.cshtml">Ingresos Comb</a></li>
+                        </ul>
+                    </li>
+
+                                        <li class="nav-item dropdown ">
+                        <a class="nav-link dropdown-toggle active" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">Intranet</a>
+                        <ul class="dropdown-menu dark" data-role="dropdown">
+                            <li><a class="dropdown-item" href="~/index.cshtml">Inicio</a></li>
+                        </ul>
+                    </li>
+
+    </ul>
+    </div>
+  </div>
+</nav>
+}

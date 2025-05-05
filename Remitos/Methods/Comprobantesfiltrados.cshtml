@@ -1,0 +1,19 @@
+@{
+
+    Response.Cache.SetCacheability(HttpCacheability.NoCache);
+    var categoryId =  Request.QueryString["compsel"]; 
+    var db = Database.Open("IntranetConnection");
+    var sql = @"SELECT 
+                                CASE WHEN CAB.TIPO_COMP = 'FAC' THEN  CAB.N_COMP ELSE 'REC ' + CAB.N_COMP END AS 'N_COMP',
+                                CAB.IDCAB
+                                FROM
+                                dbo.COMP_ANTICIPADOS_PENDIENTES CAB
+                                WHERE
+                                CAB.N_COMP LIKE '%" + categoryId +"%' ORDER BY CASE WHEN CAB.TIPO_COMP = 'FAC' THEN  CAB.N_COMP ELSE 'REC ' + CAB.N_COMP END ";
+    var products = db.Query(sql);
+    var json = Json.Encode(products);
+    Response.Write(json);
+
+     
+    
+    }

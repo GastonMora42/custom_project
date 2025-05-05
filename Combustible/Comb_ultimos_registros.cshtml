@@ -1,0 +1,15 @@
+@{
+    var db = Database.Open("IntranetConnection");
+    var ult_registros = db.QuerySingle(@"SELECT 
+                                        TOP 1 CONVERT(VARCHAR(10),CDETAIL.FECHA,103) AS 'FECHA', 
+                                        CDETAIL.COD_DEPOSITO,
+                                        dbo.COMBUSTIBLE_DEPOSITOS.DEPOSITO
+                                        FROM 
+                                        dbo.COMBUSTIBLE_DETAIL CDETAIL 
+                                        INNER JOIN dbo.COMBUSTIBLE_DEPOSITOS ON (CDETAIL.COD_DEPOSITO = dbo.COMBUSTIBLE_DEPOSITOS.IDDEP)
+                                        WHERE
+                                        CDETAIL.BIEN_DE_USO IS NOT NULL
+                                        ORDER BY CDETAIL.IDCOMBDETAIL DESC" );
+
+ Json.Write(ult_registros, Response.Output);
+}        

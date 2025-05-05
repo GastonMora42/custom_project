@@ -1,0 +1,26 @@
+﻿@{
+    if (WebSecurity.IsAuthenticated == false)
+    {
+        Response.Redirect("~/Account/Login.cshtml");
+    }
+    
+    
+    var Usuario = WebSecurity.CurrentUserName;
+    
+    var db = Database.Open("IntranetConnection");
+    var socioid= Request.Form["socioid"];
+    var caballo = Request.Form["nombre_caballo"];    
+    var descripcion = Request.Form["observ_caballo"];
+    // Process information here
+            var insertQuery =
+                    @"INSERT INTO
+                    dbo.LA_SARITA_SOCIOS_CABALLOS(
+                    FECHA_ALTA,
+                    IDSOCIO,
+                    NOMBRE,
+                    OBSERVACIONES)
+                    VALUES  (GETDATE(), @0, @1, @2)";
+            db.Execute(insertQuery, socioid,caballo,descripcion);
+           
+            
+}

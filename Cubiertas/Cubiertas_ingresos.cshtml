@@ -1,0 +1,221 @@
+﻿@{
+    if (WebSecurity.IsAuthenticated == false)
+    {
+        Response.Redirect("~/Account/Login.cshtml");
+    }
+
+    var Usuario = WebSecurity.CurrentUserName;
+    
+    Layout = "Layout/_CubiertasSiteLayout2.cshtml";
+    var db = Database.Open("IntranetConnection");
+    var result = "";
+    var productos = db.Query( @"SELECT 
+                      CUBART.ID_PRODUCTO,
+                      CUBART.DESCRIPCION + ' -- ' + CUBEST.CATEGORIA_DESC AS DESCRIPCION
+                    FROM
+                      dbo.CUBIERTAS_ARTICULOS CUBART
+                      INNER JOIN dbo.CUBIERTAS_ESTADOS CUBEST ON (CUBART.CATEGORIAS = CUBEST.ID_CATEGORIA)
+                      ORDER BY 
+                      CUBART.DESCRIPCION + ' -- ' + CUBEST.CATEGORIA_DESC");
+    int itemnum = 1;
+    var proveedores = db.Query(@"SELECT 
+                      AGRUP.CODE,
+                      PROVEED.NOM_PROVEE
+                    FROM
+                      dbo.AGRUPACION_DE_CTAS_PROVEEDORES AGRUP
+                      INNER JOIN dbo.CPA01 PROVEED ON (AGRUP.CODE = PROVEED.COD_PROVEE)
+                    WHERE
+                      AGRUP.COD_CTA = 421102
+                      ORDER BY 
+                      PROVEED.NOM_PROVEE");
+    var depositos = db.Query(@"SELECT 
+                      CUB.ID_DEPOSITO,
+                      CUB.NOMBRE_DEP
+                      FROM
+                      dbo.CUBIERTAS_DEPOSITOS CUB
+                      ORDER BY 
+                      CUB.NOMBRE_DEP");
+
+
+    if (IsPost) {
+    var equipo = Request.Form["itemselected"];
+    var fecha = Request.Form["fecha_sel"].AsDateTime();
+    var remito = Request.Form["remito"];
+    var prefijo = Request.Form["Prefijo"];
+    var numero = Request.Form["Numero"];
+    var cantidad = Request.Form["cantidad"].AsInt();
+    var deposito = Request.Form["depositos"].AsInt();
+    var proveedor = Request.Form["proveedor"];
+    var tipomov = "IE";
+    // Process information here
+            var insertQuery =
+                @"INSERT INTO 
+                dbo.CUBIERTAS_MOVIMIENTOS(
+                ARTICULO,
+                FECHA,
+                REMITO,
+                PREFIJO,
+                NUMERO,
+                CANTIDAD,
+                PROVEEDOR,
+                ID_TIPO_MOV,
+                DEPOSITO) VALUES  (@0, @1, @2, @3, @4, @5, @6, @7, @8)";
+            db.Execute(insertQuery, equipo, fecha,remito,prefijo,numero,cantidad,proveedor,tipomov,deposito);
+            result += @"<button type='button' class='btn btn-success''>Ingreso de Cubiertas realizada con exito !!</button>";
+
+            }
+
+}
+
+<script type="text/javascript"> 
+        $(function(){
+        $('#notify_btn_2').on('click', function(){
+    
+        $("#mensajealerta").delay(3000).slideUp(300);
+        });
+    });
+    function showIngresos(str) {
+
+                var xmlhttp;
+            if (str == "Seleccionar Destino") {
+                document.getElementById("txtHint").innerHTML = "";
+                return;
+            }
+            if (window.XMLHttpRequest) {// code for IE7+, Firefox, Chrome, Opera, Safari
+                xmlhttp = new XMLHttpRequest();
+            }
+            else {// code for IE6, IE5
+                xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+            }
+            xmlhttp.onreadystatechange = function () {
+                if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+                    document.getElementById("txtHint").innerHTML = xmlhttp.responseText;
+                }
+            }
+            xmlhttp.open("GET", "Cubiertas_Proveedor_Sel.cshtml?q=" + str, true);
+            xmlhttp.send();
+        }
+</script>
+<style type="text/css">
+    .field-validation-error {
+      font-weight:bold;
+      color:red;
+      background-color:yellow;
+     }
+    .validation-summary-errors{
+      border:2px dashed red;
+      color:red;
+      background-color:yellow;
+      font-weight:bold;
+      margin:12px;
+    }
+    .centertabla {
+        vertical-align: middle;
+        font-weight: 600;
+        color:navy;
+        font-size:16px;
+    }
+</style>
+
+
+<div class="container mt-4 border">
+
+    <h5>Ingreso de Cubiertas</h5>
+    <div class="row">
+    <form method="post" enctype="multipart/form-data" autocomplete="off">
+    <div class="row cells4">    
+        <table id="example" class="table table-striped" style="width:90%;margin-right:auto;margin-left:auto;">
+            <tr>
+                <td class="centertabla" style="vertical-align: middle;font-size:16px">FECHA</td>
+                <td> 
+                    <div class="input-control  text" data-role="datepicker">
+                    <input class="form-control" type="date" id="fecha_sel" name="fecha_sel" placeholder="seleccionar fecha">
+                    </div>
+                </td>
+                <td class="centertabla" style="vertical-align: middle;font-size:16px">DEPOSITO</td>
+                <td colspan="2">
+                    <div >
+                        <select id="depositos" name="depositos" class="form-select" >
+                            <option>Seleccionar</option>
+                            @foreach(var row in depositos)
+                            {                     
+                            <option value="@row.ID_DEPOSITO">@row.NOMBRE_DEP</option>
+                            }
+                        </select>
+                    </div>
+                </td>
+            </tr>
+                        <tr>
+                                <td class="centertabla" style="vertical-align: middle;font-size:16px">PROVEEDOR</td>
+                <td >
+                    <div >
+                    <select id="proveedor" name="proveedor" class="form-select" onchange="showIngresos(this.value)">
+                    <option>Seleccionar</option>
+                    <option value="SALDO INICIAL">SALDO INICIAL</option>
+                    <option value="AJUSTES">AJUSTES</option>
+                    @foreach(var row in proveedores)
+                    {                     
+                    <option value="@row.NOM_PROVEE">@row.NOM_PROVEE</option>
+                    }
+                    </select>
+                    </div>
+                </td>
+                <td > 
+                    <div class="input-group mb-3">
+                  <span class="input-group-text" id="basic-addon1">PREFIJO</span>
+                  <input type="text" class="form-control" placeholder="Prefijo" id="Prefijo" name="Prefijo">
+                </div>
+                </td>
+                                <td>                    
+                                    <div class="input-group mb-3">
+                  <span class="input-group-text" id="basic-addon1">NUMERO</span>
+                  <input type="text" class="form-control" placeholder="Número" id="Numero" name="Numero"  >
+                </div></td>
+                <td></td>
+
+            </tr>
+            <tr>
+                <td class="centertabla" style="vertical-align: middle;font-size:16px">ITEM</td>
+                <td> 
+                    <div >
+                    <select id="itemselected" name="itemselected" class="form-select" >
+                        <option>Seleccionar</option>
+                        @foreach(var row in productos)
+                        {                     
+                            <option value="@row.ID_PRODUCTO">@row.DESCRIPCION</option>
+                        }
+                    </select>
+                    </div>
+                </td>
+                                <td>                    
+                                    <div class="input-group mb-3">
+                  <span class="input-group-text" id="basic-addon1">CANTIDAD</span>
+                  <input type="text" class="form-control" placeholder="cantidad" id="cantidad" name="cantidad"  >
+                </div></td>
+                <td></td>
+                <td></td>
+            </tr>
+                        <tr>
+                <td class="centertabla" style="vertical-align: middle;font-size:16px">OBSERVACIONES</td>
+                <td colspan="2"> 
+                    <div class="input-control  text" >
+                    <input class="form-control" type="text" id="remito" name="remito" placeholder="Ingresar Observaciones">
+                    </div>
+                </td>
+                <td colspan="2"></td>
+            </tr>
+        </table>
+    </div>    
+        <button type="submit" class="btn btn-primary" id="notify_btn_2">INGRESO</button>
+
+                <div class="row" id="mensajealerta">
+                @Html.Raw(result)
+                </div>
+    </form>
+</div>
+
+    <div class="row"><div id="txtHint"></div></div>
+</div>
+
+
+

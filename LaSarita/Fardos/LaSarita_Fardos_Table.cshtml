@@ -1,0 +1,145 @@
+﻿@{
+       var Usuario = WebSecurity.CurrentUserName;
+
+    var db = Database.Open("IntranetConnection");
+
+    var sql = @"SELECT * FROM (SELECT TOP 15
+                LS_DET.ID_MOV,
+                CASE 
+                WHEN LS_DET.MOV_CTA_CTE = 1 THEN 'Compra' 
+                ELSE 'Pago' END AS 'MOVCTA',
+                ISNULL(LS_DET.CANTIDAD,'') AS 'CANTIDAD',
+                LS_DET.IMPORTE_TOTAL * LS_DET.MOV_CTA_CTE AS 'IMPORTE',
+                CONVERT(VARCHAR(8),LS_DET.FECHA_MOV,3) AS 'FECHA',
+                LS_DET.FECHA_MOV,
+                LS_DET.ALFALFA_TIPO
+              FROM
+                dbo.LA_SARITA_FARDOS_DETAIL LS_DET
+              ORDER BY 
+              LS_DET.FECHA_MOV DESC) LSF ORDER BY LSF.FECHA_MOV, LSF.ID_MOV";
+    var movimientos = db.Query(sql);
+
+    var saldofinalsql = @"SELECT ISNULL(SUM(LS_DET.IMPORTE_TOTAL * LS_DET.MOV_CTA_CTE),0) AS 'SALDO'
+                          FROM
+                          dbo.LA_SARITA_FARDOS_DETAIL LS_DET";
+    
+    var saldofinal = db.QueryValue(saldofinalsql);
+    
+    
+    var saldoinicialsql = @"SELECT ISNULL(SUM(LS_DET.IMPORTE_TOTAL * LS_DET.MOV_CTA_CTE),0) AS 'SALDO'
+                    FROM
+                    dbo.LA_SARITA_FARDOS_DETAIL LS_DET
+                    WHERE 
+                    LS_DET.ID_MOV NOT IN (SELECT TOP 15
+                      LS_DET2.ID_MOV
+                      FROM
+                      dbo.LA_SARITA_FARDOS_DETAIL LS_DET2
+                      ORDER BY 
+                      LS_DET2.FECHA_MOV DESC)";
+    
+    var saldoinicial = db.QueryValue(saldoinicialsql); 
+}
+
+<table class="table table-striped table-hover table-sm" style="font-size:14px;width: 90% ;margin-left: auto;  margin-right: auto;">
+    <thead>
+        <tr class="table-primary ">
+ 
+          @if (@saldoinicial>0){
+              <td colspan="5" class="text-dark" style="text-align:center; font-weight:500;"> SALDO A CANCELAR</td>
+          }
+          else if (@saldoinicial==0){
+                <td colspan="5" class="text-dark" style="text-align:center; font-weight:500;">SALDO INICIAL</td> 
+            }
+          else{
+            <td colspan="5" class="text-dark" style="text-align:center; font-weight:500;"> SALDO A FAVOR</td>
+          }
+          @if (@saldoinicial>0){
+              <td class="text-dark" style="text-align:right; font-weight:500;">$ @string.Format("{0:n}",saldoinicial)</td>
+          }
+          else if (@saldoinicial==0){
+                <td class="text-dark" style="text-align:right ">-</td> 
+            }
+          else{
+            <td class="text-dark" style="text-align:right; font-weight:500;">$ @string.Format("{0:n}",saldoinicial)</td>
+          }
+        </tr>
+        <tr style="font-size: 14px;">
+            <th class="text-center"></th>
+            <th class="text-center">Fecha</th>
+            <th class="text-center">Mov Cta</th>
+            <th class="text-center">Cantidad</th>
+            <th class="text-center">Tipo</th>
+            <th class="text-center">Pesos</th>
+        </tr>
+    </thead>
+        <tbody>
+        @foreach(var row in movimientos)
+        {      
+        <tr style="font-size:14px;">
+            <td style="text-align:center;">
+                @if (@row.MOVCTA== "Compra"){
+                <button  style="border-color:#0094ff;" type="button" class="btn btn-sm" data-bs-toggle="modal" data-bs-target="#fardosModalEditar" onclick="Movimiento_fardos_edit(@row.ID_MOV)"><span class="fas fa-pencil-alt text-primary fs-9" ></span></button>
+                <button  style="border-color:#f00;" type="button" class="btn btn-sm" data-bs-toggle="modal" data-bs-target="#fardosModalBorrar" onclick="Movimiento_fardos_del(@row.ID_MOV)"><span class="fas fa-eraser text-danger fs-9" ></span></button>
+                }
+                else{
+                    <button  style="border-color:#000;" type="button" class="btn btn-sm">
+                    <span class="bfas fa-dollar-sign"></span></button> 
+                    
+                    
+                }
+            </td>
+            <td class="text-center" >@row.FECHA</td>
+            @if (@row.IMPORTE>=0)
+            {
+            <td class="text-primary" style="text-align:center;font-size: 16px;">@row.MOVCTA</td>
+            }
+            else{
+                <td class="text-danger" style="text-align:center;font-size: 16px;">@row.MOVCTA</td> 
+            }
+            @if (@row.CANTIDAD>=0)
+            {
+            <td class="text-primary" style="text-align:right "> @row.CANTIDAD</td>
+            }
+            else{
+            <td class="text-danger" style="text-align:right ">-</td> 
+            }
+            <td class="text-center" >
+                @if (@row.ALFALFA_TIPO == null)
+                {
+                    <p></p>
+                }
+                else if(@row.ALFALFA_TIPO == 1)
+                {
+                    <button  style="border-color:#556B2F;color: #556B2F" type="button" class="btn btn-sm">Fardos</button> 
+                }
+                else {
+                    <button  style="border-color:#228B22;color: #228B22" type="button" class="btn btn-sm">Rollos</button> 
+                }
+                </td>
+            @if (@row.IMPORTE>=0)
+            {
+            <td class="text-primary" style="text-align:right ">@string.Format("{0:n}", @row.IMPORTE)</td>
+            }
+            
+            else{
+                <td class="text-danger" style="text-align:right ">@string.Format("{0:n}", @row.IMPORTE)</td> 
+            }
+         </tr>   
+         }    
+    </tbody>
+    <tfoot>
+        @if (@saldofinal<0){
+            <tr class="table-danger ">
+            <td colspan="5" class="text-danger" style="text-align:center; font-weight:600;"> SALDO A CANCELAR</td>
+            <td class="text-danger" style="text-align:right; font-weight:600;">$ @string.Format("{0:n}",saldofinal)</td>
+            </tr>
+          }
+          else{
+            <tr class="table-primary">
+            <td colspan="5" class="text-dark" style="text-align:center; font-weight:600;"> SALDO A FAVOR</td>
+            <td class="text-dark" style="text-align:right; font-weight:600;">$ @string.Format("{0:n}",saldofinal)</td>
+            </tr>
+          }
+        </tr>
+    </tfoot>
+</table>

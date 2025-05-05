@@ -1,0 +1,147 @@
+@{
+    var Usuario = WebSecurity.CurrentUserName;
+    
+    Layout = "../Inicio/_ConfluenciaLayout.cshtml";
+    var db = Database.Open("IntranetConnectionNew");
+    var title = "Recepcion Consulta de Habilitados";
+
+    var ClinetesActivossql = @"SELECT DISTINCT HAB_CLI.IDCLIENTE, HAB_CLI.DESCRIPCION  FROM
+                    dbo.HABILITADOS_CLIENTES HAB_CLI
+                    INNER JOIN dbo.HABILITADOS_OBRAS ON (HAB_CLI.IDCLIENTE = dbo.HABILITADOS_OBRAS.IDCLIENTE)  WHERE dbo.HABILITADOS_OBRAS.STATUS=1 
+                    ORDER BY HAB_CLI.DESCRIPCION ";
+
+    var ClinetesActivosQuery= db.Query(ClinetesActivossql);
+
+    
+}
+                  <div class="d-flex mb-2"><span class="fa-stack me-2 ms-n1"><i class="fas fa-circle fa-stack-2x text-300"></i><i class="fa-inverse fa-stack-1x text-primary far fa-check-circle"></i></span>
+                <div class="col">
+                  <h5 class="mb-0 text-primary position-relative"><span class="bg-200 dark__bg-1100 pe-3">Consulta de Habilitados</span><span class="border position-absolute top-50 translate-middle-y w-100 start-0 z-n1"></span></h5>
+                  <p class="mb-0">Por Cliente y Obra</p>
+                </div>
+              </div>
+
+          <div class="card mb-1">
+            <div class="bg-holder d-none d-lg-block bg-card" style="background-image:url(../../../assets/img/icons/spot-illustrations/corner-4.png);opacity: 0.7;">
+            </div>
+            <!--/.bg-holder-->
+            <div class="card-body position-relative">
+                <div class="row  g-3 align-items-left">
+                    <div class="col-4">
+                        
+                        <select class="form-select" id="clientes_dropdown">
+                        <option selected="" readonly disabled>Seleccione Cliente ...</option>
+                        @foreach (var row in ClinetesActivosQuery)
+                                { <option value=@row.IDCLIENTE>@row.DESCRIPCION</option> }    
+                        </select>
+                    </div>
+                    <div class="col-4">
+                        
+                        <select class="form-select" id="location_dropdown" onchange="loadtable()">
+                        <option selected="" readonly disabled>Seleccionar Obra ...</option>
+
+                        </select>
+                    </div>
+                    <div class="col-2">
+                        <button class="btn btn-primary" type="button" id="btnconsultar">Consultar</button>
+                    </div>
+                    <div class="col-2">
+                        <button class="btn btn-outline-warning rounded-pill me-1 mb-1" type="button" >Contactos de la Obra</button>
+                    </div>
+                </div>
+            </div>
+          </div>
+
+          <div class="card mb-1">
+            <div class="card-body">
+              <div class="table-responsive fs--1" id="Table_detail">
+                        <div class="alert alert-info border-2 d-flex align-items-center" role="alert">
+                        <div class="bg-info me-3 icon-item"><span class="fas fa-info-circle text-white fs-3"></span></div>
+                        <p class='mb-0 flex-1'>Seleccionar una Obra para ver el detalle de los habilitados !!</p>
+                        <button class="btn-close" type="button" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+              </div>
+            </div>
+          </div>
+
+
+
+          <script type="text/javascript">
+    $(document).ready(function () {
+        
+    });
+
+    function loadtable() {
+        var idobra = $('#location_dropdown').val();
+        console.log(idobra);
+        $.ajax({
+            url: "/ContactosObrasList/" + idobra,
+            success: function (data) {
+                
+                $("#listado").html(data);
+
+                // Coloco el link a los contactos de la obra seleccionada
+
+                var a = $('#linkobra');
+                var desiredLink = "/Cliente_Obra_add_Contacto/" + idobra 
+                a.attr('href',desiredLink); 
+
+            }
+        });
+
+    };
+
+
+    $('#btnconsultar').on('click', function(e){
+        e.preventDefault();
+        $('#Table_detail').html();
+        $('#Table_detail').load("Methods/RecepCliObrasRRHHVehiculos?idobra=" + $('#location_dropdown').val());
+        
+
+    });
+
+    function reload_js(src) {
+    $('script[src="' + src + '"]').remove();
+    $('<script>').attr('src', src).appendTo('head');
+    }
+     
+
+
+    $(function() {
+        $("#clientes_dropdown").change(function() {
+            var clienteid = $(this).val();
+            $('#Table_detail').html("\<div class='alert alert-info border-2 d-flex align-items-center' role='alert'>\
+                        <div class='bg-info me-3 icon-item'><span class='fas fa-info-circle text-white fs-3'></span></div>\
+                        <p class='mb-0 flex-1'>Seleccionar una Obra para ver el detalle de los habilitados !!</p>\
+                        <button class='btn-close' type='button' data-bs-dismiss='alert' aria-label='Close'></button></div>");
+            $.ajax(
+                {
+                    url: "Methods/ConsultaObrasxCliente",
+                    type: "get",
+                    dataType: "json",
+                    data: {clienteid: clienteid},
+                    contentType: "application/json; charset=utf-8", 
+                    cache: false
+                })
+                .done(function(data) {
+                
+                    $("#location_dropdown").html("");
+                    $("#location_dropdown").css({"font-weight":"400","color": "mediumblue"});
+                    var option = document.createElement("option");
+                    option.value = '0';
+                    option.text = 'Seleccionar Obra ...';
+                    option.disabled = true;
+                    option.selected = true; 
+                    $("#location_dropdown").append(option);
+                    for (var ndx = 0; ndx < data.length; ndx++) {
+                        var item = data[ndx];
+                        var option = document.createElement("option");
+                        //alert(item['IDOBRA']);
+                        option.value = item['IDOBRA'];
+                        option.text = item['CODIGO'];
+                        $("#location_dropdown").append(option);
+                    }
+                });
+        });
+    });
+    </script>

@@ -1,0 +1,109 @@
+@{
+
+    var Usuario = WebSecurity.CurrentUserName;
+
+var db = Database.Open("IntranetConnectionNew");
+var num_factura = Request.QueryString["num_comp"];
+
+var statusquery = "SELECT sta.IDSTATUS, sta.STATUS FROM dbo.COMP_ANTICIPADOS_CAB_STATUS sta ORDER BY sta.STATUS";
+var statuslist = db.Query(statusquery);
+
+
+var sqlcabeanticipado = @"SELECT DISTINCT
+        COMP_ANTICIPADOS_CAB.N_COMP
+        FROM
+        COMP_ANTICIPADOS_CAB
+        LEFT OUTER JOIN dbo.COMP_ANTICIPADOS_CAB_STATUS STA ON (COMP_ANTICIPADOS_CAB.STATUS=STA.IDSTATUS)
+        WHERE
+        COMP_ANTICIPADOS_CAB.IDCAB = '" + num_factura   + "'";
+
+var cabanticipado = db.QuerySingle(sqlcabeanticipado); 
+var ncompcab = cabanticipado.N_COMP;
+
+        var sqlDatosRemitos =@"SELECT 
+        REMDET.REMITO,
+        REMDET.FECHA,
+        REMDET.CANTIDAD,
+        REMDET.PRODUCTO,
+        REMDET.TOTAL_HOR,
+        REMDET.CLIENTE,
+        REMDET.ANULADO,
+        REMDET.BOMBA,
+        REMDET.ADITIVO,
+        REMDET.TOTAL_BBA,
+        REMDET.TOTAL_ADITIVO
+    FROM
+        dbo.REMITOS_FACTURADOS REMFAC
+        INNER JOIN dbo.REMITOS_DETALLE REMDET ON (REMFAC.NUM_INT = REMDET.REMITO)
+    WHERE
+        REMFAC.N_COMP = '" + ncompcab + "' AND (REMDET.ANULADO = 0 OR REMDET.ANULADO IS NULL)  ORDER BY REMDET.REMITO";
+var DatosRemitos = db.Query(sqlDatosRemitos);
+
+var sqlTotalDatosRemitos =@"SELECT  ISNULL(SUM(REMDET.TOTAL_HOR),0) AS 'TOTAL_HOR',ISNULL(SUM(REMDET.CANTIDAD),0) AS 'CANT_TOTAL',ISNULL(SUM(REMDET.TOTAL_BBA),0) AS 'TOTAL_BBA'
+                            FROM
+        dbo.REMITOS_FACTURADOS REMFAC
+        INNER JOIN dbo.REMITOS_DETALLE REMDET ON (REMFAC.NUM_INT = REMDET.REMITO) WHERE
+        REMFAC.N_COMP = '" + ncompcab + "' AND (REMDET.ANULADO = 0 OR REMDET.ANULADO IS NULL)  GROUP BY REMFAC.N_COMP";
+var TotalRemitos = db.QuerySingle(sqlTotalDatosRemitos);
+var totalhormigon =TotalRemitos.TOTAL_HOR;
+var totalbomba =TotalRemitos.TOTAL_BBA;
+var cant_total = TotalRemitos.CANT_TOTAL;
+
+if (TotalRemitos == null){
+    TotalRemitos = 0 ;
+}
+
+}
+                     
+                     <table class="table table-sm table-responsive table-striped table-centered border table-nowrap mb-lg-0"style="font-size:75%;">
+                                    <thead class="bg-light">
+                                  <tr>
+
+                                      <th style="text-align: center;">Fecha</th>
+                                      <th style="text-align: center;"> # </th>
+                                      <th style="text-align: center;">Cant</th>
+                                      <th style="text-align: center;">Imputacion </th>
+                                      <th style="text-align: center;">Producto</th>
+                                      <th style="text-align: center;">Hormigon</th>
+                                      <th style="text-align: center;">Bomba</th>
+                                      <th style="text-align: center;">Total</th>
+                                                                            <th style="text-align: center;"></th>
+                                      <th style="text-align: center;"></th>
+                                  </tr>
+                              </thead>
+                              <tbody id="remitosimputados">
+                                                              @foreach(var row in DatosRemitos)
+                              {      
+                              
+                              <tr>
+
+                                  <td style="text-align: center;font-weight: 600;">@string.Format("{0:dd/MM/yy}", @row.FECHA)</td>
+                                  <td style="text-align: center;font-weight: 600;">@row.REMITO</td>
+                                  <td style="text-align: right;">@string.Format("{0:n}", @row.CANTIDAD)</td>
+                                  <td style="text-align: center;"><span class="badge rounded-pill badge-subtle-danger">T</span></td>
+                                  <td style="text-align: center;">@row.PRODUCTO</td>
+                                  <td style="text-align: right;">@string.Format("{0:n}", @row.TOTAL_HOR)</td>
+                                  <td style="text-align: right;">@string.Format("{0:n}", @row.TOTAL_BBA)</td>
+                                  <td style="text-align: right;">@string.Format("{0:n}", @row.TOTAL_HOR + @row.TOTAL_BBA)</td>
+                                  <td style="text-align: center;"><span class="far fa-trash-alt text-danger fs-0"></span></td> 
+                                  <td style="text-align: center;"><span class="fas fa-pen text-info fs-0"></span></td> 
+                                  
+                              </tr>
+                              }
+                              <tr> 
+
+                                  <td style="text-align: center;font-weight: 600;color: dodgerblue;" >TOTAL</td>
+
+                                  <td style="text-align: right;"></td>
+                                  <td style="text-align: right;font-weight: 600;color: dodgerblue;" id="totalventa">@string.Format("{0:n}", @cant_total)</td>
+                                  <td style="text-align: right;"></td>
+                                  <td style="text-align: center;font-weight: 600;color: dodgerblue;" id="totalventa"></td>
+                                  <td style="text-align: right;font-weight: 600;color: dodgerblue;" id="totalventa">@string.Format("{0:n}", @totalhormigon)</td>
+                                  <td style="text-align: right;font-weight: 600;color: dodgerblue;" id="totalventa">@string.Format("{0:n}", @totalbomba)</td>
+                                  <td style="text-align: right;font-weight: 600;color: dodgerblue;" id="totalventa">@string.Format("{0:n}", @totalbomba + @totalhormigon)</td>
+                                                                    <td style="text-align: right;"></td>
+                                  <td style="text-align: right;"></td>
+                              </tr>
+
+                              </tbody>
+                          </table>

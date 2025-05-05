@@ -1,0 +1,18 @@
+@{
+
+        var db = Database.Open("IntranetConnectionNew");
+        var InformeCtoSumTipoSQL = @"SELECT 
+                            REPLACE(dbo.INFORME_CEMENTO_COMPRAS.DESCRIPCIO,'Cemento ','') AS 'name',
+                            ROUND(SUM(dbo.INFORME_CEMENTO_COMPRAS.CAN_PEDIDA),2) AS 'value'
+                            FROM
+                            dbo.INFORME_CEMENTO_COMPRAS
+                            WHERE
+                            YEAR(dbo.INFORME_CEMENTO_COMPRAS.FECHA_CONT) = @0
+                            GROUP BY
+                            dbo.INFORME_CEMENTO_COMPRAS.DESCRIPCIO,
+                            YEAR(dbo.INFORME_CEMENTO_COMPRAS.FECHA_CONT)";
+        var InformeCtoSumTipo = db.Query(InformeCtoSumTipoSQL ,2025);
+
+        Json.Write(InformeCtoSumTipo , Response.Output);
+    
+    }

@@ -1,0 +1,172 @@
+﻿@{
+    if (WebSecurity.IsAuthenticated == false)
+    {
+        Response.Redirect("~/Account/Login.cshtml");
+    }
+    var Usuario = WebSecurity.CurrentUserName;
+    Layout = "_LaSaritaSiteLayout.cshtml";
+        var db = Database.Open("IntranetConnection");
+    var sqlclub = @"SELECT 
+                    LSSC.ID_CLUB,
+                    LSSC.NOMBRE_CLUB
+                    FROM
+                    dbo.LA_SARITA_SOCIOS_CLUBES LSSC
+                    ORDER BY 
+                    LSSC.ID_CLUB";
+    var club = db.Query(sqlclub);
+    var sqlcategoria = @"SELECT 
+                    LSSCAT.ID_CAT,
+                    LSSCAT.CATEGORIA
+                    FROM
+                    dbo.LA_SARITA_SOCIOS_CATEGORIAS LSSCAT
+                    ORDER BY 
+                    LSSCAT.CATEGORIA";
+    var categoria = db.Query(sqlcategoria);
+
+}
+
+<form class="row g-2">    
+  <div class="col col-sm-2">
+    <label for="staticEmail2" class="visually-hidden">Email</label>
+    <input type="text" readonly class="form-control-plaintext" id="staticEmail2" value="Desde Fecha">
+  </div>
+  <div class="col-auto">
+    <label for="inputPassword2" class="visually-hidden">Password</label>
+    <input class="form-control" type="date" id="fecha_consulta" name="fecha_consulta" >
+  </div>
+  <div class="col col-sm-2">
+    <button type='button' class="btn btn-primary mb-1" onclick="consultadesde()">Buscar</button>
+  </div>
+</form>
+
+<div id="divTableDetail"></div>
+
+
+<!-- Edicion Socio -->
+
+<div class="modal fade" id="editarusuarioModal" tabindex="-1" aria-labelledby="altausuarioModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header text-white" style="background-color:rgb(160,31,111)"> 
+          <h1 class="modal-title fs-5" id="altausuarioModalLabel">EDITAR DATOS DEL SOCIO</h1>
+          
+          <button  type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <form class="was-validated" role="form" enctype = "multipart/form-data" action="LaSarita_alta_socio.cshtml" method="POST" id="MyFormAltaSocio" name="MyFormAltaSocio">
+        <div class="modal-body">
+            <div class="input-group mb-3">
+                <span class="input-group-text etiq" id="inputGroup-sizing-sm">Apellido:</span>
+                <input type="text" class="form-control form-control-sm" id="apellido" name="apellido" required>
+            </div>    
+            <div class="input-group mb-3">
+                <span class="input-group-text etiq" id="inputGroup-sizing-sm">Nombre/s:</span>
+                <input type="text" class="form-control form-control-sm" id="nombre" name="nombre" required>
+            </div>   
+            <div class="input-group mb-3">
+                <span class="input-group-text etiq" id="inputGroup-sizing-sm">Apodo:</span>
+                <input type="text" class="form-control form-control-sm" id="apodo" name="apodo">
+            </div>  
+            <div class="input-group mb-3">
+                <span class="input-group-text etiq" id="inputGroup-sizing-sm">DNI:</span>
+                <input type="text" class="form-control form-control-sm" id="dni" name="dni" placeholder="# doc sin puntos">
+            </div> 
+            <div class="input-group mb-3">
+                <span class="input-group-text etiq" id="inputGroup-sizing-sm">Teléfono:</span>
+                <input type="text" class="form-control form-control-sm" id="telefono" name="telefono" placeholder="# teléfono">
+            </div> 
+            <div class="input-group mb-3">
+                <span class="input-group-text etiq" id="inputGroup-sizing-sm">Mail:</span>
+                <input type="text" class="form-control form-control-sm" id="email" name="email" placeholder="name@example.com">
+            </div>   
+            <div class="input-group mb-3">
+                <span class="input-group-text etiq" id="inputGroup-sizing-sm">Fecha Nac.:</span>
+                <input class="form-control form-control-sm" type="date" id="fecha_nacimiento" name="fecha_nacimiento" required>
+            </div>
+            <div class="input-group mb-3">
+            <label class="input-group-text etiq" for="inputGroupSelect01">Club:</label>
+              <select class="form-select" id="select_club" name="select_club" aria-label="Default select example" >
+                <option selected>Seleccionar</option>
+                @foreach(var row in club)
+                    {
+                    <option value=@row.ID_CLUB>@row.NOMBRE_CLUB</option>  
+                    } 
+
+              </select>
+            </div>
+            <div class="input-group mb-3">
+            <label class="input-group-text etiq" for="inputGroupSelect01">Categoría:</label>
+              <select class="form-select" id="select_categoria" name="select_categoria" aria-label="Default select example" >
+                <option selected>Seleccionar</option>
+                @foreach(var row in categoria)
+                    {
+                    <option value=@row.ID_CAT>@row.CATEGORIA</option>  
+                    } 
+
+              </select>
+            </div>
+            <div class="input-group mb-3">
+                <span class="input-group-text etiq" id="inputGroup-sizing-sm">Grupo / Flia:</span>
+                <div class="input-group-text">
+                <input class="form-check-input mt-0" type="checkbox" value="" aria-label="Checkbox for following text input">
+                </div>
+                              <select class="form-select" id="select_motivo" name="select_motivo" aria-label="Default select example" disabled>
+                <option selected>Seleccionar</option>
+                @foreach(var row in categoria)
+                    {
+                    <option value=@row.ID_CAT>@row.CATEGORIA</option>  
+                    } 
+
+              </select>
+            </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+          <button type="button" class="btn btn-primary" id="submitButtonAltaSocio" name="submitButtonAltaSocio" >Guardar</button>
+        </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+
+
+
+
+<script>
+  function formatDate(date) {
+    var d = new Date(date),
+        month = '' + (d.getMonth() + 1),
+        day = '' + d.getDate(),
+        year = d.getFullYear();
+
+    if (month.length < 2) 
+        month = '0' + month;
+    if (day.length < 2) 
+        day = '0' + day;
+
+    return [year, month, day].join('-');
+}
+
+    function consultadesde (){
+      loaddetalle($("#fecha_consulta").val());
+    }
+
+    function loaddetalle(consultadate){
+        $("#divTableDetail").load("LaSarita_reportes_socios_detail.cshtml?Fechadesde="+ consultadate);
+    }
+
+    // When DOM is loaded this 
+    // function will get executed
+
+    $(window).on('load', function() {
+ // code here
+         var date = new Date();
+        var firstDay = new Date(date.getFullYear(), date.getMonth(), 1);  
+        $("#fecha_consulta").val(formatDate(firstDay));
+        loaddetalle(formatDate(firstDay));
+  });
+
+
+
+</script>
+

@@ -1,0 +1,25 @@
+@{
+    var Usuario = WebSecurity.CurrentUserName;
+    if(IsPost){
+        var db = Database.Open("IntranetConnection");
+        var sql = @"INSERT INTO 
+                    dbo.VENCIMIENTOS
+                    ( CONCEPTO, DETALLE, EMPID, FECHA, IMPORTE, RESPONSABLE, RUBROID )
+                    VALUES (@0, @1, @2, @3, @4, @5, @6)";
+
+        var fecha = Request["fechavto_alta"].AsDateTime();
+        var concepto = Request["concepto_alta"].ToUpper();
+        var detalle = Request["detalle_alta"].ToUpper();
+        var importe = Request["importe_alta"].AsFloat();
+        var empresa = Request["empresa_sel_alta"];
+        var responsable = Request["responsable_alta"];
+        var rubro = Request["rubro_alta"];
+        
+       
+        db.Execute(sql, concepto,detalle,empresa, fecha, importe, responsable, rubro);
+
+        Response.Write(fecha);
+    }
+
+    
+}

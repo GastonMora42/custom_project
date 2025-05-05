@@ -1,0 +1,363 @@
+﻿@{
+    Layout = "_RopaSiteLayout.cshtml";
+    var db = Database.Open("IntranetConnection");
+    var productos = db.Query( @"SELECT 
+                              ROPA_ART.ID_PRODUCTO,
+                              ROPA_ART.DESCRIPCION
+                            FROM
+                              dbo.NOMINA_ROPA_ARTICULOS ROPA_ART
+                            ORDER BY
+                              ROPA_ART.DESCRIPCION");
+    var personal = db.Query(@"SELECT 
+                              dbo.NOMINA_LISTADO_DE_ACTIVOS.APELLIDO_Y_NOMBRE,  
+                              dbo.NOMINA_LISTADO_DE_ACTIVOS.DESC_DEPARTAMENTO 
+                              FROM 
+                              dbo.NOMINA_LISTADO_DE_ACTIVOS 
+                              ORDER BY
+                              dbo.NOMINA_LISTADO_DE_ACTIVOS.APELLIDO_Y_NOMBRE");
+    
+            var depositos = db.Query( @"SELECT 
+                              ROPA_DEP.ID_DEPOSITO,
+                              ROPA_DEP.NOMBRE_DEP
+                            FROM
+                              dbo.NOMINA_ROPA_DEPOSITOS ROPA_DEP
+                            ORDER BY
+                              ROPA_DEP.NOMBRE_DEP");
+    int itemnum = 1;
+}
+
+<script type="text/javascript">
+    $(document).ready(function () {
+        var linea = 1;
+        $("#agregarfila").click(function () {
+            var stockactual = parseInt($("#stock_actual").val());
+            var cantidad = parseInt($("#cantidad").val());
+            console.log(stockactual);
+            console.log(cantidad);
+
+            if (cantidad <= stockactual) {
+                $("#cantidad").val("");
+                var a = $("#fecha_sel").val();
+                var formattedDate = new Date(a);
+                var d = formattedDate.getDate();
+                var m = formattedDate.getMonth();
+                m += 1;  // JavaScript months are 0-11
+                var y = formattedDate.getFullYear();
+
+                var retira = $("#retira").val();
+                if (retira == 99999) {
+                    retira = $("#DetOtros").val();
+                    $("#DetOtros").val("");
+                    document.getElementById("DetOtros").disabled = true;
+                }
+                var deposito = $("#depositoselected").val();
+                var depositosal = 2;
+                var depositoentrada = 1;
+                var tipomovsal = 2;
+                var tipomovent = 1;
+                console.log(deposito);
+                switch (deposito) {
+                    case '1':
+                        depositosal = 1;
+                        depositoentrada = 2;
+                        break;
+                    case '2':
+                        depositosal = 2;
+                        depositoentrada = 1;
+                        break;
+                    case '3':
+                        depositosal = 3;
+                        depositoentrada = 2;
+                        break;
+                    case '4':
+                        depositosal = 3;
+                        depositoentrada = 1;
+                        break;
+                    default:
+                        depositosal = 2;
+                        depositoentrada = 1;
+                        break;
+                }
+
+                $("#retira option[value='1']").attr('selected', 'selected');
+                $("#unidad_medida").val("");
+                $("#stock_actual").val("");
+                $("#fecha_sel").val('');
+                //var observacion = $("#observacion").val();
+                //$("#observacion").val('');
+                var itemselid = $("#itemselected").val();
+
+                var itemsel = $("#itemselected").find(":selected").text();
+                $("#itemselected option[value='1']").attr('selected', 'selected');
+                var markup = "<tr><td class='text-center'><input type='checkbox' name='record'><span class='check'></span></td><td class='text-center'>" + linea +
+                                     "</td><td class='text-center'>" + itemselid +
+                                     "</td><td class='text-center'>" + itemsel +
+                                     "</td><td class='text-center'>" + cantidad +
+                                     "</td><td class='text-center'>" + depositosal +
+                                     "</td><td class='text-center'>" + tipomovsal +
+                                     "</td><td class='text-center'>" + d + "/" + m + "/" + y +
+                                     "</td><td class='text-center'>" + retira + " -- TRANSFERENCIA </td></tr>";
+                $("#ingresos tbody").append(markup);
+                linea += 1;
+                var markup1 = "<tr><td class='text-center'><input type='checkbox' name='record'><span class='check'></span></td><td class='text-center'>" + linea +
+                                     "</td><td class='text-center'>" + itemselid +
+                                     "</td><td class='text-center'>" + itemsel +
+                                     "</td><td class='text-center'>" + cantidad +
+                                     "</td><td class='text-center'>" + depositoentrada +
+                                     "</td><td class='text-center'>" + tipomovent +
+                                     "</td><td class='text-center'>" + d + "/" + m + "/" + y +
+                                     "</td><td class='text-center'>" + retira + " -- TRANSFERENCIA </td></tr>";
+                $("#ingresos tbody").append(markup1);
+                linea += 1;
+            }
+            else {
+                setTimeout(function () {
+                    $.Notify({ type: 'error', caption: 'Error', content: "No hay cantidad suficiente en stock !!!" });
+                }, 200);
+            }
+        });
+
+        // Find and remove selected table rows
+        $("#borrarfila").click(function () {
+            $("table tbody").find('input[name="record"]').each(function () {
+                if ($(this).is(":checked")) {
+                    $(this).parents("tr").remove();
+
+                }
+            });
+            linea = 1;
+            $('#ingresos tr').each(function () {
+                $(this).find('td').each(function () {
+                    //do your stuff, you can use $(this) to get current cell
+
+                    if ($(this).attr('id') == 'linea') {
+                        $(this).text(linea);
+                        linea += 1;
+
+                    }
+
+                })
+            })
+        });
+    });
+
+    function cargaegresos() {
+
+        $('#ingresos > tbody  > tr').each(function () {
+
+            var itemsel = $(this).find('td').eq(2).text();
+            var cantsel = $(this).find('td').eq(4).text();
+            var depositosel = $(this).find('td').eq(5).text();
+            var tipomovsel = $(this).find('td').eq(6).text();
+            var fechasel = $(this).find('td').eq(7).text();
+            var empleadosel = $(this).find('td').eq(8).text();
+
+            var form_data = {
+
+                itemsel: itemsel, //$("#dropdownList option:selected").text();
+                cantsel: cantsel,
+                depositosel: depositosel,
+                tipomovsel: tipomovsel,
+                fechasel: fechasel,
+                empleadosel: empleadosel
+
+            };
+
+            console.log(JSON.stringify(form_data))
+
+            $.ajax({
+                url: 'RopaTransferenciasCarga.cshtml',
+                type: 'post',
+                data: JSON.stringify(form_data),
+                contentType: "application/json",
+                datatype: "html"
+            });
+        })
+
+
+        $('#ingresos > tbody  > tr').each(function () {
+            $(this).parents("tr").remove();
+        })
+        alert("Transferencias Cargadas!!");
+        location.reload()
+    }
+
+    function showCustomer(str) {
+        var depositsel = $("#depositoselected").val();
+        console.log(depositsel);
+        switch (depositsel) {
+                    case '1':
+                        depositosal = 1;
+                        depositoentrada = 2;
+                        break;
+                    case '2':
+                        depositosal = 2;
+                        depositoentrada = 1;
+                        break;
+                    case '3':
+                        depositosal = 3;
+                        depositoentrada = 2;
+                        break;
+                    case '4':
+                        depositosal = 3;
+                        depositoentrada = 1;
+                        break;
+                    default:
+                        depositosal = 2;
+                        depositoentrada = 1;
+                        break;
+                }
+
+        console.log(depositosal);
+        console.log(depositoentrada);
+
+        $.ajax({
+                url: "Ropa_stock_prod_sel?q="+ str +"&depositosel=" + depositsel ,
+                type: "GET",
+                success: function (data) {
+                    //console.log(data)
+                     var json = $.parseJSON(data);
+                    // console.log(json)
+                     
+                     $("#unidad_medida").val(json.DESCRIPCION_UNIDAD);
+                     $("#stock_actual").val(json.CANTIDAD);
+                     console.log(typeof(json.CANTIDAD))
+                     if (json.CANTIDAD == 0){
+                         document.getElementById('cantidad').setAttribute('readonly', true);
+                         
+                     }
+                     else {
+                         document.getElementById('cantidad').removeAttribute('readonly');
+                     }
+                },
+                error: function (error) {
+                    $("#unidad_medida").val("");
+                     $("#stock_actual").val("");
+                }
+            });
+    
+    }
+
+    function detalleotros(){
+        var e = document.getElementById("retira");
+        var value = e.value;
+        if(value==99999){
+            document.getElementById("DetOtros").disabled = false;
+        }
+        else{
+            document.getElementById("DetOtros").disabled = true;
+        }
+    }
+</script>
+<legend>Transferencias de Depósitos</legend>
+<div class="row">
+    <div class="row cells8">
+        <div class="cell colspan1">
+            <label>Fecha</label>
+            <div class="input-control  text" data-role="datepicker">
+                <input type="text" id="fecha_sel">
+                <button class="button"><span class="mif-calendar"></span></button>
+            </div>
+        </div>
+         <div class="cell colspan2">
+            <label>Transferencia</label>
+                <div class="input-control  select">
+                    <select id="depositoselected" >
+                        <option value="2">NESTOR --> PLOTTIER</option>
+                        <option value="1">PLOTTIER --> NESTOR</option>
+                        <option value="3">ADMINISTRACION --> NESTOR</option>
+                        <option value="4">ADMINISTRACION --> PLOTTIER</option>
+                    </select>
+                    </div>
+        </div>
+                        <div class="cell colspan2">
+            <label>Retira</label>
+            <div class="input-control  select">
+                <select id="retira" onchange="detalleotros()">
+                    <option value="1">Seleccionar ....</option>
+                    <option value="NESTOR SEEWALD">NESTOR SEEWALD</option>
+                    @foreach(var row in personal)
+                    {                     
+                        <option value="@row.APELLIDO_Y_NOMBRE">@row.APELLIDO_Y_NOMBRE</option>
+                    }
+                    <option value="99999">OTROS..</option>
+                </select>
+            </div>
+        </div>
+        <div class="cell colspan2" id="inputOtros">
+        <label>Otros Detalle</label>
+            <div class="input-control text " data-role="input-control">
+                <input type="text" disabled id="DetOtros">
+            </div>
+        </div>
+    </div>
+</div>
+    <div class="row cells7">
+        <div class="cell colspan3">
+            <label>Item</label>
+            <div class="input-control  select">
+                <select id="itemselected" onchange="showCustomer(this.value)">
+                    <option value=0 selected disabled>Seleccionar ....</option>
+                    @foreach(var row in productos)
+                    {                     
+                        <option value="@row.ID_PRODUCTO">@row.DESCRIPCION</option>
+                    }
+                </select>
+
+            </div>
+        </div>
+
+        <div class="cell colspan1">
+            <label>Uni. de Medida</label>
+            <div class="input-control text info">
+                <input type="text" id="unidad_medida" disabled style="font-size: 14px;font-weight: 500;color: #0026ff;text-align: center ">
+            </div>
+        </div>
+        <div class="cell colspan1">
+            <label>Stock actual</label>
+            <div class="input-control text info">
+                <input type="text" id="stock_actual" disabled style="font-size: 14px;font-weight: 500;color: #0026ff;text-align: center ">
+            </div>
+        </div>
+        <div class="cell colspan1 ">
+            <label>Cantidad</label>
+            <div class="input-control text " data-role="input-control">
+                <input type="text" placeholder="cantidad" id="cantidad">
+            </div>
+        </div>
+    </div>
+
+    <button class="button primary" id="agregarfila">Agregar fila</button>
+    <button class="button warning" id="borrarfila">Borrar fila</button>
+    <form>
+        <fieldset>
+            <table class="table striped" id="ingresos">
+                <thead>
+                <tr><th class="text-center"></th>
+                    <th class="text-center">#</th>
+                    <th class="text-center">IdItem</th>
+                    <th class="text-center">Item</th>
+                    <th class="text-center">Cantidad</th>
+                    <th class="text-center">Deposito</th>
+                    <th class="text-center">TipoMov</th>
+                    <th class="text-center">Fecha</th>
+                    <th class="text-center">Retira</th>
+                    
+
+                </tr>
+                </thead>
+                <tbody>
+
+                </tbody>
+            </table>
+        </fieldset>
+
+    </form>
+    <button class="command-button primary button large-button" id="cargaegresosbtn" onclick="cargaegresos()">
+                                    Cargar
+    </button>
+</div>
+
+
+
+

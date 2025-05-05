@@ -1,0 +1,321 @@
+@{
+    var Usuario = WebSecurity.CurrentUserName;
+    
+        var db = Database.Open("IntranetConnectionNew");
+        var numremito = Request.QueryString["num_remito"];
+        var sqlDetalleRemito =@"SELECT 
+                                    RemDet.CTRL_REMITO,
+                                    RemDet.ID,
+                                    RemDet.PLANILLA,
+                                    RemDet.PLANTA,
+                                    CONVERT (varchar(10), RemDet.FECHA, 126) AS 'FECHA',
+                                    RemDet.REMITO,
+                                    RemDet.CLIENTE,
+                                    RemDet.NOMBRE_PARTICULAR, 
+                                    RemDet.OBRA,
+                                    RemDet.COND_CLIENTE,
+                                    RemDet.LUGAR,
+                                    RemDet.CANTIDAD,
+                                    RemDet.PRODUCTO,
+                                    RemDet.ANULADO,
+                                    CASE WHEN RemDet.BOMBA IS NULL THEN 'NO' ELSE 'SI' END AS 'BOMBA',
+                                    ISNULL(RemDet.ADITIVO,0) AS 'ADITIVO',
+                                    RemDet.OBSERVACIONES,
+                                    CASE WHEN RemDet.ttpp IS NULL THEN 'NO' ELSE 'SI' END AS 'TTPP',
+                                    RemDet.CTRL_REMITO_POR,
+                                    RemDet.OBSERVCIONES_CTRL,
+                                    RemDet.EXCESO_HS, 
+                                    RemDet.FECHA_CTRL_REMITO,
+                                    RemDet.INTERNO, 
+                                    RemDet.CHOFER 
+                                    FROM 
+                                    dbo.REMITOS_DETALLE RemDet  WHERE  RemDet.REMITO = " + numremito;
+        var DetalleRemito = db.QuerySingle(sqlDetalleRemito);
+
+        var clientessql = @"SELECT 
+                          dbo.GVA14.COD_CLIENT,
+                          dbo.GVA14.RAZON_SOCI
+                        FROM
+                          dbo.GVA14
+                        WHERE 
+                          dbo.GVA14.RAZON_SOCI <> '' AND 
+                          dbo.GVA14.RAZON_SOCI NOT LIKE '%NO USAR%'
+                        ORDER BY
+                          dbo.GVA14.RAZON_SOCI";
+        var clientes = db.Query(clientessql);
+
+        var plantassql = @"SELECT DISTINCT RemDet.PLANTA FROM dbo.REMITOS_DETALLE RemDet ORDER BY RemDet.PLANTA ";
+        var plantas = db.Query(plantassql);
+
+        var productossql = @"SELECT DISTINCT RemDet.PRODUCTO FROM dbo.REMITOS_DETALLE RemDet WHERE RemDet.PRODUCTO NOT IN ('','0')  ORDER BY RemDet.PRODUCTO ";
+        var productos = db.Query(productossql);
+
+        var choferessql = @"SELECT CHO.APELLIDO_Y_NOMBRE FROM dbo.NOMINA_LISTADO_CHOFERES CHO ORDER BY CHO.APELLIDO_Y_NOMBRE";
+        var choferes = db.Query(choferessql);
+
+        var vehiculossql = @"SELECT BS.INTERNO, BS.NOMBRE_BIEN   FROM dbo.BIENES_DE_USO BS WHERE LEFT(BS.INTERNO,1) IN (SELECT Value collate Modern_Spanish_CI_AS FROM dbo.Split ('S,V,T,O,H',','))";
+        var vehiculos = db.Query(vehiculossql);
+    }
+@if (@DetalleRemito.ANULADO){    
+      <div class="alert alert-warning border-2 d-flex align-items-center" role="alert">
+        <div class="bg-warning me-3 icon-item"><span class="fas fa-times-circle text-white fs-6"></span></div>
+        <h5 class="mb-0 flex-1">Remito Anulado !!!</h5>
+      </div>
+        }
+    else {
+
+    }
+    
+
+          <div class="row mb-3 g-3">
+        <div class="col-lg-9">
+          <div class="card" id="allContactTable" >
+            <div class="card-header border-bottom border-200 px-0">
+              <div class="d-lg-flex justify-content-between">
+                <div class="row flex-between-center gy-2 px-x1">
+                  <div class="col-auto pe-0">
+                    <h5 class="mb-0">Datos del Remito</h5>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="card-body bg-light">
+                <div class="tab-content">
+                  <div class="tab-pane preview-tab-pane active" role="tabpanel">                           
+                              <form class="row g-3 " role="form" enctype = "multipart/form-data" action="Methods/Remitos_graba_control.cshtml" method="POST" id="FormRealizaCtrl" name="FormRealizaCtrl">
+                              <input class="form-control" name="idremito" id="idremito" type="hidden" value="@DetalleRemito.ID">
+                                  <div class="col-md-6">
+                                        <label class="form-label" for="planta">Planta</label>
+                                        <select class="form-select" id="planta" name="planta">
+                                            <option selected="@DetalleRemito.PLANTA" value="@DetalleRemito.PLANTA">@DetalleRemito.PLANTA</option>
+                                            @foreach(var row in plantas)
+                                            {
+                                            <option  value="@row.PLANTA">@row.PLANTA</option>
+                                            }
+                                        </select>
+                                  </div>
+                                  <div class="col-md-3">
+                                      <label class="form-label" for="inputplanta">Fecha</label>
+                                      <input class="form-control" id="fechamov" name="fechamov" type="date" value="@DetalleRemito.FECHA">
+                                  </div>
+                                  <div class="col-md-6">
+                                      <label class="form-label" for="inputCliente4">Cliente</label>
+                                      <select class="form-select" id="cliente" name="cliente">
+                                          <option selected  value="@DetalleRemito.CLIENTE">@DetalleRemito.CLIENTE</option>
+                                          @foreach(var row in clientes)
+                                          {
+                                          <option  value="@row.RAZON_SOCI">@row.RAZON_SOCI</option>
+                                          }
+                                      </select>
+                                  </div>
+                                  <div class="col-md-6">
+                                      <label class="form-label" for="NombreParticular">Nombre Particular</label>
+                                      <input class="form-control" id="NombreParticular" name="NombreParticular" type="text" value="@DetalleRemito.NOMBRE_PARTICULAR" disabled>
+                                  </div> 
+                                  <div class="col-md-6">
+                                      <label class="form-label" for="obra">Obra</label>
+                                      <input class="form-control" id="obra" name="obra" type="text" value="@DetalleRemito.OBRA">
+                                  </div>
+                                  <div class="col-md-6">
+                                      <label class="form-label" for="lugar">Lugar</label>
+                                      <input class="form-control" id="lugar" name="lugar" type="text" value="@DetalleRemito.LUGAR">
+                                  </div>
+                                  <div class="col-md-4">
+                                      <label class="form-label" for="producto">Producto</label>
+                                      <select class="form-select" id="producto" name="producto">
+                                          <option selected="@DetalleRemito.PRODUCTO" value="@DetalleRemito.PRODUCTO">@DetalleRemito.PRODUCTO</option>
+                                          @foreach(var row in productos)
+                                          {
+                                          <option  value="@row.PRODUCTO">@row.PRODUCTO</option>
+                                          }
+                                      </select>
+                                  </div>
+                                  <div class="col-md-2">
+                                      <label class="form-label" for="cantidad">Cantidad</label>
+                                      <input style="text-align:right;" class="form-control" id="cantidad"  name ="cantidad" type="text"
+                                          value="@string.Format(" {0:n}", @DetalleRemito.CANTIDAD)">
+                                  </div>
+                                  <div class="col-md-2">
+                                      <label class="form-label" for="aditivo">Aditivo</label>
+                                      <input style="text-align:right;" class="form-control" id="aditivo" name="aditivo" type="text"
+                                          value="@string.Format(" {0:n}", @DetalleRemito.ADITIVO)">
+                                  </div>
+                                  <div class="col-md-2">
+                                      <label class="form-label" for="bomba">Bomba</label>
+                                      <select class="form-select" id="bomba" name="bomba">
+                                          <option selected="@DetalleRemito.BOMBA" value="DetalleRemito.BOMBA">@DetalleRemito.BOMBA</option>
+                                          <option  value="1">SI</option>
+                                          <option  value="0">NO</option>
+                                      </select>
+                                  </div>
+                                  <div class="col-md-2">
+                                      <label class="form-label" for="TransportePropio">TT / PP</label>
+                                      <select class="form-select" id="TransportePropio" name="TransportePropio"">
+                                          <option selected="@DetalleRemito.ttpp" value="@DetalleRemito.ttpp">@DetalleRemito.ttpp</option>
+                                          <option  value="1">SI</option>
+                                          <option  value="0">NO</option>
+                                      </select>
+                                  </div>
+                                  <div class="col-2">
+                                      <label class="form-label" for="interno">Interno</label>
+                                      <input class="form-control" name="interno" id="interno" type="text" value="@DetalleRemito.INTERNO">
+                                  </div>
+                                  <div class="col-6">
+                                      <label class="form-label" for="chofer">Chofer</label>
+                                      <select class="form-select" id="chofer" name="chofer">
+                                          <option selected="@DetalleRemito.CHOFER" value="@DetalleRemito.CHOFER">@DetalleRemito.CHOFER</option>
+                                          @foreach(var row in choferes)
+                                          {
+                                          <option  value="@row.APELLIDO_Y_NOMBRE">@row.APELLIDO_Y_NOMBRE</option>
+                                          }
+                                      </select>
+                                  </div>
+                                  <div class="col-6">
+                                      <label class="form-label" for="observaciones">Observaciones</label>
+                                      <input class="form-control" id="observaciones" name="observaciones" type="text" value="@DetalleRemito.OBSERVACIONES">
+                                  </div>
+                                  <div class="col-4">
+                                      <label class="form-label" for="CondCliente">Condicion</label>
+
+                                      <select class="form-select" id="CondCliente" name="CondCliente">
+                                          <option selected value="@DetalleRemito.COND_CLIENTE">@DetalleRemito.COND_CLIENTE</option>
+                                          <option  value="Fac Anticipada">Fac Anticipada</option>
+                                          <option  value="Recibo">Recibo</option>
+                                      </select>
+                                  </div>  
+                                  <div class="col-12">
+                                      <div class="row flex-between-center g-0">
+                                          <div class="col-auto"></div>
+                                          @if (@DetalleRemito.CTRL_REMITO_POR==null)
+                                          {
+                                              <div class="col-auto"><button class="btn btn-primary " type="button" id="editremitobtn">Cargar Control</button></div>    
+                                          }
+                                          else
+                                          {
+                                              <div class="col-auto"><button class="btn btn-primary " type="button" id="editremitobtn" disabled>Cargar Control</button></div>
+                                          }     
+                                      </div>   
+                                  </div>  
+                              </form> 
+                  </div>                           
+                </div>
+            </div>
+
+          </div>
+        </div>
+        <div class="col-lg-3">
+          <div class="row g-3">
+            <div class="border-0 dark__bg-card-dark h-auto rounded-xl-3"  id="allContactOffcanvas" aria-labelledby="allContactOffcanvasLabel">
+              <div class="offcanvas-header d-flex flex-between-center d-xl-none bg-light">
+                <h6 class="fs-0 mb-0 fw-semi-bold">Control de Remitos</h6>
+                <button class="btn-close text-reset d-xl-none shadow-none" id="allContactOffcanvasLabel" type="button" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+              </div>
+              <div class="card scrollbar shadow-none shadow-show-xl">
+                <div class="card-header  d-none d-xl-block">
+                  <h5 class="mb-0">Control de Remitos</h5>
+                </div>
+                <div class="card-body bg-light">
+                <div class="alert alert-info" role="alert">Controlado por: @DetalleRemito.CTRL_REMITO_POR</div>
+                <div class="alert alert-info" role="alert">Observaciones: @DetalleRemito.OBSERVCIONES_CTRL</div>
+                                                                          
+                                @if (@DetalleRemito.FECHA_CTRL_REMITO==null)
+                                {<div class="col-12"></div>}
+                                else
+                                {<div class="alert alert-info" role="alert">Fecha Control: @string.Format("{0:dd/MM/yy}",
+                                    @DetalleRemito.FECHA_CTRL_REMITO) </div>}
+                  
+                </div>
+              </div>
+            </div>
+            <div class="border-0 dark__bg-card-dark h-auto rounded-xl-3"  id="Controlrealizado" aria-labelledby="ControlrealizadoLabel">
+              <div class="offcanvas-header d-flex flex-between-center d-xl-none bg-light">
+                <h6 class="fs-0 mb-0 fw-semi-bold">Remito Controlado</h6>
+                <button class="btn-close text-reset d-xl-none shadow-none" id="ControlrealizadoLabel" type="button" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+              </div>
+              <div class="card scrollbar shadow-none shadow-show-xl">
+                <div class="card-header  d-none d-xl-block">
+                  <h5 class="mb-0">Comprobantes Imputados</h5>
+                </div>
+                <div class="card-body bg-light">
+                  <div class="table-responsive fs--1" id="Table_detail">
+                  <div id="imputadodetail"></div>
+                  </div> 
+                </div>
+                <div class="card-footer border-top border-200 py-x1">
+                  <button class="btn btn-outline-warning" type="button" data-bs-toggle="modal" data-bs-target="#staticBackdrop1" onclick="CompImputados()">Imputar</button>
+                
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>                     
+
+
+
+
+
+
+<!-- Modal Imputaciones -->
+<div class="modal fade" id="staticBackdrop1" data-bs-keyboard="false" data-bs-backdrop="static" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg mt-6" role="document">
+    <div class="modal-content border-0">
+      <div class="position-absolute top-0 end-0 mt-3 me-3 z-1">
+        <button class="btn-close btn btn-sm btn-circle d-flex flex-center transition-base" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-0">
+        <div class="bg-light rounded-top-3 py-3 ps-4 pe-6">
+          <h4 class="mb-1" id="staticBackdropLabel">Add a new illustration to the landing page</h4>
+          <p class="fs--2 mb-0">Added by <a class="link-600 fw-semi-bold" href="#!">Antony</a></p>
+        </div>
+        <div class="p-4">
+          <div class="row">
+            <div class="col-lg-9">
+              <div class="d-flex"><span class="fa-stack ms-n1 me-3"><i class="fas fa-circle fa-stack-2x text-200"></i><i class="fa-inverse fa-stack-1x text-primary fas fa-tag" data-fa-transform="shrink-2"></i></span>
+                <div class="flex-1">
+                  <h5 class="mb-2 fs-0">Labels</h5>
+                  <div class="d-flex"><span class="badge me-1 py-2 badge-subtle-success">New</span><span class="badge me-1 py-2 badge-subtle-primary">Goal</span><span class="badge me-1 py-2 badge-subtle-info">Enhancement</span>
+                    <div class="dropdown dropend">
+                      <button class="btn btn-sm btn-secondary px-2 fsp-75 bg-400 border-400 dropdown-toggle dropdown-caret-none" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="fas fa-plus"></span></button>
+                      <div class="dropdown-menu">
+                        <h6 class="dropdown-header py-0 px-3 mb-0">Select Label</h6>
+                        <div class="dropdown-divider"></div>
+                        <div class="px-3">
+                          <button class="badge-subtle-danger dropdown-item rounded-1 mb-2" type="button">New</button>
+                          <button class="badge-subtle-primary dropdown-item rounded-1 mb-2" type="button">Goal</button>
+                          <button class="badge-subtle-info dropdown-item rounded-1 mb-2" type="button">Enhancement</button>
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <div class="px-3">
+                          <button class="btn btn-sm d-block w-100 btn-outline-secondary border-400">Create Label</button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <hr class="my-4" />
+                </div>
+              </div>
+              <div class="d-flex"><span class="fa-stack ms-n1 me-3"><i class="fas fa-circle fa-stack-2x text-200"></i><i class="fa-inverse fa-stack-1x text-primary fas fa-align-left" data-fa-transform="shrink-2"></i></span>
+                <div class="flex-1">
+                  <h5 class="mb-2 fs-0">Description</h5>
+                  <p class="text-break fs--1">The illustration must match to the contrast of the theme. The illustraion must described the concept of the design. To know more about the theme visit the page. </p>
+                </div>
+              </div>
+            </div>
+            <div class="col-lg-3">
+              <h6 class="mt-5 mt-lg-0">Add To Card</h6>
+              <ul class="nav flex-lg-column fs--1">
+                <li class="nav-item me-2 me-lg-0"><a class="nav-link nav-link-card-details" href="#!"><span class="fas fa-user me-2"></span>Members</a></li>
+                <li class="nav-item me-2 me-lg-0"><a class="nav-link nav-link-card-details" href="#!"><span class="fas fa-tag me-2"></span>Label</a></li>
+                <li class="nav-item me-2 me-lg-0"><a class="nav-link nav-link-card-details" href="#!"><span class="fas fa-paperclip me-2"></span>Attachments</a></li>
+                <li class="nav-item me-2 me-lg-0"><a class="nav-link nav-link-card-details" href="#!"><span class="fa fa-align-left me-2"></span>Description </a></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+ 
+

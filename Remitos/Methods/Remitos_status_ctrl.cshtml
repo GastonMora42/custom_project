@@ -1,0 +1,14 @@
+@{
+
+    Response.Cache.SetCacheability(HttpCacheability.NoCache);
+    var numremito = Request.QueryString["num_remito"];
+    var db = Database.Open("IntranetConnection");
+    var sql = @"SELECT 
+                CASE WHEN RemDet.CTRL_REMITO_POR IS NULL THEN 0 
+                ELSE 1 END AS 'ctrl' FROM dbo.REMITOS_DETALLE RemDet  WHERE  RemDet.REMITO = @0 ";
+    var products = db.QuerySingle(sql,numremito);
+    Json.Write(products, Response.Output);
+
+     
+    
+    }

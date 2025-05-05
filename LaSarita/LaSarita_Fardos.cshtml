@@ -1,0 +1,315 @@
+@{
+    if (WebSecurity.IsAuthenticated == false)
+    {
+        Response.Redirect("~/Account/Login.cshtml");
+    }
+    var Usuario = WebSecurity.CurrentUserName;
+    Layout = "_LaSaritaSiteLayout.cshtml";
+
+
+
+}
+<h6 class="p-2">
+    Detalle de Fardos - @Usuario
+</h6>
+
+<div class="d-grid gap-2 d-md-flex justify-content-md-end" style="margin-top: 15px;margin-bottom:20px;">
+      <a type="button"  href="Fardos/LaSarita_reportes_Fardos.cshtml" class="btn btn-outline-secondary" >
+REPORTE FARDOS  
+</a>
+  <button type="button" class="btn text-white bg-primary" data-bs-toggle="modal" data-bs-target="#fardosModal">
+COMPRA FARDOS  
+</button>
+</div>
+<div class="table-responsive" id="divTableDetail">
+
+</div>
+
+<!-- COMPRA DE FARDOS -->
+<div class="modal fade" id="fardosModal" tabindex="-1" >
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header text-white bg-primary">
+        <h1 class="modal-title fs-5" id="fardosModalLabel">COMPRA FARDOS</h1>
+        
+        <button style="color:white;" type="button" class="btn-close" data-bs-dismiss="modal" ></button>
+      </div>
+      <div class="modal-body">
+        <form class="was-validated" role="form" enctype = "multipart/form-data" action="Fardos/LaSarita_Fardos_Compras.cshtml" method="POST" id="MyFormFardos" name="MyFormFardos">
+          <div class="mb-3">
+            <label for="fecha_fardos" class="col-form-label">Fecha:</label>
+            <input class="form-control is-invalid" type="date" id="fecha_fardos" name="fecha_fardos" required>
+          </div>
+
+        <div class="mb-3">
+            <label for="total_fardos" class="col-form-label">Total $:</label>
+            <input type="text" class="form-control" id="total_fardos" name="total_fardos" required>
+        </div>    
+        <div class="mb-3">
+            <label for="cantidad" class="col-form-label">Cantidad Fardos: </label>
+            <input class="form-control" id="cantidad" name="cantidad" required></input>
+          </div>
+         <div class="mb-3">
+            <label for="message-text" class="col-form-label">Tipo:</label>
+            <select class="form-select" aria-label="Default select example" id="tipoalfalfa" name="tipoalfalfa"> 
+                <option selected value="" disabled>Seleccionar</option>
+                <option value="1">Fardos</option>
+                <option value="2">Rollos</option>
+            </select>
+          </div>  
+
+        </form>
+    
+     </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+        <button type="button" class="btn btn-primary" id="submitButtonFardos" name="submitButtonFardos" >Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- EDITAR COMPRA DE FARDOS -->
+<div class="modal fade" id="fardosModalEditar" tabindex="-1" >
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header text-white bg-info">
+        <h1 class="modal-title fs-5" id="fardosModalLabel">EDITAR COMPRA FARDOS</h1>
+        
+        <button style="color:white;" type="button" class="btn-close" data-bs-dismiss="modal" ></button>
+      </div>
+      <div class="modal-body">
+        <form class="was-validated" role="form" method="post" action="Fardos/LaSarita_Fardos_Editar.cshtml" id="MyFormFardosEditar" name="MyFormFardosEditar">
+            <input class="form-control" id="id_fardos_edit" name="id_fardos_edit" type="hidden">
+          <div class="mb-3">
+            <label for="fecha_fardos" class="col-form-label">Fecha:</label>
+            <input class="form-control is-invalid" type="date" id="fecha_fardos_edit" name="fecha_fardos_edit" required>
+          </div>
+
+        <div class="mb-3">
+            <label for="total_fardos" class="col-form-label">Total $:</label>
+            <input type="text" class="form-control" id="total_fardos_edit" name="total_fardos_edit" required>
+        </div>    
+        <div class="mb-3">
+            <label for="cantidad" class="col-form-label">Cantidad Fardos: </label>
+            <input class="form-control" id="cantidad_edit" name="cantidad_edit" required></input>
+          </div>
+         <div class="mb-3">
+            <label for="message-text" class="col-form-label">Tipo:</label>
+            <select class="form-select" aria-label="Default select example" id="tipoalfalfa_edit" name="tipoalfalfa_edit"> 
+                <option value=1>Fardos</option>
+                <option value=2>Rollos</option>
+            </select>
+          </div> 
+
+        </form>
+    
+     </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+        <button type="button" class="btn btn-info" id="submitButtonFardosEdit" name="submitButtonFardosEdit" >Editar</button>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- BORRAR COMPRA FARDOS -->
+<div class="modal fade" id="fardosModalBorrar" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header text-white bg-danger">
+        <h1 class="modal-title fs-5" id="fardosModalLabel">BORRAR COMPRA FARDOS</h1>
+        
+        <button style="color:white;" type="button" class="btn-close text-white" data-bs-dismiss="modal" ></button>
+      </div>
+      <div class="modal-body">
+        <form class="was-validated" role="form" method="post" action="Fardos/LaSarita_Fardos_Borrar.cshtml" id="MyFormFardosBorrar" name="MyFormFardosBorrar">
+            <input class="form-control" type="hidden" id="id_fardos_del" name="id_fardos_del"  readonly>
+          <div class="mb-3">
+            <label for="fecha_fardos" class="col-form-label">Fecha:</label>
+            <input class="form-control" type="date" id="fecha_fardos_del" name="fecha_fardos_del" readonly>
+          </div>
+        <div class="mb-3">
+            <label for="total_fardos" class="col-form-label">Total $:</label>
+            <input type="text" class="form-control" id="total_fardos_del" name="total_fardos_del" readonly>
+        </div>    
+        <div class="mb-3">
+            <label for="cantidad" class="col-form-label">Cantidad Fardos: </label>
+            <input class="form-control" id="cantidad_del" name="cantidad_del" readonly></input>
+          </div>
+
+        </form>
+    
+     </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+        <button type="button" class="btn btn-danger" id="submitButtonFardosDel" name="submitButtonFardosDel" >Borrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+    $(document).ready(function () {
+        // Default Datatable
+        loaddetalle();
+
+
+    });
+
+
+    function loaddetalle() {
+        $("#divTableDetail").load("Fardos/LaSarita_fardos_table.cshtml");
+    }
+
+    function Movimiento_fardos_del(id_mov) {
+        var url = 'Fardos/LaSarita_fardos_obtiene_datos_mov.cshtml?idmov=' + id_mov;
+        $.ajax({
+            type: "GET",
+            url: url,
+            datatype: "json",
+            success: function (data) {
+                var datos = JSON.parse(data)
+
+                $("#fecha_fardos_del").val(datos.FECHA);
+                $("#total_fardos_del").val(datos.IMPORTE);
+                $("#cantidad_del").val(datos.CANTIDAD);
+                $("#id_fardos_del").val(id_mov);
+            },
+            error: function (data) {
+
+                // Some error in ajax call
+                alert("some Error");
+            }
+        });
+    }
+    function Movimiento_fardos_edit(id_mov) {
+        var url = 'Fardos/LaSarita_fardos_obtiene_datos_mov.cshtml?idmov=' + id_mov;
+
+        $.ajax({
+            type: "GET",
+            url: url,
+            datatype: "json",
+            success: function (data) {
+                var datos = JSON.parse(data)
+
+                $("#fecha_fardos_edit").val(datos.FECHA);
+                $("#total_fardos_edit").val(datos.IMPORTE);
+                $("#cantidad_edit").val(datos.CANTIDAD);
+                $("#id_fardos_edit").val(id_mov);
+                
+                $("#tipoalfalfa_edit option[value=" + datos.ALFALFA_TIPO + "]").attr('selected', 'selected');
+
+            },
+            error: function (data) {
+
+                // Some error in ajax call
+                alert("some Error");
+            }
+        });
+    }
+
+
+
+    $("#submitButtonFardosDel").click(function () {
+
+        var form = $("#MyFormFardosBorrar");
+        var url = "Fardos/LaSarita_Fardos_Borrar.cshtml?id_fardos=" + $("#id_fardos_del").val();
+
+        $.ajax({
+            type: "POST",
+            url: url,
+            data: $("#MyFormFardosBorrar").serialize(),
+            dataType: "html",
+            success: function (data) {
+
+                document.getElementById("MyFormFardosBorrar").reset();
+                $('#fardosModalBorrar').modal('hide');
+                $("#divTableDetail").empty();
+                loaddetalle();
+                $.toast({
+                    heading: 'Information',
+                    text: 'Los datos fueron Borrados con exito !!!!',
+                    icon: 'info',
+                    loader: true,        // Change it to false to disable loader
+                    loaderBg: '#9EC600'  // To change the background
+                })
+            },
+            error: function (xhr, textStatus, error) {
+                console.log(xhr.statusText);
+                console.log(textStatus);
+                console.log(error);
+            }
+        });
+    });
+
+    $("#submitButtonFardosEdit").click(function () {
+
+        var form = $("#MyFormFardosEditar");
+        var url = $("#MyFormFardosEditar").attr("action");
+        console.log($("#MyFormFardosEditar").serialize());
+        console.log(url);
+        $.ajax({
+            type: "post",
+            url: $("#MyFormFardosEditar").attr('action'),
+            data: $("#MyFormFardosEditar").serialize(),
+            dataType: "html",
+            success: function (data) {
+
+                document.getElementById("MyFormFardosEditar").reset();
+                $('#fardosModalEditar').modal('hide');
+                loaddetalle();
+                $.toast({
+                    heading: 'Information',
+                    text: 'Los datos fueron modificados con exito !!!!',
+                    icon: 'info',
+                    loader: true,        // Change it to false to disable loader
+                    loaderBg: '#9EC600'  // To change the background
+                })
+            },
+            error: function (xhr, textStatus, error) {
+                console.log(xhr.statusText);
+                console.log(textStatus);
+                console.log(error);
+            }
+        });
+    });
+
+    $("#submitButtonFardos").click(function () {
+
+        var form = $("#MyFormFardos");
+        var url = $("#MyFormFardos").attr("action");
+        $.ajax({
+            type: "post",
+            url: $("#MyFormFardos").attr('action'),
+            data: $("#MyFormFardos").serialize(),
+            dataType: "html",
+            success: function (data) {
+
+                document.getElementById("MyFormFardos").reset();
+                $('#fardosModal').modal('hide');
+                loaddetalle();
+                $.toast({
+                    heading: 'Information',
+                    text: 'Los datos fueron guardados con exito !!!!',
+                    icon: 'info',
+                    loader: true,        // Change it to false to disable loader
+                    loaderBg: '#9EC600'  // To change the background
+                })
+            },
+            error: function (xhr, textStatus, error) {
+                console.log(xhr.statusText);
+                console.log(textStatus);
+                console.log(error);
+            }
+        });
+    });
+
+
+
+
+</script>
+
+
+
+
+
+
+

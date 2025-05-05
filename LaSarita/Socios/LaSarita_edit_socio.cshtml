@@ -1,0 +1,57 @@
+﻿@{
+    if (WebSecurity.IsAuthenticated == false)
+    {
+        Response.Redirect("~/Account/Login.cshtml");
+    }
+    
+    //idsocio_selected=6&editapellido=ACOSTA%20&editnombre=MAXIMILIANO%20&editapodo=prueba&editdni=&edittelefono=&editemail=&editfecha_nacimiento=&editselect_club=7&editselect_categoria=1
+    
+    var Usuario = WebSecurity.CurrentUserName;
+    var db = Database.Open("IntranetConnection");
+    var idsocio = Request.Form["idsocio_selected"]; 
+    var apellido = Request.Form["editapellido"].ToUpper();
+    var nombre = Request.Form["editnombre"].ToUpper();
+    var apodo = Request.Form["editapodo"].ToUpper();  
+    if (apodo == ""){
+        apodo = null;
+    };
+    var telefono = Request.Form["edittelefono"];  
+    var dni = Request.Form["editdni"]; 
+    if (dni == "0"){
+        dni = null;
+    };
+    var fecha_nac = Request.Form["editfecha_nacimiento"];
+    if (fecha_nac == ""){
+        fecha_nac = null;
+    };
+
+    var email = Request.Form["editemail"];
+    var club = Request.Form["editselect_club"].AsInt();  
+    var categoria = Request.Form["editselect_categoria"].AsInt();
+    var activo = Request.Form["editactivo"];
+    var activo_valor = 1;
+    if (activo == "0"){
+        activo_valor = 0;}
+    var grupo = 0;
+    // Process information here
+            var insertQuery =
+                      @"UPDATE 
+                      dbo.LA_SARITA_SOCIOS
+                    SET
+                      dbo.LA_SARITA_SOCIOS.CLUB = @1,
+                      dbo.LA_SARITA_SOCIOS.APELLIDO = @2,
+                      dbo.LA_SARITA_SOCIOS.NOMBRES = @3,
+                      dbo.LA_SARITA_SOCIOS.FECHA_NACIMIENTO = @4,
+                      dbo.LA_SARITA_SOCIOS.MAIL = @5,
+                      dbo.LA_SARITA_SOCIOS.DNI = @6,
+                      dbo.LA_SARITA_SOCIOS.CATEGORIA = @7,
+                      dbo.LA_SARITA_SOCIOS.TELEFONO = @8,
+                      dbo.LA_SARITA_SOCIOS.APODO = @9,
+                      dbo.LA_SARITA_SOCIOS.GRUPO = @10,
+                      dbo.LA_SARITA_SOCIOS.ACTIVO = @11
+                    WHERE
+                      dbo.LA_SARITA_SOCIOS.IDSOCIO = @0";
+            db.Execute(insertQuery,idsocio, club,apellido,nombre,fecha_nac,email,dni,categoria,telefono,apodo,grupo,activo_valor);
+            db.Execute("UPDATE dbo.LA_SARITA_SOCIOS SET dbo.LA_SARITA_SOCIOS.DNI = NULL WHERE dbo.LA_SARITA_SOCIOS.DNI = 0 ");
+            db.Execute("UPDATE dbo.LA_SARITA_SOCIOS SET dbo.LA_SARITA_SOCIOS.FECHA_NACIMIENTO = NULL WHERE dbo.LA_SARITA_SOCIOS.FECHA_NACIMIENTO = '01/01/1900' ");
+}

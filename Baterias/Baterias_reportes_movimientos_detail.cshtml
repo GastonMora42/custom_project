@@ -1,0 +1,107 @@
+﻿@{
+    if (WebSecurity.IsAuthenticated == false)
+    {
+        Response.Redirect("~/Account/Login.cshtml");
+    }
+
+    var Usuario = WebSecurity.CurrentUserName;
+    
+    Layout = "_BateriasSiteLayout.cshtml";
+    
+    var db = Database.Open("IntranetConnection");
+    var cubselected = Request.QueryString["cub_selected"];
+    var dep_selected = Request.QueryString["depsel"];
+    
+    var sqlarticulo =  @"SELECT 
+                          CUB.DESCRIPCION,
+                          CUB.ID_PRODUCTO,
+                          dbo.Baterias_ESTADOS.CATEGORIA_DESC
+                        FROM
+                          dbo.Baterias_ARTICULOS CUB
+                          INNER JOIN dbo.Baterias_ESTADOS ON (CUB.CATEGORIAS = dbo.Baterias_ESTADOS.ID_CATEGORIA)
+                        WHERE
+                          CUB.ID_PRODUCTO = @0 ";
+
+    var detalleart = db.QuerySingle(sqlarticulo,cubselected);
+
+    Page.Title = detalleart["DESCRIPCION"] + " -- " + detalleart["CATEGORIA_DESC"];
+    var sql = @"SELECT 
+    dbo.Baterias_MOVIMIENTOS.ID_REGISTRO,
+      dbo.Baterias_ARTICULOS.DESCRIPCION,
+      dbo.Baterias_ESTADOS.CATEGORIA_DESC,
+      dbo.Baterias_DEPOSITOS.ID_DEPOSITO,
+      dbo.Baterias_DEPOSITOS.NOMBRE_DEP,
+      (dbo.Baterias_MOVIMIENTOS.CANTIDAD *   dbo.Baterias_TIPOS_MOVIMIENTOS.MOV_STOCK) AS 'CANTIDAD',
+      dbo.Baterias_ARTICULOS.ID_PRODUCTO AS 'ARTICULO',
+      dbo.Baterias_MOVIMIENTOS.FECHA,
+      dbo.Baterias_TIPOS_MOVIMIENTOS.DESCR_MOVIMIENTO
+      FROM
+      dbo.Baterias_ARTICULOS 
+      INNER JOIN dbo.Baterias_MOVIMIENTOS ON (dbo.Baterias_MOVIMIENTOS.ARTICULO = dbo.Baterias_ARTICULOS.ID_PRODUCTO)
+      INNER JOIN dbo.Baterias_DEPOSITOS ON (dbo.Baterias_MOVIMIENTOS.DEPOSITO = dbo.Baterias_DEPOSITOS.ID_DEPOSITO)
+      INNER JOIN dbo.Baterias_ESTADOS ON (dbo.Baterias_ARTICULOS.CATEGORIAS = dbo.Baterias_ESTADOS.ID_CATEGORIA)
+      INNER JOIN dbo.Baterias_TIPOS_MOVIMIENTOS ON (dbo.Baterias_MOVIMIENTOS.ID_TIPO_MOV = dbo.Baterias_TIPOS_MOVIMIENTOS.ID_TIPOMOV)
+      WHERE
+      dbo.Baterias_ARTICULOS.ID_PRODUCTO = @0 AND dbo.Baterias_DEPOSITOS.NOMBRE_DEP = @1
+      ORDER BY 
+      dbo.Baterias_MOVIMIENTOS.FECHA DESC"; 
+
+
+    var movimientos = db.Query(sql,cubselected,dep_selected);
+    var cantreg = movimientos.Count();
+}
+
+@if (cantreg<1){
+    <h5> NO HAY MOVIMIENTOS PARA EL ARTICULO SELECCIONADO !!</h5>
+}
+else{
+        <table class="table striped hovered dataTable" id="example">
+            <thead>
+            <tr>
+                <th class="text-center">FECHA</th>
+                <th class="text-center">DESCRIPCION</th>
+                <th class="text-center">DEPOSITO</th>
+                <th class="text-center">CANTIDAD</th>
+                <th class="text-center">TIPO_MOVIMIENTO</th>
+                 <th class="text-center">BORRAR</th>
+
+            </tr>
+                        </thead>
+            <tbody>
+                @foreach(var row in movimientos)
+                {      
+                <tr>
+                    <td class="text-center">@string.Format("{0:dd/MM/yy}", @row.FECHA)</td>
+                    <td>@row.DESCRIPCION</td>
+                    <td>@row.NOMBRE_DEP</td>
+                    <td style="text-align:right ">@string.Format("{0:n}", @row.CANTIDAD)</td>
+                    @if (@row.CANTIDAD>1)
+                    {
+                    <td class="text-info" style="text-align:left ">@row.DESCR_MOVIMIENTO</td>
+                    }
+                    else
+                    {
+                    <td class="text-alert" style="text-align:left ">@row.DESCR_MOVIMIENTO</td>   
+                    }
+                    <td class="text-alert" style="text-align:center "><a href="Baterias_delete_record.cshtml?q=@row.ID_REGISTRO"> <h6> <i class="icon-remove fg-red on-right on-left"></i></h6></a></td>
+                 </tr>   
+                 }    
+            </tbody>
+        </table>
+}
+<script>
+            $(document).ready(function() {
+        $('#example').dataTable({
+             "order": [],
+            paging: true,
+            "pageLength": 50,
+            "lengthMenu": [[10, 25, 50, -1], [10, 25, 50, "All"]]
+        });
+    
+    } );
+</script>
+
+
+
+
+

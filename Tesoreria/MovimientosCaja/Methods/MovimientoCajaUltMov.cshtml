@@ -1,0 +1,22 @@
+@{
+    var Usuario = WebSecurity.CurrentUserName;
+    
+    var db = Database.Open("IntranetConnectionNew");
+    var UltimoRecibosql = @" SELECT TOP 1
+                                dbo.RECIBOS_DETALLE.NUMERO
+                                FROM
+                                dbo.RECIBOS_DETALLE
+                                WHERE
+                                dbo.RECIBOS_DETALLE.NUMERO >= 900000
+                                ORDER BY
+                                dbo.RECIBOS_DETALLE.DATESAVED DESC,
+                                    dbo.RECIBOS_DETALLE.IDRECIBO,
+                                dbo.RECIBOS_DETALLE.NUMERO";
+
+    var UltimoReciboQuery = db.QuerySingle(UltimoRecibosql);
+    var UltMov = UltimoReciboQuery[0] + 1;
+    Json.Write(UltMov , Response.Output);
+    
+    }
+
+

@@ -1,0 +1,159 @@
+@{
+
+    if (!WebSecurity.IsAuthenticated) {
+        Response.Redirect("~/Account/Login?returnUrl="
+            + Request.Url.LocalPath);
+    }
+
+
+    var Usuario = WebSecurity.CurrentUserName;
+    
+        Layout = "~/Inicio/_ConfluenciaLayout.cshtml";
+        var db = Database.Open("IntranetConnectionNew");
+        var title = "Movimiento de Caja";
+
+
+        var result = "";
+        Validation.Add("importe", 
+        Validator.Required("Make sure you say how many you want"),
+        Validator.Range(1,4, "Must be between 1 and 4")
+        );
+        if(IsPost){
+            if (Validation.IsValid()) {
+                    result += "<p>You entered:</p>";
+                    foreach(string item in Request.Form){
+                        result += item + ": " + Request[item] + "<br />";
+                    }
+                }
+                else{
+                    ModelState.AddFormError("Hay Errores en la carga del Movimiento"); 
+                }
+            }
+    
+    }
+<!-- Page-Title -->
+<!-- BEGIN: .page-header, Title of the Page -->
+
+<!-- BEGIN: .main-content -->
+<div class="content">
+    <!-- Start Content-->
+    <div class="container-fluid">
+
+        <div class="row mt-5 mt-lg-0 mt-xl-5 mt-xxl-0">
+            <!-- Carga de datos del Recibo-->
+
+            <div class="col-lg-4 col-xl-12 col-xxl-4 h-100">
+                <div class="d-flex mb-4"><span class="fa-stack me-2 ms-n1"><i
+                            class="fas fa-circle fa-stack-2x text-300"></i><i
+                            class="fa-inverse fa-stack-1x text-primary fas fa-donate"></i></span>
+                    <div class="col">
+                        <h5 class="mb-0 text-primary position-relative"><span
+                                class="bg-200 dark__bg-1100 pe-3">Movimientos de Caja</span><span
+                                class="border position-absolute top-50 translate-middle-y w-100 start-0 z-n1"></span>
+                        </h5>
+                        <p class="mb-0">Carga de Movimientos</p>
+                    </div>
+                </div>
+
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h5 class="mb-0">Nuevo Movimiento</h5>
+                    </div>
+                    <div class="card-body bg-light">
+                    
+                        <form class="row g-3 needs-validation" novalidate method="post" id="formAltaMov" name="formAltaMov">
+
+                            <div class="row gx-2">
+                                <div class="col-sm-6 mb-3">
+                                    <label class="form-label" for="ultmovinput"># Movimiento</label>
+                                    <input style="text-align:center;font-weight:600; "
+                                        class="form-control text-primary bg-primary-subtle"  type="text"
+                                        readonly id="ultmovinput" name="ultmovinput" >
+                                </div>
+                                <div class="col-sm-6 mb-3">
+                                    <label class="form-label" for="fecha">Fecha</label>
+                                    <input style="text-align:center;font-weight:600; "
+                                        class="form-control text-primary bg-primary-subtle" readonly id="fecha" name="fecha" value="">
+                                </div>
+                                <div class="col-sm-6 mb-3 ">
+                                    <label class="form-label" for="concepto">Concepto</label>
+                                    <select class="form-select" id="concepto" name="concepto" required>
+                                        <option value="" selected disabled>Concepto ...</option>
+                                        <option value="Ingreso">Ingreso</option>
+                                        <option value="Egreso">Egreso</option>
+                                    </select>
+                                </div>
+                                <div class="col-sm-6 mb-3">
+                                    <label class="form-label" for="moneda">Moneda</label>
+                                    <select class="form-select" id="moneda" name="moneda" required>
+                                        <option value="" selected disabled>Moneda ...</option>
+                                        <option value="PESOS">Pesos</option>
+                                        <option value="DOLARES">Dolares</option>
+                                    </select>
+                                </div>
+                                <div class="col-sm-6 mb-3">
+                                    <label for="importe">Importe </label>
+                                    <input class="form-control" id="importe" name="importe"
+                                        data-input-mask='{"alias":"decimal","digits":2,"rightAlign":true,"jitMasking":false,"prefix":"$"}'
+                                         type="text" required/>
+                                        
+                                </div>
+
+                                <div class="col-sm-12 mb-3">
+                                    <label class="form-label" for="observaciones">Observaciones</label>
+                                    <input class="form-control" id="observaciones" name="observaciones" required>
+                                    <div class="invalid-feedback">
+                                    Debe ingresar una Observaci&oacute;n!
+                                    </div>
+                                </div>
+                                <div class="col-sm-6 mb-3">
+                                    <button class="btn btn-primary" type="submit" id="submitButtonMov">Cargar Movimiento</button>
+                                </div>
+
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <!-- Datos del recibo-->
+            <div class="col-lg-8 col-xl-12 col-xxl-8 h-100">
+                <div class="d-flex mb-4"><span class="fa-stack me-2 ms-n1"><i
+                            class="fas fa-circle fa-stack-2x text-300"></i><i
+                            class="fa-inverse fa-stack-1x text-primary fas fa-receipt"></i></span>
+                    <div class="col">
+                        <h5 class="mb-0 text-primary position-relative"><span class="bg-200 dark__bg-1100 pe-3">Detalle
+                                de Movimientos</span><span
+                                class="border position-absolute top-50 translate-middle-y w-100 start-0 z-n1"></span>
+                        </h5>
+                        <p class="mb-0" id="titulodia"></p>
+                    </div>
+                </div>
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h5 class="mb-0">Movimientos</h5>
+                    </div>
+                    <div class="card-body py-2">
+                        <div class="table-responsive scrollbar mt-2 fs--1" id="MovCajaDetail">
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="toast bg-success text-white" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="alert alert-success border-2 d-flex align-items-center" role="alert">
+            <div class="bg-success me-3 icon-item"><span class="fas fa-check-circle text-white fs-3"></span></div>
+            <p class="mb-0 flex-1">Operacion realizada !!</p>
+            <button class="btn-close" type="button" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    </div><!-- container-fluid -->
+</div><!-- content -->
+
+<script src="JS/MovCaja.js?v=002"></script>
+<!-- END: .main-content -->
+
+
+
+
+

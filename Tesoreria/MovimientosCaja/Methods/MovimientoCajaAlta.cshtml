@@ -1,0 +1,39 @@
+@{
+    if(IsPost){
+    var Usuario = WebSecurity.CurrentUserName;
+    var movsigno = 1;
+    var db = Database.Open("IntranetConnection");
+    var fecha = Request.Form["fecha"];
+    var tipo = Request.Form["concepto"];  
+    if (tipo =="Egreso"){
+        movsigno = -1;
+    }
+
+    var ultmovinput = Request.Form["ultmovinput"];
+    var moneda = Request.Form["moneda"];    
+    var importe = Request.Form["importe"].AsFloat();
+    var observaciones = Request.Form["observaciones"];
+    
+    // Process information here
+            var insertQuery =
+                    @"INSERT INTO
+                      dbo.RECIBOS_DETALLE(
+                        FECHA,
+                        TIPO,
+                        NUMERO,
+                        LINEA_RC,
+                        MONEDA,
+                        IMPORTE,
+                        DETALLE,
+                        ORIGEN,
+                        USER_NAME)
+                    VALUES  (@0, @1, @2, @3, @4, @5, @6, @7, @8)";
+            db.Execute(insertQuery, fecha,tipo,ultmovinput,1,moneda,importe * movsigno,observaciones,'W', Usuario);
+
+            
+    }       
+            
+}
+
+
+

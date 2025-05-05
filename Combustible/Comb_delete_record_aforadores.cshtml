@@ -1,0 +1,62 @@
+﻿@{
+    Layout = "_CombustibleSiteLayout.cshtml";
+    Page.Title = "Borrar Registro";
+    if (WebSecurity.IsAuthenticated == false)
+    {
+        Response.Redirect("~/Account/Login.cshtml");
+    }
+    var db = Database.Open("IntranetConnection");
+    string proveedorelegido = Request.QueryString["q"];
+    var result = "";
+    
+    var stringquery = @"SELECT * FROM dbo.COMBUSTIBLE_AFORADORES WHERE dbo.COMBUSTIBLE_AFORADORES.IDMOVAFO=" + proveedorelegido;
+    var movimientos = db.Query(stringquery);
+
+    if (IsPost)  {
+            var deleteQueryString = "DELETE FROM dbo.COMBUSTIBLE_AFORADORES WHERE dbo.COMBUSTIBLE_AFORADORES.IDMOVAFO=@0";
+            db.Execute(deleteQueryString, proveedorelegido);
+
+            result += @"<button class='command-button success'><i class='icon-checkmark on-left'></i><h4>El movimiento se borro correctamente !!</h4></button>";
+            
+            Response.Redirect("~/Combustible/Combustible_aforadores.cshtml");
+            }
+
+    
+}
+<legend>Desea Borrar el siguiente Registro    
+       <button class="large info fg-white place-right">
+            
+          <a href="javascript:history.back()">Regresar</a>
+            
+        </button>  </legend>  
+<div class="row">
+            @foreach(var row in movimientos)
+        {  
+   <form data-role="validator" method="post" action="">
+    <div class="row">
+        <div class="input-control text size3">
+            <label>FECHA</label>
+            <div class="input-control  info-state select">
+                <input type="text" value="@string.Format("{0:dd/MM/YY}", @row.FECHA)" disabled style="font-weight: 500">
+            </div>
+        </div>
+            <div class="input-control text size2">
+            <label>VALOR</label>
+            <div class="input-control  info-state select">
+            <input type="text" value="@string.Format("{0:n}", @row.VALOR)" disabled style="font-weight: 500">
+            </div>
+
+        </div>
+
+      </div>
+    <div class="row ">
+        <button class="large bg-red fg-white ">
+            Borrar Registro
+        </button>
+    </div>
+    <div id="Message" class="row">
+    @Html.Raw(result)
+    </div>
+</form>
+}
+</div>

@@ -1,0 +1,25 @@
+@{
+    if(IsPost){
+        var db = Database.Open("IntranetConnection");
+        var sql = @"UPDATE 
+                    dbo.COMP_ANTICIPADOS_CAB
+                    SET
+                        OBSERVACIONES = @0,
+                        STATUS = @1,
+                        OBSERVACIONES_STATUS = @2,
+                        FECHA_STATUS = @3,
+                        STATUS_CTRL_POR = @4
+                    WHERE
+                    dbo.COMP_ANTICIPADOS_CAB.IDCAB=@5";
+
+        var idcab = Request["row_num"];
+        var observaciones = Request["observaciones"];
+        var status = Request["tipoctrl"];
+        var observstatus = Request["observacionesctrl"];
+        var reailizadopor = Request["Ctrlreailizadopor"]; 
+        var fecha_status = DateTime.Now;
+        //var statusctrlpor = "Andrea";
+        Response.Write(status);
+        db.Execute(sql, observaciones, status,observstatus, fecha_status,reailizadopor, idcab);
+    }
+}

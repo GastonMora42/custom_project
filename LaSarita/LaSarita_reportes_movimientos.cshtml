@@ -1,0 +1,324 @@
+﻿@{
+    if (WebSecurity.IsAuthenticated == false)
+    {
+        Response.Redirect("~/Account/Login.cshtml");
+    }
+    var Usuario = WebSecurity.CurrentUserName;
+    Layout = "_LaSaritaSiteLayout.cshtml";
+    var db = Database.Open("IntranetConnection");
+    var Tipo_Mov_elegido = Request.QueryString["TipoMov"];
+    var Fecha_desde = Request.QueryString["Fechadesde"].AsDateTime();
+    var Fecha_hasta = Request.QueryString["Fechahasta"].AsDateTime();
+
+    var sqlsocios =@"SELECT   LSS.IDSOCIO,
+                    LSS.NOMBRES,
+                    LSS.APELLIDO,
+                    LSS.APODO,
+                    LSS.COBRO,
+                    LSS.NOMBRES + ' ' + LSS.APELLIDO + CASE WHEN LSS.APODO IS NULL THEN '' ELSE ' ( ' + LSS.APODO + ' )' END AS 'DATOS_SOCIO' 
+                    FROM LA_SARITA_LIST_SOCIOS LSS 
+                    WHERE 
+                    LSS.COBRO = 1 
+                    ORDER BY 
+                    LSS.NOMBRES,
+                    LSS.APELLIDO";
+    var socios = db.Query(sqlsocios);
+
+
+
+}
+
+<style>
+    .close {
+    color: crimson; 
+    opacity: 1;
+}
+</style>
+<form class="row g-2">    
+  <div class="col col-sm-2">
+    <label for="staticEmail2" class="visually-hidden">Email</label>
+    <input type="text" readonly class="form-control-plaintext" id="staticEmail2" value="Desde Fecha">
+  </div>
+  <div class="col-auto">
+    <label for="inputPassword2" class="visually-hidden">Password</label>
+    <input class="form-control" type="date" id="fecha_consulta" name="fecha_consulta" >
+  </div>
+  <div class="col col-sm-2">
+    <button type='button' class="btn btn-primary mb-1" onclick="consultadesde()">Buscar</button>
+  </div>
+</form>
+<div class="table-responsive" id="divTableDetail">
+</div>
+
+<div class="modal fade" id="ingresosModal" tabindex="-1" aria-labelledby="ingresosModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header text-white bg-primary" > 
+        <h1 class="modal-title fs-5" id="ingresosModalLabel">INGRESOS</h1>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form class="was-validated" role="form" enctype = "multipart/form-data" action="LaSarita_ingresos_edit.cshtml" method="POST" id="MyForm" name="MyForm">
+          <input type="hidden" name="idselected" id="idselected" value="">
+          <div class="mb-3">
+            <label for="fecha_ingreso" class="col-form-label">Fecha:</label>
+            <input class="form-control" type="date" id="fecha_ingreso" name="fecha_ingreso" >
+          </div>
+          <div class="mb-3">
+            <label for="message-text" class="col-form-label">Socio:</label>
+            <select class="form-select" aria-label="Default select example" id="socioid" name="socioid">
+                <option selected>Seleccionar</option>
+                <option value="99999" >ESCUELA RENDICION</option>
+                <option value="99998" >INGRESO EFECTIVO</option>
+                @foreach(var row in socios)
+                {                     
+                <option value="@row.IDSOCIO" >@row.DATOS_SOCIO</option>
+                }
+
+            </select>
+          </div>
+                 
+         <div class="mb-3">
+            <label for="message-text" class="col-form-label">Forma de Cobro:</label>
+            <select class="form-select" aria-label="Default select example" id="formadecobro" name="formadecobro"> 
+                <option selected>Seleccionar</option>
+                <option value="Efectivo">Efectivo</option>
+                <option value="MercadoPago">Mercado Pago</option>
+                <option value="Transferencias">Transferencia</option>
+            </select>
+          </div>  
+        <div class="mb-3">
+            <label for="importe_ingresos" class="col-form-label">Importe $:</label>
+            <input type="text" class="form-control" id="importe_ingresos" name="importe_ingresos">
+          </div>  
+        <div class="mb-3">
+            <label for="descripcion" class="col-form-label">Descripcion:</label>
+            <textarea class="form-control" id="descripcion" name="descripcion"></textarea>
+          </div>
+
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+        <button type="button" class="btn btn-primary" id="submitButtonIngEdit" name="submitButtonIngEdit">Editar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Carga de Gastos -->
+
+<div class="modal fade" id="gastosModal" tabindex="-1" >
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header text-danger bg-danger-subtle">
+        <h1 class="modal-title fs-5" id="gastosModalLabel">GASTOS</h1>
+        
+        <button style="color:crimson;" type="button" class="btn-close btn-close-red" data-bs-dismiss="modal" ></button>
+      </div>
+      <div class="modal-body">
+        <form class="was-validated" role="form" enctype = "multipart/form-data" action="LaSarita_egresos_edit.cshtml" method="POST" id="MyFormEgr" name="MyFormEgr">
+          <input type="hidden" name="idselectedgasto" id="idselectedgasto" value="">
+          <div class="mb-3">
+            <label for="fecha_egreso" class="col-form-label">Fecha:</label>
+            <input class="form-control is-invalid" type="date" id="fecha_egreso" name="fecha_egreso" required>
+          </div>
+
+        <div class="mb-3">
+            <label for="message-text" class="col-form-label">Motivo:</label>
+            <select class="form-select" id="select_motivo" name="select_motivo"  >
+            <option selected>Seleccionar</option>
+            <option value="Fardos_Pago">PAGO FARDOS</option>
+            <option value="Varios">VARIOS</option>
+            </select>
+        </div>  
+        <div class="mb-3">
+            <label for="message-text" class="col-form-label">Forma de Pago:</label>
+            <select class="form-select" aria-label="Default select example" id="formadepago" name="formadepago"> 
+                <option selected value="Efectivo">Efectivo</option>
+                <option value="MercadoPago">Mercado Pago</option>
+                <option value="Transferencias">Transferencia</option>
+            </select>
+          </div>  
+        <div class="mb-3">
+            <label for="importe_egresos" class="col-form-label">Importe $:</label>
+            <input type="text" class="form-control" id="importe_egresos" name="importe_egresos" required>
+        </div>    
+        <div class="mb-3">
+            <label for="descripcion" class="col-form-label">Descripcion:</label>
+            <textarea class="form-control" id="descripciongtos" name="descripciongtos" required></textarea>
+          </div>
+
+        </form>
+    
+     </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+        <button type="button" class="btn btn-primary" id="submitButtonEgEdit" name="submitButtonEgEdit" >Editar</button>
+      </div>
+    </div>
+  </div>
+</div>
+<style> .highlight { background-color:#ffff99; } </style>
+<script>
+  function formatDate(date) {
+    var d = new Date(date),
+        month = '' + (d.getMonth() + 1),
+        day = '' + d.getDate(),
+        year = d.getFullYear();
+
+    if (month.length < 2) 
+        month = '0' + month;
+    if (day.length < 2) 
+        day = '0' + day;
+
+    return [year, month, day].join('-');
+}
+
+    $(window).on('load', function() {
+ // code here
+        // Current date: September 29, 2022
+        const date1 = new Date();
+        date1.setDate(date1.getDate() - 10);
+        $("#fecha_consulta").val(formatDate(date1));
+        loaddetalle(formatDate(date1));
+
+  });
+    function consultadesde (){
+      loaddetalle($("#fecha_consulta").val());
+    }
+
+
+
+    function llamaingreso(id_mov){
+
+        var url = 'LaSarita_obtienedatos.cshtml?idmov='+ id_mov;
+
+            $.ajax({
+                type: "GET",
+                url: url,
+                datatype: "json",
+                success: function(data) {
+                    var datos = JSON.parse(data)
+                    console.log(datos);
+                    $("#fecha_ingreso").val(datos.FECHA);
+                    $("#socioid").val(datos.ID_SOCIO);
+                    $("#formadecobro").val(datos.MEDIO_PAGO);
+                    $("#importe_ingresos").val(datos.IMPORTE);
+                    $("#descripcion").val(datos.DESCRIPCION);
+                    $("#idselected").val(id_mov);
+                },
+                error: function(data) {
+                      
+                    // Some error in ajax call
+                    alert("some Error");
+                }
+            });
+    }
+    function llamaegreso(id_mov){
+
+        var url = 'LaSarita_obtienedatos.cshtml?idmov='+ id_mov;
+
+            $.ajax({
+                type: "GET",
+                url: url,
+                datatype: "json",
+                success: function(data) {
+                    var datos = JSON.parse(data)
+                    //console.log(datos.DESCRIPCION);
+                    $("#fecha_egreso").val(datos.FECHA);
+                    $("#select_motivo").val(datos.TIPO_MOV);
+                    $("#formadepago").val(datos.MEDIO_PAGO);
+                    $("#importe_egresos").val(datos.IMPORTE);
+                    $("#descripciongtos").val(datos.DESCRIPCION);
+                    $("#idselectedgasto").val(id_mov);
+                },
+                error: function(data) {
+                      
+                    // Some error in ajax call
+                    alert("some Error");
+                }
+            });
+    }
+
+
+    function loaddetalle(fechasel){
+        $("#divTableDetail").load("LaSarita_detalleMov_Table.cshtml?Fechadesde="+ fechasel);
+    }
+</script>
+    <script>
+    // When DOM is loaded this 
+    // function will get executed
+    $(document).ready(function(){
+        // function will get executed 
+        // on click of submit button
+        loaddetalle();
+        });
+
+        $("#submitButtonIngEdit").click(function(ev) {
+
+            var form = $("#MyForm");
+            var url = $("#MyForm").attr("action");
+            var id_mov = $("#idselected").val();
+            
+            $.ajax({
+                type: "POST",
+                url: url,
+                data: form.serialize(),
+                datatype: "html",
+                success: function(data) {
+                    document.getElementById("MyForm").reset();
+                    $('#ingresosModal').modal('hide'); 
+                    $("#divTableDetail").load('LaSarita_detalleMov_Table.cshtml', function() {
+                    /* When load is done */
+                    $("#"+id_mov).effect("highlight",{},4000);
+                    });
+
+                },
+                error: function(data) {
+                      
+                    // Some error in ajax call
+                    alert("some Error");
+                }
+            });
+        });
+
+            $("#submitButtonEgEdit").click(function(ev) {
+
+            var form = $("#MyFormEgr");
+            var url = $("#MyFormEgr").attr("action");
+            var id_mov = $("#idselectedgasto").val();
+            $.ajax({
+                type: "POST",
+                url: url,
+                data: form.serialize(),
+                datatype: "html",
+                success: function(data) {
+                    document.getElementById("MyFormEgr").reset();
+                    $('#gastosModal').modal('hide'); 
+                    $("#divTableDetail").load('LaSarita_detalleMov_Table.cshtml', function() {
+                    /* When load is done */
+                    $("#"+id_mov).effect("highlight",{},4000);
+                    });
+                    
+                    
+                },
+                error: function(data) {
+                      
+                    // Some error in ajax call
+                    alert("some Error");
+                }
+            });
+        });
+
+    
+    </script>
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,14 @@
+@{
+    var Usuario = WebSecurity.CurrentUserName;
+    if(IsPost){
+        var db = Database.Open("IntranetConnection");
+        var sql = @"INSERT INTO 
+                    dbo.VENCIMIENTOS_RUBROS
+                    (RUBRO, USUARIO)
+                    VALUES (@0, @1)";
+        var nvorubro = Request["nvorubro"].ToUpper();
+        var fecha_vencimiento = DateTime.Now;
+       
+        db.Execute(sql, nvorubro, Usuario);
+    }
+}

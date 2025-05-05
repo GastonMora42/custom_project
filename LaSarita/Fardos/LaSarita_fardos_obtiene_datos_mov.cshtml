@@ -1,0 +1,33 @@
+@{
+    if (WebSecurity.IsAuthenticated == false)
+    {
+        Response.Redirect("~/Account/Login.cshtml");
+    }
+    
+    
+    var Usuario = WebSecurity.CurrentUserName;
+    
+    var db = Database.Open("IntranetConnection");
+
+    var idmov= Request["idmov"].AsInt();
+
+    // Process information here
+    var sql = @"SELECT 
+                LS_DET.ID_MOV,
+                CASE 
+                WHEN LS_DET.MOV_CTA_CTE = 1 THEN 'Compra' 
+                ELSE 'Pago' END AS 'MOVCTA',
+                ISNULL(LS_DET.CANTIDAD,'') AS 'CANTIDAD',
+                LS_DET.IMPORTE_TOTAL * LS_DET.MOV_CTA_CTE AS 'IMPORTE',
+                CONVERT(VARCHAR(10),LS_DET.FECHA_MOV,23) AS 'FECHA',
+                LS_DET.FECHA_MOV,
+                LS_DET.ALFALFA_TIPO
+              FROM
+                dbo.LA_SARITA_FARDOS_DETAIL LS_DET
+              WHERE
+              LS_DET.ID_MOV = " + idmov;
+    var data = db.QuerySingle(sql);
+    Json.Write(data, Response.Output);
+           
+            
+}

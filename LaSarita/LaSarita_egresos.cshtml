@@ -1,0 +1,49 @@
+﻿@{
+    if (WebSecurity.IsAuthenticated == false)
+    {
+        Response.Redirect("~/Account/Login.cshtml");
+    }
+    
+    
+    var Usuario = WebSecurity.CurrentUserName;
+    
+    var db = Database.Open("IntranetConnection");
+
+    var motivo = Request.Form["select_motivo"];
+    var fecha = Request.Form["fecha_egreso"];
+    var importe = Request.Form["importe_egresos"].AsFloat();
+    var descripcion = Request.Form["descripciongastos"];
+    var formadepago = Request.Form["formadepago"];
+    var codmov = "E";
+    var estad_mov = -1;
+    // Process information here
+            var insertQuery =
+                    @"INSERT INTO
+                    dbo.LA_SARITA_SOCIOS_MOVIMIENTOS(
+                    FECHA,
+                    CODIGO_MOV,
+                    TIPO_MOV,
+                    MEDIO_PAGO,
+                    IMPORTE,
+                    DESCRIPCION,
+                    USUARIO,
+                    ESTAD_MOV)
+                    VALUES  (@0, @1, @2, @3, @4, @5, @6, @7)";
+            db.Execute(insertQuery, fecha,codmov,motivo,formadepago,importe,descripcion,Usuario,estad_mov);
+    var ultreg = db.QueryValue("SELECT IDENT_CURRENT('dbo.LA_SARITA_SOCIOS_MOVIMIENTOS')");
+        
+    if (motivo=="Fardos_Pago"){
+    // Process information here
+      var insertQueryfardos = @"INSERT INTO
+                                dbo.LA_SARITA_FARDOS_DETAIL(
+                                FECHA_MOV,    
+                                REF_ID_MOV,
+                                IMPORTE_TOTAL,
+                                MOV_CTA_CTE,
+                    USUARIO) VALUES (@0, @1, @2, @3, @4)";
+        db.Execute(insertQueryfardos, fecha, ultreg, importe, -1, Usuario);
+    }
+    
+            
+}
+

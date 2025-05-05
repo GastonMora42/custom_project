@@ -1,0 +1,19 @@
+@{
+    var db = Database.Open("IntranetConnectionNew");
+    var telefonosel = Request["telefono"];
+    var telefonoselssql = @"SELECT TOP 1     
+                        'OK' AS 'RESULTADO',      
+                        LTRIM(RTRIM(dbo.RECIBOS_CLIENTE.NOMBRE)) AS 'NOMBRE',
+                        dbo.RECIBOS_CLIENTE.LUGAR_OBRA
+                        FROM
+                        dbo.RECIBOS_CLIENTE 
+                        WHERE
+                        dbo.RECIBOS_CLIENTE.TELEFONOS = @0 
+                        ORDER BY 
+                        dbo.RECIBOS_CLIENTE.FECHA_RECIBO";
+
+    var telefonoselres = db.Query(telefonoselssql,telefonosel);
+    
+    Json.Write(telefonoselres, Response.Output);
+}  
+

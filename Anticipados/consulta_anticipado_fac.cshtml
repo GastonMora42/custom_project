@@ -1,0 +1,28 @@
+@{
+    var Usuario = WebSecurity.CurrentUserName;
+    
+        Layout = "../Inicio/_ConfluenciaLayout.cshtml";
+        var db = Database.Open("IntranetConnectionNew");
+        var title = "Consulta Anticipado";
+        var numcomp = Request.QueryString["num_comp"];
+        var sql =@"SELECT cab.N_COMP FROM dbo.COMP_ANTICIPADOS_CAB cab WHERE cab.IDCAB =" + numcomp;
+        var ant_listado = db.QueryValue(sql);
+      
+    
+    }
+<!-- BEGIN: .main-content -->
+
+
+<div id="Table_detail"></div>
+
+
+<script>
+    $(document).ready(function(){
+     recibosel();
+     
+     function recibosel() {
+            
+            $('#Table_detail').load("Methods/consulta_anticipado_det_fac.cshtml?num_comp="+ @numcomp);
+    }
+    });
+</script>

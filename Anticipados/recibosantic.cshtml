@@ -1,0 +1,131 @@
+@{
+    var Usuario = WebSecurity.CurrentUserName;
+    
+        Layout = "../Inicio/_ConfluenciaLayout.cshtml";
+        var db = Database.Open("IntranetConnectionNew");
+        var title = "Consulta de Recibo";
+    var sql =@"SELECT   LSS.IDSOCIO,
+                        LSS.NOMBRES,
+                        LSS.APELLIDO,
+                        LSS.APODO,
+                        LSS.COBRO,
+                        LSS.NOMBRES + ' ' + LSS.APELLIDO + CASE WHEN LSS.APODO IS NULL THEN '' ELSE ' ( ' + LSS.APODO + ' )' END AS 'DATOS_SOCIO' 
+                        FROM LA_SARITA_LIST_SOCIOS LSS 
+                        WHERE 
+                        LSS.COBRO = 1 
+                        ORDER BY 
+                        LSS.NOMBRES,
+                        LSS.APELLIDO";
+    var socios = db.Query(sql);
+    
+      
+    
+    }
+<!-- BEGIN: .main-content -->
+
+          <div class="row g-3 mb-3">
+            <div class="col-xxl-6 col-lg-12">
+              <div class="card h-100">
+                <div class="bg-holder bg-card" style="background-image:url(../assets/img/icons/spot-illustrations/corner-3.png);">
+                </div>
+                <!--/.bg-holder-->
+
+                <div class="card-header z-1">
+                  <h5 class="text-primary">Consulta de Recibo </h5>
+                  <h6 class="text-600">Here are some quick links for you to start </h6>
+                </div>
+                <div class="card-body z-1">
+                  <div class="row g-2 h-100 align-items-end">
+                    <div class="col-sm-6 col-md-5">
+                      <div class="d-flex position-relative">
+                        <div class="icon-item icon-item-sm border rounded-3 shadow-none me-2"><span class="fas fa-chess-rook text-primary"></span></div>
+                        <div class="flex-1"><a class="stretched-link text-800" href="#!">
+                            <h6 class="mb-0">General</h6>
+                          </a>
+                          <p class="mb-0 fs--2 text-500">Customize with a few clicks</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-sm-6 col-md-5">
+                      <div class="d-flex position-relative">
+                        <div class="icon-item icon-item-sm border rounded-3 shadow-none me-2"><span class="fas fa-crown text-warning"></span></div>
+                        <div class="flex-1"><a class="stretched-link text-800" href="#!">
+                            <h6 class="mb-0">Upgrade to pro</h6>
+                          </a>
+                          <p class="mb-0 fs--2 text-500">Try Pro for 14 days free! </p>
+                        </div>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-xxl-6 col-md-6">
+              <div class="card h-100">
+                <div class="card-header d-flex flex-between-center">
+                  <h5 class="mb-0">Team Progress</h5><a class="btn btn-link btn-sm px-0" href="#!">Report<span class="fas fa-chevron-right ms-1 fs--2"> </span></a>
+                </div>
+                <div class="card-body">
+
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+
+
+    <div class="row">
+    <div class="col-12">
+    <div class="page-title-box page-title-box-alt">
+    <h4 class="page-title">@title</h4>
+    <div class="page-title-right">
+
+    </div>
+    </div>
+    </div>
+    </div>     
+    <div class="row mb-3">
+            <div class="col-xl-5 pe-xl-2">
+                <div class="card mb-3">
+                <div class="bg-holder d-none d-lg-block bg-card " style="background-color:#f2f3f4">
+                </div>
+                <!--/.bg-holder-->
+
+                <div class="card-body position-relative">
+
+                <form class="row row-cols-lg-5 g-3 align-items-center">
+                <div class="col-6">
+                <h5>Recibo #</h5>
+                </div>
+                <div class="col-12">
+                <label class="sr-only" for="inlineFormInputGroupUsername">Username</label>
+                <div class="input-group">
+                <input class="form-control" id="numrecibo" type="text" placeholder="Ingrese # recibo" />
+                </div>
+                </div>
+                <div class="col-12">
+                <button type="button" class="btn btn-primary" onclick="recibosel()">Consultar</button>
+                </div>
+                </form>
+                </div>
+                </div>
+                                </div>
+                </div>
+
+<div id="Table_detail"></div>
+
+  
+
+
+<script>
+    
+     function recibosel() {
+            
+            $('#Table_detail').load("Methods/rec_imputacion_anticipados.cshtml?num_recibo="+$('#numrecibo').val() );
+    }
+</script>
+
+
+

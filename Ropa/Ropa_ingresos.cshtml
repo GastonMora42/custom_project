@@ -1,0 +1,231 @@
+﻿@{
+    Layout = "_RopaSiteLayout.cshtml";
+    var db = Database.Open("IntranetConnection");
+    var proveedores = db.Query( "SELECT comb_provee.COD_PROVEE,comb_provee.NOM_PROVEE FROM dbo.COMBUSTIBLES_COMPRAS_PROVEEDORES comb_provee ORDER BY comb_provee.NOM_PROVEE");
+    var productos = db.Query( @"SELECT 
+                              ROPA_ART.ID_PRODUCTO,
+                              ROPA_ART.DESCRIPCION
+                            FROM
+                              dbo.NOMINA_ROPA_ARTICULOS ROPA_ART
+                            ORDER BY
+                              ROPA_ART.DESCRIPCION");
+        var depositos = db.Query( @"SELECT 
+                              ROPA_DEP.ID_DEPOSITO,
+                              ROPA_DEP.NOMBRE_DEP
+                            FROM
+                              dbo.NOMINA_ROPA_DEPOSITOS ROPA_DEP
+                            ORDER BY
+                              ROPA_DEP.NOMBRE_DEP");
+    int itemnum = 1;
+}
+
+<script>
+    function altanvainmobiliaria() {
+        e.preventDefault();
+        $.ajax({
+            url: '/RopaIngresosCarga.cshtml',
+            type: 'post',
+            data: $('inmobiForm').serialize(),
+            contentType: "application/json",
+            dataType: 'json'
+        });
+
+    }
+
+    function cargaingresos() {
+
+        $('#ingresos > tbody  > tr').each(function () {
+
+            var itemsel = $(this).find('td').eq(2).text();
+            var cantsel = $(this).find('td').eq(6).text();
+            var depositsel = $(this).find('td').eq(4).text();
+            var fechasel = $(this).find('td').eq(7).text();
+            var remitosel = $(this).find('td').eq(8).text();
+
+            var form_data = {
+
+                itemsel: itemsel, //$("#dropdownList option:selected").text();
+                cantsel: cantsel,
+                fechasel: fechasel,
+                remitosel: remitosel,
+                depositosel : depositsel
+
+            };
+
+            $.ajax({
+                url: 'RopaIngresosCarga.cshtml',
+                type: 'post',
+                data: JSON.stringify(form_data),
+                contentType: "application/json",
+                datatype: "html",
+                success: function(respuesta){
+                    //si la solicitud es hecha éxitosamente entonces la respuesta representa los datos
+                    console.log( respuesta );
+                },
+                error : function(respuesta){console.log( respuesta );}
+            });
+        })
+
+
+        $('#ingresos > tbody  > tr').each(function () {
+            $(this).parents("tr").remove();
+        })
+        alert("Ingresos Cargados !!");
+        //location.reload()
+    }
+</script>
+
+<script type="text/javascript">
+
+
+    $(document).ready(function () {
+        var linea = 1;
+        $("#agregarfila").click(function () {
+            var cantidad = 0;
+            cantidad = $("#cantidad").val();
+            if (cantidad < 1 ){
+                $("#error-canti").text("Debe Ingresar un valor correcto para Cantidad !!!");
+                return
+            }
+            else{
+                $("#error-canti").text("");
+            }
+            
+
+            $("#cantidad").val('');
+            var a = $("#fecha_sel").val();
+            var formattedDate = new Date(a);
+            var d = formattedDate.getDate();
+            var m = formattedDate.getMonth();
+            m += 1;  // JavaScript months are 0-11
+            var y = formattedDate.getFullYear();
+            //$("#fecha_sel").val('');
+            var aplicacion = $("#aplicacion").val();
+            //$("#aplicacion").val('');
+            var itemselid = $("#itemselected").val();
+            var itemsel = $("#itemselected").find(":selected").text();
+            var depositoid = $("#depositoselected").val();
+            var deposito = $("#depositoselected").find(":selected").text();var itemselid = $("#itemselected").val();
+            var itemsel = $("#itemselected").find(":selected").text();
+            $("#itemselected").val('Seleccionar');
+            var markup = "<tr><td class='text-center'><input type='checkbox' name='record'><span class='check'></span></td><td class='text-center' id='linea'>" + linea + 
+                         "</td><td class='text-center'>" + itemselid + "</td><td class='text-center'>" + itemsel + "</td><td class='text-center'>" + depositoid + "</td><td class='text-center'>" + deposito + "</td><td class='text-center'>" + cantidad + "</td><td class='text-center'>" + 
+                            a + "</td><td class='text-center'>" + aplicacion + "</td></tr>";
+            $("table tbody").append(markup);
+            linea += 1;
+        });
+
+        // Find and remove selected table rows
+        $("#borrarfila").click(function () {
+            $("table tbody").find('input[name="record"]').each(function () {
+                if ($(this).is(":checked")) {
+                    $(this).parents("tr").remove();
+
+                }
+            });
+            linea = 1;
+            $('#ingresos tr').each(function () {
+                $(this).find('td').each(function () {
+                    //do your stuff, you can use $(this) to get current cell
+
+                    if ($(this).attr('id') == 'linea') {
+                        $(this).text(linea);
+                        linea += 1;
+
+                    }
+
+                })
+            })
+        });
+    });    
+</script>
+
+<div data-role="dialog" id="dialog9" class="padding20 dialog" data-close-button="true" data-href="Rep_alta.cshtml" data-overlay="true" data-overlay-color="op-dark" data-overlay-click-close="true" style="width: 400px; height: auto; visibility: hidden;">
+
+                </div>
+<legend>Ingreso de Ropa</legend>
+<div class="row">
+    <div class="row cells6">
+         <div class="cell colspan1">
+            <label>Fecha</label>
+            <div class="input-control  text" data-role="datepicker" data-format='dd/mm/yyyy'>
+                <input type="text" id="fecha_sel" placeholder="fecha" name="fecha_sel">
+                <button class="button"><span class="mif-calendar"></span></button>
+            </div>
+        </div>
+
+        <div class="cell colspan2">
+           <label> Remito</label>
+            <div class="input-control text" data-role="input-control" >
+                <input type="text" placeholder="Observaciones del Ingreso" id="aplicacion" name="aplicacion">
+                
+            </div>
+        </div>
+         
+         <div class="cell colspan1">
+            <label>Deposito</label>
+                                        <div class="input-control  select">
+                    <select id="depositoselected" >
+                        <option>Seleccionar</option>
+                        @foreach(var row in depositos)
+                        {                     
+                            <option value="@row.ID_DEPOSITO">@row.NOMBRE_DEP</option>
+                        }
+                    </select>
+                    </div>
+        </div>
+      </div>
+    </div>
+<div class="row">
+    <div class="row cells6">
+        <div class="cell colspan2">
+            <label>Item</label>
+                            <div class="input-control  select">
+                    <select id="itemselected" >
+                        <option>Seleccionar</option>
+                        @foreach(var row in productos)
+                        {                     
+                            <option value="@row.ID_PRODUCTO">@row.DESCRIPCION</option>
+                        }
+                    </select>
+                    </div>
+            </div>
+                      <div class="cell colspan1">
+           <label> Cantidad</label>
+            <div class="input-control text" data-role="input-control" >
+                <input type="text" placeholder="cantidad" id="cantidad" ><div id="error-canti" style="font-weight: 600;color: #f00"></div>
+                
+            </div>
+        </div>
+    </div>
+</div>
+    <button class="button primary" id="agregarfila">Agregar fila</button>
+    <button class="button warning" id="borrarfila">Borrar fila</button>
+    <form>
+        <fieldset>
+            <table class="table striped" id="ingresos">
+                <thead>
+                <tr>
+                    <th class="text-center"></th>
+                    <th class="text-center">#</th>
+                    <th class="text-center">IdItem</th>
+                    <th class="text-center">Item</th>
+                    <th class="text-center">IdDep</th>
+                    <th class="text-center">Deposito</th>
+                    <th class="text-center">Cantidad</th>
+                    <th class="text-center">Fecha</th>
+                    <th class="text-center">Remito</th>
+                </tr>
+                </thead>
+                <tbody>
+
+                </tbody>
+            </table>
+        </fieldset>
+
+    </form>
+    <button class="command-button primary" onclick="cargaingresos()"> Cargar </button>
+</div>
+
+
+

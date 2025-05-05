@@ -1,0 +1,120 @@
+﻿@{
+    Layout = "_CombustibleSiteLayout.cshtml";
+    var db = Database.Open("IntranetConnection");
+    var Usuario = WebSecurity.CurrentUserName;
+    var result = "";
+     Page.Title = "Combustible Aforadores";
+ 
+    var destinos = db.Query( "SELECT comb_dep.IDDEP, comb_dep.DEPOSITO FROM dbo.COMBUSTIBLE_DEPOSITOS comb_dep ORDER BY comb_dep.DEPOSITO");
+    int itemnum = 1;
+
+    Validation.Add("cantidad", Validator.Range(1, 99999999, "debe ingresar una cantidad de combustible !!"));
+    Validation.Add("fecha", Validator.DateTime("Debe seleccionar una fecha"));
+
+
+    if (IsPost && Validation.IsValid())  {
+    var fecha = Request.Form["fecha"];
+    var destino = Request.Form["destino"];
+    var cantidad = Request.Form["cantidad"].AsInt();
+
+    // Process information here
+            var insertQuery ="INSERT INTO dbo.COMBUSTIBLE_AFORADORES(FECHA,IDDEPOSITO,VALOR,USUARIO) VALUES  (@0, @1, @2, @3)";
+            
+            db.Execute(insertQuery , fecha, destino, cantidad,Usuario);
+
+            result += @"<button class='command-button success'><i class='icon-checkmark on-left'></i><h5>El movimiento se cargo correctamente !!</h5></button>";
+            cantidad = 0;
+
+            }
+}
+<script>
+    $(document).ready(function () {
+        $("#Message").delay(3000).slideUp(300);
+    });
+
+</script>
+<script>
+    function showCustomer(str) {
+        var xmlhttp;
+        if (str == "Seleccionar Destino") {
+            document.getElementById("txtHint").innerHTML = "";
+            return;
+        }
+        if (window.XMLHttpRequest) {// code for IE7+, Firefox, Chrome, Opera, Safari
+            xmlhttp = new XMLHttpRequest();
+        }
+        else {// code for IE6, IE5
+            xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+        }
+        xmlhttp.onreadystatechange = function () {
+            if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+                document.getElementById("txtHint").innerHTML = xmlhttp.responseText;
+            }
+        }
+        xmlhttp.open("GET", "Comb_Dep_sel_Aforador.cshtml?q=" + str, true);
+        xmlhttp.send();
+    }
+</script>
+
+<style type="text/css">
+    .field-validation-error {
+      font-weight:bold;
+      color:red;
+      background-color:yellow;
+     }
+    .validation-summary-errors{
+      border:2px dashed red;
+      color:red;
+      background-color:yellow;
+      font-weight:bold;
+      margin:12px;
+    }
+</style>
+<legend>Carga de Aforadores</legend>
+
+<div class="row">
+    <form data-role="validator" method="post" action="">
+    <div class="row cells4">
+        <div class="cell colspan1">
+            <label>Fecha</label>
+            <div class="input-control  text" data-role="datepicker" data-format='dd/mm/yyyy'>
+                <input type="text" id="fecha" placeholder="seleccionar fecha" name="fecha">
+                <button class="button"><span class="mif-calendar"></span></button>
+            </div>
+        </div>
+        <div class="cell colspan1">
+            <label>Aforador</label></label>
+            <div class="input-control  select">
+                <select id="destino" onchange="showCustomer(this.value)" name="destino">
+                    <option>Seleccionar Destino</option>
+                    @foreach(var row in destinos)
+                    {                     
+                        <option value="@row.IDDEP">@row.DEPOSITO</option>
+                    }
+                </select>
+            </div>
+        </div>
+        <div class="cell colspan1">
+            <label>Cantidad</label>
+            <div class="input-control text warning">
+                <input type="text" placeholder="Ingresar Cantidad de litros" id="cantidad" name="cantidad"  />
+                @Html.ValidationMessage("cantidad")
+            </div>
+        </div>
+        </div>
+   
+
+        <div class="row cells6">
+        <button class="primary" id="notify_btn_2"><i class="icon-download on-left"></i>      
+            Cargar Aforador
+        </button>
+
+    </div>
+    <div id="Message" class="row">
+    @Html.Raw(result)
+    </div>
+</form>
+</div>
+<div class="row"><div id="txtHint"></div></div>
+
+

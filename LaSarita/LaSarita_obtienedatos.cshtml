@@ -1,0 +1,33 @@
+@{
+    if (WebSecurity.IsAuthenticated == false)
+    {
+        Response.Redirect("~/Account/Login.cshtml");
+    }
+    
+    
+    var Usuario = WebSecurity.CurrentUserName;
+    
+    var db = Database.Open("IntranetConnection");
+
+    var idmov= Request["idmov"].AsInt();
+
+    // Process information here
+    var sql = @"SELECT 
+                CONVERT(VARCHAR(10),LS_MOV.FECHA,23) AS 'FECHA',
+                LS_MOV.ID_SOCIO,
+                LS_MOV.DESCRIPCION,
+                LS_MOV.MEDIO_PAGO,
+                LS_MOV.IMPORTE,
+                LS_MOV.ID_MOV,
+                LS_MOV.CODIGO_MOV,
+                LS_MOV.TIPO_MOV
+                FROM
+                dbo.LA_SARITA_SOCIOS_MOVIMIENTOS LS_MOV
+                LEFT OUTER JOIN dbo.LA_SARITA_SOCIOS LSS ON (LS_MOV.ID_SOCIO=LSS.IDSOCIO)
+                WHERE
+                LS_MOV.ID_MOV = " + idmov;
+    var data = db.QuerySingle(sql);
+    Json.Write(data, Response.Output);
+           
+            
+}

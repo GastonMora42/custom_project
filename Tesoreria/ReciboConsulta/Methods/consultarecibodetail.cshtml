@@ -1,0 +1,296 @@
+@{
+    var Usuario = WebSecurity.CurrentUserName;
+    
+        var db = Database.Open("IntranetConnectionNew");
+        var numrecibo = Request.QueryString["num_recibo"];
+        var sqlRecibo =@"SELECT   
+                        REC_CLI.IDRECCLI,
+                        REC_CLI.RECIBO,
+                        CONVERT(VARCHAR(10),REC_CLI.FECHA_RECIBO,103) AS 'FECHA_RECIBO',
+                        ISNULL(REC_CLI.FECHA_CONSUMO,'SIN CONDICION') AS 'FECHA_CONSUMO',
+                        REC_CLI.NOMBRE,
+                        REC_CLI.TELEFONOS,
+                        REC_CLI.LUGAR_OBRA,
+                        REC_CLI.OBSERVACIONES, 
+                        CASE 
+                        WHEN REC_CLI.FECHA_CONSUMO IN ('ANTICIPADO','CANCELACION') THEN 'SI' ELSE 'NO' END AS 'CTRLANTICIPADO'  
+                        FROM 
+                        RECIBOS_CLIENTE REC_CLI 
+                        WHERE 
+                        REC_CLI.RECIBO = @0" ;
+        var recibo = db.QuerySingle(sqlRecibo,numrecibo);
+
+        var sqlVenta =@"SELECT   *
+                        FROM 
+                        RECIBOS_VENTA REC_VENTA WHERE REC_VENTA.RECIBO = " + numrecibo;
+        var venta = db.Query(sqlVenta);
+        var sqlTotalVenta =@"SELECT   
+                        SUM(REC_VENTA.TOTAL) AS 'TOTAL'
+                        FROM 
+                        RECIBOS_VENTA REC_VENTA 
+                        WHERE 
+                        REC_VENTA.RECIBO = " + numrecibo + " GROUP BY REC_VENTA.RECIBO";
+        var TotalVenta= db.QueryValue(sqlTotalVenta);
+
+
+        
+        var sqlDatosDetalle =@"SELECT   *
+                        FROM 
+                        RECIBOS_DETALLE REC_VENTA WHERE REC_VENTA.NUMERO = " + numrecibo;
+        var DatosDetalle = db.Query(sqlDatosDetalle);
+
+        var sqlTotalDatosDetalle =@"SELECT  SUM(REC_VENTA.IMPORTE) AS 'TOTAL_COBRO'
+                        FROM 
+                        RECIBOS_DETALLE REC_VENTA WHERE REC_VENTA.NUMERO = " + numrecibo + " GROUP BY REC_VENTA.NUMERO";
+        var TotalDatosDetalle = db.QueryValue(sqlTotalDatosDetalle);
+
+
+var statusstyle = "primary";
+var status = "";
+var statusctrlpor = "";
+var statusfecha = recibo.FECHA_RECIBO;
+ var statusobserv = "";
+if (recibo.CTRLANTICIPADO == "SI")
+{
+
+        var sqlcabeanticipado = @"SELECT DISTINCT
+                                COMP_ANTICIPADOS_CAB.IDCAB,
+                                COMP_ANTICIPADOS_CAB.FECHA,
+                                COMP_ANTICIPADOS_CAB.TIPO_COMP,
+                                COMP_ANTICIPADOS_CAB.N_COMP,
+                                COMP_ANTICIPADOS_CAB.OBSERVACIONES,
+                                STA.STATUS,
+                                COMP_ANTICIPADOS_CAB.OBSERVACIONES_STATUS,
+                                STA.STYLE,
+                                COMP_ANTICIPADOS_CAB.STATUS,
+                                COMP_ANTICIPADOS_CAB.FECHA_STATUS,
+                                COMP_ANTICIPADOS_CAB.STATUS_CTRL_POR
+                              FROM
+                                COMP_ANTICIPADOS_CAB
+                                LEFT OUTER JOIN dbo.COMP_ANTICIPADOS_CAB_STATUS STA ON (COMP_ANTICIPADOS_CAB.STATUS=STA.IDSTATUS)
+                              WHERE
+                                COMP_ANTICIPADOS_CAB.N_COMP = '" + numrecibo  + "'";
+
+        var cabanticipado = db.QuerySingle(sqlcabeanticipado); 
+    //    var idcab = cabanticipado.IDCAB;
+        var fechacab = cabanticipado.FECHA;
+        var tipocompcab = cabanticipado.TIPO_COMP;
+        var ncompcab = cabanticipado.N_COMP;
+        var observcab = cabanticipado.OBSERVACIONES;
+        status = cabanticipado.STATUS;
+        statusobserv = cabanticipado.OBSERVACIONES_STATUS;
+        statusstyle = cabanticipado.STYLE;
+        statusfecha = cabanticipado.FECHA_STATUS;
+        statusctrlpor = cabanticipado.STATUS_CTRL_POR;
+
+        if (statusfecha==null) {
+          statusfecha = fechacab;
+        }
+}
+
+
+        var Acancelar= TotalVenta - TotalDatosDetalle;
+      
+    
+    }
+
+<div class="row mb-2">
+  <div class="card mb-1">
+              <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 col-lg-3 mb-3 mb-lg-0">
+                      <h5 class="mb-3 fs-0">Cliente</h5>
+                      <h6 class="mb-2">@recibo.NOMBRE</h6>
+                      <h6 class="mb-0 fs--1"> <strong>Telefono: </strong><a href="#">@recibo.TELEFONOS</a></h6>
+                    </div>
+                    <div class="col-md-3 col-lg-3 mb-3 mb-lg-0">
+                      <h5 class="mb-3 fs-0">Lugar de Entrega</h5>
+                      <h6 class="mb-2">@recibo.LUGAR_OBRA</h6>
+                    </div>
+                    <div class="col-md-3 col-lg-3">
+                    <h5 class="mb-3 fs-0">Fecha Recibo</h5>
+                      <h6 class="mb-2">@recibo.FECHA_RECIBO</h6>
+                    </div>
+                    <div class="col-md-3 col-lg-3">
+                    <h5 class="mb-3 fs-0">Condici&oacuten</h5>
+                      <button class="btn btn-outline-dark me-1 mb-2" type="button" id="btnfechaconsumo" >@recibo.FECHA_CONSUMO</button>
+                      
+                    </div>
+                    
+                </div>
+              </div>
+  </div>
+</div>
+<div class="row mb-2">
+  <div class="col-5 ">
+    <div class="card mb-1 ">
+      <div class="card-header">
+        <div class="row flex-between-end">
+          <div class="col-auto align-self-center">
+            <h5 class="mb-0" data-anchor="data-anchor" id="basic-example">Datos de la Venta<a class="anchorjs-link " aria-label="Anchor" data-anchorjs-icon="#" href="#basic-example" style="padding-left: 0.375em;"></a></h5>
+          </div>
+        </div>
+      </div>
+      <div class="card-body bg-light">
+        <div class="tab-content">
+          <table class="table table-sm table-responsive table-centered border table-nowrap mb-lg-0"style="font-size:85%;">
+              <thead class="bg-light">
+                  <tr>
+                      <th style="text-align: center;">#</th>
+                      <th style="text-align: center;">Cantidad</th>
+                      <th style="text-align: center;">Tipo</th>
+                      <th style="text-align: center;">Precio Unit.</th>
+                      <th style="text-align: center;">Total</th>
+                  </tr>
+              </thead>
+              <tbody>
+                  
+                  @foreach(var row in venta)
+                  {      
+                  
+                  <tr>
+                      <td style="text-align: center;font-weight: 600;">@row.RENGLON</td>
+                      <td style="text-align: right;">@string.Format("{0:n}", @row.CANTIDAD)</td>
+                      <td style="text-align: center;">@row.TIPO</td>
+                      <td style="text-align: right;">@string.Format("{0:n}", @row.PRECIO_UNIT)</td>
+                      <td style="text-align: right;">@string.Format("{0:n}", @row.TOTAL)</td>
+                      
+                  </tr>
+                  }
+                  <tr> 
+
+                      <td style="text-align: center;font-weight: 600;">TOTAL</td>
+                      <td style="text-align: right;"></td>
+                      <td style="text-align: center;"></td>
+                      <td style="text-align: right;"></td>
+                      <td style="text-align: right;font-weight: 600;color: dodgerblue;" id="totalventa">@string.Format("{0:n}", @TotalVenta)</td>
+                      
+                  </tr>
+              </tbody>
+          </table>
+
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-7">
+    <div class="card mb-1 ">
+      <div class="card-header">
+        <div class="row flex-between-end">
+          <div class="col-auto align-self-center">
+            <h5 class="mb-0" data-anchor="data-anchor" id="basic-example">Forma de Pago<a class="anchorjs-link " aria-label="Anchor" data-anchorjs-icon="#" href="#basic-example" style="padding-left: 0.375em;"></a></h5>
+          </div>
+
+        </div>
+      </div>
+      <div class="card-body bg-light">
+        <div class="tab-content">
+          <table class="table table table-sm table-responsive table-centered border table-nowrap mb-lg-0" style="font-size:85%;">
+                  <thead class="bg-light">
+                      <tr>
+                          <th style="text-align: center;">#</th>
+                          <th style="text-align: center;">Detalle</th>
+                          <th style="text-align: center;">Banco</th>
+                          <th style="text-align: center;">Fecha</th>
+                          <th style="text-align: center;">Cant-Num</th>
+                          <th style="text-align: center;">TC</th>
+                          <th style="text-align: center;">Total</th>
+                      </tr>
+                  </thead>
+                  <tbody>
+                      @foreach(var row in DatosDetalle)
+                      {
+                      <tr>
+                          <td style="text-align: center;font-weight: 600;">@row.LINEA_RC</td>
+                          <td style="text-align: right;">@row.MONEDA</td>
+                          <td style="text-align: center;">@row.BANCO</td>
+                          <td style="text-align: right;">@row.FECHA_CHEQUE</td>
+                          @if (@row.TOTAL_VENTA==null)
+                          {
+                            <td style="text-align: right;">-</td>  
+                          }
+                          else
+                          {
+                              <td style="text-align: right;">@string.Format("{0:n}", @row.TOTAL_VENTA)</td>    
+                          }
+                          
+                          <td style="text-align: right;">@row.DETALLE</td>
+                          <td style="text-align: right;">@string.Format("{0:n}", @row.IMPORTE)</td>
+                          
+                      </tr>
+                      }
+                      <tr>
+
+                          <td style="text-align: center;font-weight: 600;" colspan="2">TOTAL</td>
+                          <td style="text-align: center;"></td>
+                          <td style="text-align: right;"></td>
+                          <td style="text-align: right;"></td>
+                          <td style="text-align: right;"></td>
+                          <td style="text-align: right;font-weight: 600;color: dodgerblue;" id="totalcobro">@string.Format("{0:n}", @TotalDatosDetalle)</td>
+                          
+                      </tr>
+                      <tr>
+                          <td style="text-align: center;font-weight: 600;" colspan="3">A CANCELAR EN OBRA</td>
+
+                          <td style="text-align: right;"></td>
+                          <td style="text-align: right;"></td>
+                          <td style="text-align: right;"></td>
+                          <td style="text-align: right;font-weight: 600;color: crimson;" id="acancelar">@string.Format("{0:n}", @Acancelar)</td>
+                      </tr>
+                  </tbody>
+              </table>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+@if (@recibo.CTRLANTICIPADO == "SI")
+{
+    <div class="row mb-2">
+      <div class="card mb-3">
+          <div class="card-body">
+              <div class="row">
+                  <div class="col-md-2 col-lg-2 mb-2 mb-lg-0">
+                      <button class="btn btn-outline-@statusstyle btn-lg me-1 mb-1" type="button">@status</button>
+                  </div>
+                  <div class="col-md-2 col-lg-2 mb-2 mb-lg-0">
+                      <h5 class="mb-2 fs-0">Ctrl Status</h5>
+                      <h6 class="mb-2">@statusctrlpor</h6>
+
+                  </div>
+                  <div class="col-md-2 col-lg-2">
+                      <h5 class="mb-2 fs-0">Fecha Status</h5>
+                      @if (@statusfecha== null)
+                      {
+                      <h6 class="mb-2"> - </h6>
+                      } else
+                      {
+                      <h6 class="mb-2"> @string.Format("{0:dd/MM/yyyy}", @statusfecha)</h6>
+                      }
+                  </div>
+                  <div class="col-md-3 col-lg-3">
+                      <h5 class="mb-2 fs-0">Observ. Status</h5>
+                      <h6 class="mb-2" id="observaciones">@statusobserv </h6>
+                  </div>
+              </div>
+          </div>
+      </div>
+    </div>
+}
+
+
+
+          <script>
+    $(document).ready(function () {
+        var venta = $("#totalventa").html() * 1;
+        var cobro = $("#totalcobro").html() * 1 ;
+        var acancelar = (venta - cobro);
+        
+        console.log(acancelar);
+        console.log(typeof(venta));
+    });
+
+</script>

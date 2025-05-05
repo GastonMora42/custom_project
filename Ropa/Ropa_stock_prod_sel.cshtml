@@ -1,0 +1,26 @@
+@{
+    var db = Database.Open("IntranetConnection");
+    string idprod = Request.QueryString["q"];
+    int deposito = Request.QueryString["depositosel"].AsInt();
+    var sqlcantidades = @"SELECT 
+                        ISNULL((SELECT SUM(dbo.NOMINA_ROPA_ITEMS .CANTIDAD * MOV.MOV_STOCK)
+                                      FROM
+                                      dbo.NOMINA_ROPA_ITEMS 
+                                      INNER JOIN dbo.NOMINA_ROPA_DEPOSITOS ON (dbo.NOMINA_ROPA_ITEMS.DEPOSITO=dbo.NOMINA_ROPA_DEPOSITOS.ID_DEPOSITO)
+                                      INNER JOIN dbo.NOMINA_ROPA_TIPOS_MOVIMIENTOS MOV ON (dbo.NOMINA_ROPA_ITEMS.ID_TIPO_MOV=MOV.ID_TIPOMOV)
+                                      WHERE
+                                      dbo.NOMINA_ROPA_ITEMS.ARTICULO = dbo.NOMINA_ROPA_ARTICULOS.ID_PRODUCTO AND 
+                                      dbo.NOMINA_ROPA_ITEMS.DEPOSITO = @0 
+                                      ),0) as 'CANTIDAD', 
+                        dbo.NOMINA_ROPA_UNIDADES_MEDIDA.DESCRIPCION_UNIDAD, 
+                        dbo.NOMINA_ROPA_ARTICULOS.ID_PRODUCTO
+                        FROM
+                        dbo.NOMINA_ROPA_ARTICULOS 
+                        --INNER JOIN dbo.NOMINA_ROPA_CATEGORIAS ON (dbo.NOMINA_ROPA_ARTICULOS.CATEGORIAS = dbo.NOMINA_ROPA_CATEGORIAS.ID_CATEGORIA)
+                        INNER JOIN dbo.NOMINA_ROPA_UNIDADES_MEDIDA ON (dbo.NOMINA_ROPA_ARTICULOS.UNIDAD_MEDIDA = dbo.NOMINA_ROPA_UNIDADES_MEDIDA.ID_UNID_MEDIDA)
+                        WHERE
+                        dbo.NOMINA_ROPA_ARTICULOS.ID_PRODUCTO = @1";
+    var ult_registros = db.QuerySingle(sqlcantidades,deposito,idprod);
+
+ Json.Write(ult_registros, Response.Output);
+}        

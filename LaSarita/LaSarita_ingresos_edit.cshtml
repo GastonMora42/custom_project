@@ -1,0 +1,29 @@
+@{
+    if (WebSecurity.IsAuthenticated == false)
+    {
+        Response.Redirect("~/Account/Login.cshtml");
+    }
+    
+    if(IsPost){
+    var Usuario = WebSecurity.CurrentUserName;
+    
+    var db = Database.Open("IntranetConnection");
+    var fecha = Request.Form["fecha_ingreso"];
+    var socioid= Request.Form["socioid"];
+    var formadecobro = Request.Form["formadecobro"];    
+    var importe = Request.Form["importe_ingresos"].AsFloat();
+    var descripcion = Request.Form["descripcion"];
+    var idmov = Request.Form["idselected"];
+    var sql = @"UPDATE dbo.LA_SARITA_SOCIOS_MOVIMIENTOS 
+                SET 
+                FECHA = @0, 
+                ID_SOCIO = @1, 
+                MEDIO_PAGO = @2, 
+                IMPORTE = @3, 
+                DESCRIPCION = @4
+                WHERE 
+                ID_MOV = @5";
+
+        db.Execute(sql, fecha, socioid, formadecobro, importe, descripcion, idmov);
+    }
+}

@@ -1,0 +1,139 @@
+@{
+    if (WebSecurity.IsAuthenticated == false)
+    {
+        Response.Redirect("~/Account/Login.cshtml");
+    }
+
+    var Usuario = WebSecurity.CurrentUserName;
+    
+    Layout = "../Inicio/_ConfluenciaLayout.cshtml";
+    var db = Database.Open("IntranetConnectionNew");
+    var title = "Listado de Eventos";
+
+    var Vencempresassql = @"SELECT 
+                            dbo.VENCIMIENTOS_EMPRESAS.IDEMPEV,
+                            dbo.VENCIMIENTOS_EMPRESAS.EMPRESA
+                            FROM
+                            dbo.VENCIMIENTOS_EMPRESAS
+                            ORDER BY
+                            dbo.VENCIMIENTOS_EMPRESAS.EMPRESA ";
+
+    var VencempresasQuery= db.Query(Vencempresassql);
+
+    var Vencrubrossql = @"SELECT 
+                            dbo.VENCIMIENTOS_RUBROS.IDVENCRUBRO,
+                            dbo.VENCIMIENTOS_RUBROS.RUBRO
+                            FROM
+                            dbo.VENCIMIENTOS_RUBROS
+                            ORDER BY
+                            dbo.VENCIMIENTOS_RUBROS.RUBRO ";
+
+    var VencrubrosQuery= db.Query(Vencrubrossql);
+
+    var per_yearsql = @"SELECT DISTINCT
+                        YEAR(dbo.VENCIMIENTOS.FECHA) AS 'PER_YEAR'
+                        FROM
+                        dbo.VENCIMIENTOS
+                        WHERE
+                        dbo.VENCIMIENTOS.FECHA >= CAST(GETDATE() AS DATE)
+                        ORDER BY
+                        YEAR(dbo.VENCIMIENTOS.FECHA)";
+
+    var per_yearQuery = db.Query(per_yearsql);
+}
+@if (WebSecurity.IsAuthenticated)
+{
+        <div class="d-flex mb-2"><span class="fa-stack me-2 ms-n1"><i class="fas fa-circle fa-stack-2x text-300"></i><i class="fa-inverse fa-stack-1x text-primary far fa-calendar-alt"></i></span>
+        <div class="col">
+            <h5 class="mb-0 text-primary position-relative"><span class="bg-200 dark__bg-1100 pe-3">Calendario de Vencimientos</span>
+            <span class="border position-absolute top-50 translate-middle-y w-100 start-0 z-n1"></span></h5>
+            <p class="mb-0">Por Empresa - Rubro y Per&iacute;odo</p>
+        </div>
+        </div>
+
+        <div class="card mb-3">
+        <div class="bg-holder d-none d-lg-block bg-card" style="background-image:url(../../../assets/img/icons/spot-illustrations/corner-4.png);opacity: 0.7;">
+        </div>
+        <!--/.bg-holder-->
+        <div class="card-body position-relative">
+            <div class="row flex-between-center">
+                <div class="col-md">                     
+                    <select class="form-select" id="empresas_dropdown">
+                    
+                    <option value="999" selected>Todas</option>
+                        @foreach (var row in VencempresasQuery)
+                            { <option value=@row.IDEMPEV>@row.EMPRESA</option> }    
+                    </select>
+                </div>
+                <div class="col-md">
+                    <select class="form-select" id="rubro_dropdown" name="rubro_dropdown" >
+                    
+                    <option value="0" selected>Todos</option>
+                        @foreach (var row in VencrubrosQuery)
+                            { 
+                                <option value=@row.IDVENCRUBRO>@row.RUBRO</option> 
+                            }    
+                    </select>
+                </div>
+                <div class="col-4">
+                    <select class="form-select" id="periodo_dropdown" name="periodo_dropdown" >
+                    <option selected value="9999">Vencidos y a Vencer - Pr&oacutex. 30 d&iacute;as</option>
+                        @foreach (var row in per_yearQuery)
+                            { 
+                                <option value=@row.PER_YEAR>@row.PER_YEAR</option> 
+                            }    
+                    </select>
+                </div>
+
+                <div class="col-md">
+                    <div class="form-check form-switch">
+                    <input class="form-check-input" id="checkperanteriores" name="checkperanteriores" type="checkbox" onchange="myFunction(this.checked)" />
+                    <label class="form-check-label" for="checkperanteriores">Per&iacute;odos Anteriores</label>
+                    </div>
+                </div>
+                <div class="col-auto">
+                 <button class="btn btn-primary" type="button" id="btnconsultar">Consultar</button>
+                </div>
+
+            </div>
+        </div>
+
+
+        </div>
+        <div class="toast bg-success text-white" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="alert alert-success border-2 d-flex align-items-center" role="alert">
+            <div class="bg-success me-3 icon-item"><span class="fas fa-check-circle text-white fs-3"></span></div>
+            <p class="mb-0 flex-1">Operacion realizada !!</p>
+            <button class="btn-close" type="button" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        </div>
+
+
+        <div class="card mb-3">
+        <div class="card-header bg-light">
+              <div class="row flex-between-center">
+                <div class="col-6 col-sm-auto d-flex align-items-center pe-0">
+                  <h5 class="mb-0 " id="titulo_selected"></h5>
+                </div>
+                <div class="col-3 col-sm-auto d-flex align-items-right pe-0">
+                <h5 class="mb-0 pe-3" style="color:blue;">Importe Total : $</h5>
+
+                <h5 class="mb-0" style="color:navy;" id="importetotal"></h5>
+                </div>
+                <div class="col-3 col-sm-auto ms-auto text-end ps-0">
+                  <div id="orders-actions">
+                    <button class="btn btn-secondary btn-sm badge-subtle-secondary" data-bs-toggle="modal" data-bs-target="#alta_rubro" role="button"><span class="fas fa-plus"></span> Rubro</button>
+                    <button class="btn btn-success btn-sm badge-subtle-success" data-bs-toggle="modal" data-bs-target="#alta_evento" role="button"><span class="fas fa-plus"></span> Evento</button>
+                  </div>  
+                </div>
+              </div>
+            </div>
+            <div class="card-body fs--1">
+                <div id="Table_detail"></div>
+            </div>
+        </div>
+
+<script src="Eventos.js?v=2045"></script>
+
+}
+

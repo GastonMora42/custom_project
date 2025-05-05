@@ -1,0 +1,58 @@
+﻿@{
+    var db = Database.Open("IntranetConnection");
+    string proveedorelegido = Request.QueryString["q"];
+    var stringquery = @"SELECT dbo.COMBUSTIBLE_AFORADORES.IDMOVAFO,
+  dbo.COMBUSTIBLE_AFORADORES.FECHA,
+  dbo.COMBUSTIBLE_DEPOSITOS.DEPOSITO,
+  dbo.COMBUSTIBLE_AFORADORES.VALOR,
+  dbo.COMBUSTIBLE_AFORADORES.USUARIO,
+  dbo.COMBUSTIBLE_AFORADORES.VALOR -  ISNULL((SELECT TOP 1 AFO.VALOR FROM dbo.COMBUSTIBLE_AFORADORES AFO WHERE AFO.IDDEPOSITO = " + @proveedorelegido + " AND AFO.FECHA <  dbo.COMBUSTIBLE_AFORADORES.FECHA ORDER BY AFO.FECHA DESC),dbo.COMBUSTIBLE_AFORADORES.VALOR ) AS 'CONSUMO' FROM  dbo.COMBUSTIBLE_AFORADORES  INNER JOIN dbo.COMBUSTIBLE_DEPOSITOS ON (dbo.COMBUSTIBLE_AFORADORES.IDDEPOSITO = dbo.COMBUSTIBLE_DEPOSITOS.IDDEP) WHERE dbo.COMBUSTIBLE_DEPOSITOS.IDDEP =" + @proveedorelegido + " ORDER BY dbo.COMBUSTIBLE_AFORADORES.FECHA DESC";
+  
+   var movimientos = db.Query(stringquery);
+}
+<legend>Detalle de Ingresos del Depósito Seleccionado</legend>
+<table class="table striped hovered dataTable" id="datatable-buttons" style="font-size:85%;width: 80%;margin-left:auto;margin-right:auto;">
+    <thead>
+    <tr>
+        <th class="text-center">FECHA</th>
+        <th class="text-center">DEPOSITO</th>
+        <th class="text-center">CANTIDAD</th>
+        <th class="text-center">CONSUMO</th>
+        <th></th>
+    </tr>
+    </thead>
+    <tbody>
+        @foreach(var row in movimientos)
+        {      
+        <tr>
+            <td class="text-center">@string.Format("{0:dd/MM/yy}", @row.FECHA)</td>
+            <td>@row.DEPOSITO</td>
+            <td style="text-align:right ">@string.Format("{0:n}", @row.VALOR)</td>      
+            <td style="text-align:right ">@string.Format("{0:n}", @row.CONSUMO)</td>   
+            <td style="text-align:center">
+                <a href="Comb_delete_record_aforadores.cshtml?q=@row.IDMOVAFO"> <i class="icon-remove fg-red on-right on-left"></i></a> 
+            </td>  
+         </tr>   
+         }
+    </tbody>
+</table>
+    <script>
+        $(document).ready(function() {
+            // Default Datatable
+
+            //Buttons examples
+            var table = $('#datatable-buttons').DataTable({
+                lengthChange: false,
+                "ordering": true,
+                "order": [[0, 'desc' ]],
+                buttons: [
+                { extend: 'copy', className: 'button primary' },
+                { extend: 'excel', className: 'button primary' },
+                { extend: 'pdf' , className:'button primary'}]
+            });
+
+            table.buttons().container()
+                .appendTo('#datatable-buttons_wrapper .col-md-6:eq(0)');
+            
+    } );
+</script>

@@ -1,0 +1,13 @@
+@{
+    var Usuario = WebSecurity.CurrentUserName;
+    var eventosel = Request["ideventodelete"];
+    if(IsPost){
+        var db = Database.Open("IntranetConnection");
+        var sql = @"DELETE FROM dbo.VENCIMIENTOS WHERE dbo.VENCIMIENTOS.IDVENC = @0";      
+        db.Execute(sql, eventosel );
+
+        Response.Write(eventosel);
+    }
+
+    
+}

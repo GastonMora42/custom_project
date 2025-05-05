@@ -1,0 +1,69 @@
+@{
+if (WebSecurity.IsAuthenticated == false)
+    {
+        Response.Redirect("~/Account/Login.cshtml");
+    }
+var Usuario = WebSecurity.CurrentUserName;
+
+    Layout = "_LaSaritaSiteLayout.cshtml";
+    var db = Database.Open("IntranetConnectionNew");
+
+var sql =@"SELECT   LSS.IDSOCIO,
+                    LSS.NOMBRES,
+                    LSS.APELLIDO,
+                    LSS.APODO,
+                    LSS.COBRO,
+                    LSS.NOMBRES + ' ' + LSS.APELLIDO + CASE WHEN LSS.APODO IS NULL THEN '' ELSE ' ( ' + LSS.APODO + ' )' END AS 'DATOS_SOCIO' 
+                    FROM LA_SARITA_LIST_SOCIOS LSS 
+                    WHERE 
+                    LSS.COBRO = 1 
+                    ORDER BY 
+                    LSS.NOMBRES,
+                    LSS.APELLIDO";
+var socios = db.Query(sql);
+
+  
+
+}
+<style>
+ .navsocios {
+    border: 1.5px solid;
+    background-color: white;
+    border-color: rgb(160,31,111);
+    } 
+
+.socios {
+    background-color: #fdf4f9;
+    border:1px solid;
+    border-color: rgb(160,31,111);
+    color: rgb(160,31,111);
+    font-weight: 600;
+}
+</style>
+
+
+@section customHeader{
+    <nav class="navbar navsocios navbar-expand-lg " >
+        <div class="container-fluid">
+    <a class="navbar-brand " href="#" style="color: rgb(160,31,111);">
+      <img src="LaSarita.jpg" alt="" width="40" height="34" class="d-inline-block align-text-top">
+      La Sarita Socios
+    </a>
+
+        <a class="navbar-brand" style="color: rgb(160,31,111);" href="#">Inicio</a>
+        </div>
+    </nav>
+}
+
+<div class="d-grid gap-2 col-4 mx-auto">
+
+
+<button type="button" class="btn socios btn-lg" style="padding-bottom: 30px;padding-top: 30px;margin-top:50px;" data-bs-toggle="modal" data-bs-target="#ingresosModal">
+CUOTAS
+</button>
+<button type="button" class="btn socios btn-lg" style="padding-bottom: 30px;padding-top: 30px;margin-top:50px;" data-bs-toggle="modal" data-bs-target="#gastosModal">
+CABALLOS   
+</button>
+<a class="btn socios btn-lg" style="padding-bottom: 30px;padding-top: 30px;margin-top:50px;" href="LaSarita_Fardos.cshtml" role="button">
+MIS DATOS  
+</a>

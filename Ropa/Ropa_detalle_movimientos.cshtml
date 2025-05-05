@@ -1,0 +1,79 @@
+﻿@{
+    Layout = "_RopaSiteLayout.cshtml";
+    var title = "Detalle";
+    var Bienelegido = Request.QueryString["Bienselected"];
+    var db = Database.Open("IntranetConnection");
+    var strsql = @"SELECT 
+                    (dbo.NOMINA_ROPA_ITEMS.CANTIDAD * MOV.MOV_STOCK) AS 'CANTIDAD',
+                    dbo.NOMINA_ROPA_DEPOSITOS.NOMBRE_DEP,
+                    dbo.NOMINA_ROPA_ITEMS.FECHA,
+                    dbo.NOMINA_ROPA_ITEMS.PROVEEDOR,
+                    MOV.DESCR_MOVIMIENTO,
+                    dbo.NOMINA_ROPA_ITEMS.USUARIO,
+                    dbo.NOMINA_ROPA_ITEMS.ID_REGISTRO
+                    FROM
+                    dbo.NOMINA_ROPA_ITEMS
+                    INNER JOIN dbo.NOMINA_ROPA_ARTICULOS ON (dbo.NOMINA_ROPA_ITEMS.ARTICULO = dbo.NOMINA_ROPA_ARTICULOS.ID_PRODUCTO)
+                    INNER JOIN dbo.NOMINA_ROPA_CATEGORIAS ON (dbo.NOMINA_ROPA_ARTICULOS.CATEGORIAS = dbo.NOMINA_ROPA_CATEGORIAS.ID_CATEGORIA)
+                    INNER JOIN dbo.NOMINA_ROPA_UNIDADES_MEDIDA ON (dbo.NOMINA_ROPA_ARTICULOS.UNIDAD_MEDIDA = dbo.NOMINA_ROPA_UNIDADES_MEDIDA.ID_UNID_MEDIDA)
+                    INNER JOIN dbo.NOMINA_ROPA_DEPOSITOS ON (dbo.NOMINA_ROPA_ITEMS.DEPOSITO = dbo.NOMINA_ROPA_DEPOSITOS.ID_DEPOSITO)
+                    INNER JOIN dbo.NOMINA_ROPA_TIPOS_MOVIMIENTOS MOV ON (dbo.NOMINA_ROPA_ITEMS.ID_TIPO_MOV = MOV.ID_TIPOMOV)
+                    WHERE
+                    dbo.NOMINA_ROPA_ARTICULOS.ID_PRODUCTO ='"+  Bienelegido + "' ORDER BY dbo.NOMINA_ROPA_ITEMS.FECHA DESC, MOV.DESCR_MOVIMIENTO DESC, dbo.NOMINA_ROPA_ITEMS.ID_REGISTRO";
+    var products = db.Query(strsql);    
+}
+
+<table class="table striped hovered table-sm dataTable" id="example">
+    <thead>
+    <tr>
+        <th class="text-center">FECHA</th>
+        <th class="text-center">TIPO_MOVIMIENTO</th>
+        <th class="text-center">DEPOSITO</th>
+        <th class="text-center">CANTIDAD</th>
+        <th class="text-center">PROV. - EMPLEADO</th>
+        <th class="text-center">USUARIO</th>
+        <th class="text-center">BORRAR</th>
+    </tr>
+                </thead>
+    <tbody>
+        @foreach(var row in products)
+        {
+        
+        <tr>
+            <td class="text-center"> @string.Format("{0:dd/MM/yy}", @row.FECHA)</td>
+            @if (@row.CANTIDAD>=1)
+            {
+            <td style="text-align:center;font-weight: 700;color: #0026ff ">@row.DESCR_MOVIMIENTO</td>
+            <td style="text-align:center;font-weight: 700;color: #0026ff ">@row.NOMBRE_DEP</td>
+            <td class="text-primary" style="text-align:right;font-weight: 700;color: #0026ff ">@string.Format("{0:n}", @row.CANTIDAD)</td>
+            }
+            else
+            {
+            <td  style="text-align:center;font-weight: 700;color: #f00 ">@row.DESCR_MOVIMIENTO </td>  
+            <td style="text-align:center;font-weight: 700;color: #f00 ">@row.NOMBRE_DEP</td> 
+            <td class="text-alert" style="text-align:right ;font-weight: 700;color: #f00 ">@string.Format("{0:n}", @row.CANTIDAD * -1) </td> 
+            }
+           
+
+            <td style="text-align:center">@row.PROVEEDOR</td>
+            <td style="text-align:center">@row.USUARIO</td> 
+            <td class="text-center"><a href="Ropa_delete_record.cshtml?q=@row.ID_REGISTRO"><h6> <i class="icon-remove fg-red on-right on-left"></i></h6></a></td>
+            </tr>
+    }
+                </tbody>
+</table>
+<script>
+            $(document).ready(function() {
+            $('#example').dataTable({
+            "paging": true,
+            "ordering": false,
+            "info":     true,
+            "lengthChange": true,
+            "pageLength": 50,
+            "lengthMenu": [ [10, 25, 50, -1], [10, 25, 50, "All"] ]
+        });
+    
+    } );
+</script>
+
+

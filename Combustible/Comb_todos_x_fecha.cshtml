@@ -1,0 +1,71 @@
+﻿@{
+    Layout = "_CombustibleSiteLayout.cshtml";
+    Page.Title = "Detalle Egresos por Fecha - últimos 90 días";
+            if (WebSecurity.IsAuthenticated == false)
+    {
+        Response.Redirect("~/Account/Login.cshtml");
+    }
+
+    var Usuario = WebSecurity.CurrentUserName;
+    var db = Database.Open("IntranetConnectionNew");
+    var strsql2 = "dbo.COMBUSTIBLE_TODOS_POR_FECHA"; 
+    var bienes = db.Query(strsql2); 
+    }
+
+<table id="datatable-buttons" class="table striped hovered dataTable" style="font-size:85%">
+    <thead>
+    <tr> 
+        <th class="text-center">FECHA</th>
+        <th class="text-center">BS DE USO</th>
+        <th class="text-center">CANTIDAD</th>
+        <th class="text-center">DEPOSITO</th>
+        <th class="text-center">KMS_HS</th>     
+        <th class="text-center">KMS_HS_ANT</th>
+        <th class="text-center">KMS_HS_DIF</th>
+        <th class="text-center">PROMEDIO</th>  
+        <th class="text-center">PRECINTO</th>  
+        <th class="text-center">CHOFER</th>  
+    </tr>
+    </thead>
+    <tbody>
+        @foreach(var row in bienes)
+        {      
+        <tr>
+            <td class="text-center">@string.Format("{0:dd/MM/yy}", @row.FECHA)</td>
+            <td class="text-center">@row.BIEN_DE_USO</td>
+            <td class="text-right">@string.Format("{0:n}", @row.CANTIDAD)</td>
+            <td class="text-center">@row.DEPOSITO</td>
+            <td class="text-right">@string.Format("{0:n}", @row.KMS_HS)</td>
+            <td class="text-right">@string.Format("{0:n}", @row.KMS_HS_ANT)</td>
+            <td class="text-right">@string.Format("{0:n}", @row.KMS_HS_DIF)</td>
+            <td class="text-right">@string.Format("{0:n}", @row.PROMEDIO)</td>
+            <td class="text-center">@row.PRECINTO</td>            
+            <td class="text-center">@row.CHOFER</td> 
+         </tr>   
+         }
+    </tbody>
+</table>
+
+
+
+    <script>
+        $(document).ready(function() {
+            // Default Datatable
+
+            //Buttons examples
+            var table = $('.data-table').DataTable({
+                lengthChange: false,
+                "ordering": false,
+                buttons: [
+                { extend: 'copy', className: 'button primary' },
+                { extend: 'excel', className: 'button primary' },
+                { extend: 'pdf' , className:'button primary'}]
+            });
+
+            table.buttons().container()
+                .appendTo('#datatable-buttons_wrapper .col-md-6:eq(0)');
+            
+    } );
+</script>
+
+

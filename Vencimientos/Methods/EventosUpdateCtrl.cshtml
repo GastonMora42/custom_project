@@ -1,0 +1,23 @@
+@{
+    var Usuario = WebSecurity.CurrentUserName;
+    var dbq = Database.Open("IntranetConnectionNew");
+    var idUser = dbq.QueryValue("SELECT ID FROM USERS_TABLE WHERE LOWER(Usuario) = LOWER(@0)", Usuario);
+    if(IsPost){
+        var db = Database.Open("IntranetConnection");
+        var sql = @"UPDATE 
+                    dbo.VENCIMIENTOS
+                    SET
+                    CONTROL = 1,
+                    FECHA_CTRL = @0,
+                    USER_CTRL = @1,
+                    DETAIL_CTRL = @2
+                    WHERE
+                    dbo.VENCIMIENTOS.IDVENC = @3";
+
+        var idvenc = Request["ideventoctrl"];
+        var observvencimiento = Request["observacionesctrl"].ToUpper();
+        var fecha_vencimiento = DateTime.Now;
+       
+        db.Execute(sql, fecha_vencimiento, idUser, observvencimiento, idvenc);
+    }
+}

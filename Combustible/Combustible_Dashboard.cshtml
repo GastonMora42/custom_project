@@ -1,0 +1,93 @@
+﻿@{
+        if (WebSecurity.IsAuthenticated == false)
+    {
+        Response.Redirect("~/Account/Login.cshtml");
+    }
+
+    var Usuario = WebSecurity.CurrentUserName;
+    Layout = "_CombustibleSiteLayout.cshtml";
+    var db = Database.Open("IntranetConnection");
+    Page.Title = "Stock de Combustible";
+    var result = "";
+
+        // Sacar saldo y ultima fecha del Plottier 
+        
+        var StockComb = db.Query(@"SELECT 
+          SUM(dbo.COMBUSTIBLE_DETAIL.CANTIDAD * dbo.COMBUSTIBLE_DETAIL.TIPO_MOV) AS 'CANTIDAD',
+          dbo.COMBUSTIBLE_DEPOSITOS.DEPOSITO,
+          dbo.COMBUSTIBLE_DEPOSITOS.IDDEP,
+          (SELECT MAX(DET.FECHA) FROM dbo.COMBUSTIBLE_DETAIL DET WHERE DET.COD_DEPOSITO=dbo.COMBUSTIBLE_DETAIL.COD_DEPOSITO AND DET.TIPO_MOV=-1) AS 'MAXDATE',
+          (SELECT MAX(DET2.FECHA) FROM dbo.COMBUSTIBLE_DETAIL DET2 WHERE DET2.COD_DEPOSITO=dbo.COMBUSTIBLE_DETAIL.COD_DEPOSITO AND DET2.TIPO_MOV=1) AS 'MAXDATEING',
+          dbo.COMBUSTIBLE_DEPOSITOS.CAPACIDAD
+        FROM
+          dbo.COMBUSTIBLE_DETAIL
+          INNER JOIN dbo.COMBUSTIBLE_DEPOSITOS ON (dbo.COMBUSTIBLE_DETAIL.COD_DEPOSITO = dbo.COMBUSTIBLE_DEPOSITOS.IDDEP)
+        WHERE
+        dbo.COMBUSTIBLE_DEPOSITOS.ACTIVO = 1
+        GROUP BY
+          dbo.COMBUSTIBLE_DEPOSITOS.DEPOSITO,
+          dbo.COMBUSTIBLE_DEPOSITOS.IDDEP,
+          dbo.COMBUSTIBLE_DETAIL.COD_DEPOSITO,
+          dbo.COMBUSTIBLE_DEPOSITOS.CAPACIDAD
+        UNION ALL
+        SELECT 
+          SUM(dbo.COMBUSTIBLE_DETAIL.CANTIDAD * dbo.COMBUSTIBLE_DETAIL.TIPO_MOV) AS 'CANTIDAD',
+          'TODOS',
+          9999,
+          (SELECT MAX(DET.FECHA) FROM dbo.COMBUSTIBLE_DETAIL DET WHERE DET.TIPO_MOV=-1) AS 'MAXDATE',
+          (SELECT MAX(DET.FECHA) FROM dbo.COMBUSTIBLE_DETAIL DET WHERE DET.TIPO_MOV=1) AS 'MAXDATEING',
+          0
+        FROM
+          dbo.COMBUSTIBLE_DETAIL
+        ORDER BY
+          dbo.COMBUSTIBLE_DEPOSITOS.IDDEP");
+        
+
+
+        int fila;
+        fila = 0;
+        result = @"</div><div class='row cells3'>";
+}
+<div class="row cells3">
+        @foreach(var row in StockComb)
+        {   
+
+               <div class="cell">
+                <div class="panel">
+                    <div class="heading">
+                        <span class="title" >
+                            @if(@row.IDDEP == 9999){
+                            <a href="Comb_todos_x_fecha.cshtml" style="color: #fff;font-weight: 300">@row.DEPOSITO 
+                            
+                                <span class="element place-right icon-plus on-right on-left" style="background: white;color: #000;padding: 5px;border-radius: 50%"></span>   
+
+                        </a> 
+                            }
+                            else
+                            {
+                             <a href="Comb_Origen_Sel_resxdia.cshtml?origenselcted=@row.IDDEP" style="color: #fff;font-weight: 300">@row.DEPOSITO -- Max: @string.Format("{0:n}", @row.CAPACIDAD)
+                                 <span class="element place-right icon-plus on-right on-left" style="background: white;color: #000;padding: 5px;border-radius: 50%"></span></a> 
+                            }
+                        </span>
+                    </div>
+                    <div class="content padding10">
+                    <span class="list-title" style="color: #ff006e">Último Consumo: @string.Format("{0:dd/MM/yyyy}", @row.MAXDATE)</span><br/>
+                    <span class="list-title" style="color: #0094ff">Último Ingreso: @string.Format("{0:dd/MM/yyyy}", @row.MAXDATEING)</span>   
+                    <h5 style="text-align: right">@string.Format("{0:n}", @row.CANTIDAD )</h5>
+                
+                    </div>
+                </div>
+            </div>       
+                        
+
+            fila = fila +1;  
+            if(fila==3)
+            {
+            fila = 0;
+            @Html.Raw(result)
+            }
+         }
+
+</div>
+
+

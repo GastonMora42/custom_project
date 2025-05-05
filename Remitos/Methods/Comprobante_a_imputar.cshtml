@@ -1,0 +1,33 @@
+@{
+
+    Response.Cache.SetCacheability(HttpCacheability.NoCache);
+    var remitonum = Request.QueryString["remsel"];
+    var db = Database.Open("IntranetConnection");
+    var sql = @"SELECT * FROM dbo.COMP_ANTICIPADOS_RES_APLICACIONES RESAPL WHERE RESAPL.IDCAB=" + remitonum;
+    var products = db.Query(sql);
+
+
+}
+
+<table class="table mb-0 data-table fs--1">
+    <thead class="bg-200 text-900">
+        <tr>
+            
+            <th class="sort align-middle">COMP</th>
+            <th class="sort align-middle">CANT.</th>
+            <th></th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody style="font-size: 90%;">
+        @foreach (var row in products)
+        {
+            <tr>
+                 
+                 <td>@row.N_RENGLON</td>
+                 <td class="sort align-middle" style="text-align: left;color:rgb(153, 51, 0)">@row.CANTIDAD</td>
+                 <td><input ></td>
+            </tr>
+        }
+    </tbody>
+</table>

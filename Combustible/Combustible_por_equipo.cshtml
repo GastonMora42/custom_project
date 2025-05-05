@@ -1,0 +1,62 @@
+﻿@{
+    Layout = "_CombustibleSiteLayout.cshtml";
+    Page.Title = "Detalle por Maquina";
+            if (WebSecurity.IsAuthenticated == false)
+    {
+        Response.Redirect("~/Account/Login.cshtml");
+    }
+
+    var Usuario = WebSecurity.CurrentUserName;
+    var db = Database.Open("IntranetConnectionNew");
+    var strsql2 = "SELECT DISTINCT dbo.COMBUSTIBLE_DETAIL.BIEN_DE_USO FROM dbo.COMBUSTIBLE_DETAIL ORDER BY dbo.COMBUSTIBLE_DETAIL.BIEN_DE_USO"; 
+    var bienes = db.Query(strsql2);  
+    }
+
+                    <select  class="input-control text-info" id="TipoMov" onchange="showdetbien(this.value)">
+                        <option value="1">Seleccionar</option>
+                            @foreach (var row in bienes)
+                            {
+                                <option value="@row.BIEN_DE_USO">@row.BIEN_DE_USO</option>
+                            }
+                    </select>
+
+<script>
+    function showdetbien(interno) {
+        
+        var xmlhttp;
+        if (interno == 1) {
+            document.getElementById("txtHint").innerHTML = "";
+            return;
+        }
+        if (window.XMLHttpRequest) {// code for IE7+, Firefox, Chrome, Opera, Safari
+            xmlhttp = new XMLHttpRequest();
+        }
+        else {// code for IE6, IE5
+            xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+        }
+        xmlhttp.onreadystatechange = function () {
+            if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+                document.getElementById("txtHint").innerHTML = xmlhttp.responseText;
+
+                            //Buttons examples
+            var table = $('#datatable-buttons').DataTable({
+                lengthChange: false,
+                search: false,
+                order:false,
+                buttons: [
+                { extend: 'copy', className: 'button primary' },
+                { extend: 'excel', className: 'button primary' },
+                { extend: 'pdf' , className:'button primary'}]
+            });
+
+            table.buttons().container()
+                .appendTo('#datatable-buttons_wrapper .col-md-6:eq(0)');
+            }
+        }
+        xmlhttp.open("GET", "Comb_Inter_Sel.cshtml?q=" + interno, true);
+        xmlhttp.send();
+    }
+</script>
+<div class="row"><div id="txtHint"></div></div>
+
+

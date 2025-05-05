@@ -1,0 +1,61 @@
+@{
+    var Usuario = WebSecurity.CurrentUserName;
+    
+        Layout = "../Inicio/_ConfluenciaLayout.cshtml";
+        var db = Database.Open("IntranetConnectionNew");
+        var title = "Consulta de Recibo";
+     
+    
+    }
+<!-- BEGIN: .main-content -->
+
+    <div class="row">
+    <div class="col-12">
+    <div class="page-title-box page-title-box-alt">
+    <h4 class="page-title">@title</h4>
+    <div class="page-title-right">
+
+    </div>
+    </div>
+    </div>
+    </div>     
+
+    <div class="card mb-3">
+    <div class="bg-holder d-none d-lg-block bg-card " style="background-color:#f2f3f4">
+    </div>
+    <!--/.bg-holder-->
+
+    <div class="card-body position-relative">
+
+    <form class="row row-cols-lg-5 g-3 align-items-center">
+    <div class="col-6">
+    <h5>Recibo #</h5>
+    </div>
+    <div class="col-12">
+    <label class="sr-only" for="inlineFormInputGroupUsername">Username</label>
+    <div class="input-group">
+    <input class="form-control" id="numrecibo" type="text" placeholder="Ingrese # recibo" />
+    </div>
+    </div>
+    <div class="col-12">
+    <button type="button" class="btn btn-primary" onclick="recibosel()">Consultar</button>
+    </div>
+    </form>
+    </div>
+    </div>
+
+<div id="Table_detail"></div>
+
+  
+
+
+<script>
+    
+     function recibosel() {
+            
+            $('#Table_detail').load("Methods/consultareciboDetail.cshtml?num_recibo="+$('#numrecibo').val() );
+    }
+</script>
+
+
+

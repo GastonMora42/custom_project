@@ -1,0 +1,173 @@
+@{
+    var Usuario = WebSecurity.CurrentUserName;
+    var db = Database.Open("IntranetConnection");
+    var Fecha_desde = Request.QueryString["Fechadesde"].AsDateTime();
+        var sql = @"SELECT
+                LS_MOV.FECHA,
+                CASE 
+                WHEN LSS.IDSOCIO IS NOT NULL THEN LSS.NOMBRES + ' ' + LSS.APELLIDO + CASE WHEN LSS.APODO IS NULL THEN '' ELSE ' ( ' + LSS.APODO + ' )' END
+                WHEN LS_MOV.ID_SOCIO = 99999 THEN 'ESCUELA RENDICION'
+                WHEN LS_MOV.ID_SOCIO = 99998 THEN 'INGRESO EFECTIVO'
+                WHEN LS_MOV.DESCRIPCION IS NULL THEN LS_MOV.TIPO_MOV
+                WHEN LS_MOV.DESCRIPCION = '' THEN UPPER(LS_MOV.TIPO_MOV)
+                ELSE UPPER(LS_MOV.DESCRIPCION) END AS 'DESCRIPCION',
+                CASE WHEN LS_MOV.MEDIO_PAGO = 'MercadoPago' THEN LS_MOV.IMPORTE * LS_MOV.ESTAD_MOV ELSE 0 END AS 'MP',
+                CASE WHEN LS_MOV.MEDIO_PAGO = 'Transferencias' THEN LS_MOV.IMPORTE * LS_MOV.ESTAD_MOV ELSE 0 END AS 'TRANSF',
+                CASE WHEN LS_MOV.MEDIO_PAGO = 'Efectivo' THEN LS_MOV.IMPORTE * LS_MOV.ESTAD_MOV ELSE 0 END 'EFECTIVO',
+                LS_MOV.ID_MOV,
+                LS_MOV.CODIGO_MOV,
+                UPPER(LS_MOV.DESCRIPCION) AS 'DETALLE'
+                FROM
+                dbo.LA_SARITA_SOCIOS_MOVIMIENTOS LS_MOV
+                LEFT OUTER JOIN dbo.LA_SARITA_SOCIOS LSS ON (LS_MOV.ID_SOCIO=LSS.IDSOCIO)
+                WHERE
+                LS_MOV.FECHA >= @0 AND
+                LS_MOV.USUARIO = @1
+                ORDER BY 
+                LS_MOV.FECHA";
+    var movimientos = db.Query(sql,Fecha_desde,Usuario);
+
+    var saldofinalsql = @"SELECT SUM(LS_MOV.IMPORTE * LS_MOV.ESTAD_MOV) AS 'SALDO_FIN_EFEC'
+                    FROM
+                    dbo.LA_SARITA_SOCIOS_MOVIMIENTOS LS_MOV
+                    WHERE 
+                    LS_MOV.MEDIO_PAGO = 'Efectivo' AND
+                    LS_MOV.USUARIO = @0 ";
+    
+    var saldofinal = db.QueryValue(saldofinalsql,Usuario);
+
+    var saldofinalsqltra = @"SELECT SUM(LS_MOV.IMPORTE * LS_MOV.ESTAD_MOV) AS 'SALDO_FIN_TRA'
+                    FROM
+                    dbo.LA_SARITA_SOCIOS_MOVIMIENTOS LS_MOV
+                    WHERE 
+                    LS_MOV.MEDIO_PAGO = 'Transferencias' AND
+                    LS_MOV.USUARIO = @0 ";
+    
+    var saldofinaltra = db.QueryValue(saldofinalsqltra,Usuario);
+
+    var saldofinalsqlmp = @"SELECT SUM(LS_MOV.IMPORTE * LS_MOV.ESTAD_MOV) AS 'SALDO_FIN_MP'
+                    FROM
+                    dbo.LA_SARITA_SOCIOS_MOVIMIENTOS LS_MOV
+                    WHERE 
+                    LS_MOV.MEDIO_PAGO = 'MercadoPago' AND
+                    LS_MOV.USUARIO = @0 ";
+    
+    var saldofinalmp = db.QueryValue(saldofinalsqlmp,Usuario);
+    
+    
+    var saldoinicialsql = @"SELECT SUM(LS_MOV.IMPORTE * LS_MOV.ESTAD_MOV)
+     AS 'SALDO'
+                    FROM
+                    dbo.LA_SARITA_SOCIOS_MOVIMIENTOS LS_MOV
+                    WHERE 
+                    LS_MOV.ID_MOV NOT IN (SELECT LS_MOV2.ID_MOV FROM
+                                            dbo.LA_SARITA_SOCIOS_MOVIMIENTOS LS_MOV2
+                                            WHERE 
+                                            LS_MOV2.FECHA >=@0 AND
+                                            LS_MOV2.USUARIO = @1) AND LS_MOV.MEDIO_PAGO = 'Efectivo' AND LS_MOV.USUARIO =@2";
+    
+    var saldoinicial = db.QueryValue(saldoinicialsql,Fecha_desde,Usuario,Usuario);
+
+
+    var saldoinicialsqltra = @"SELECT SUM(LS_MOV.IMPORTE * LS_MOV.ESTAD_MOV) AS 'SALDO'
+                    FROM
+                    dbo.LA_SARITA_SOCIOS_MOVIMIENTOS LS_MOV
+                    WHERE 
+                    LS_MOV.ID_MOV NOT IN (SELECT LS_MOV2.ID_MOV FROM
+                                            dbo.LA_SARITA_SOCIOS_MOVIMIENTOS LS_MOV2
+                                            WHERE 
+                                            LS_MOV2.FECHA >=@0 AND
+                                            LS_MOV2.USUARIO = @1) AND LS_MOV.MEDIO_PAGO = 'Transferencias' AND LS_MOV.USUARIO =@2";
+    
+    var saldoinicialtra = db.QueryValue(saldoinicialsqltra,Fecha_desde,Usuario,Usuario);
+
+    var saldoinicialsqlmp = @"SELECT SUM(LS_MOV.IMPORTE * LS_MOV.ESTAD_MOV) AS 'SALDO'
+                    FROM
+                    dbo.LA_SARITA_SOCIOS_MOVIMIENTOS LS_MOV
+                    WHERE 
+                    LS_MOV.ID_MOV NOT IN (SELECT LS_MOV2.ID_MOV FROM
+                                            dbo.LA_SARITA_SOCIOS_MOVIMIENTOS LS_MOV2
+                                            WHERE 
+                                            LS_MOV2.FECHA >=@0 AND
+                                            LS_MOV2.USUARIO = @1) AND LS_MOV.MEDIO_PAGO = 'MercadoPago' AND LS_MOV.USUARIO =@2";
+    
+    var saldoinicialmp= db.QueryValue(saldoinicialsqlmp,Fecha_desde,Usuario,Usuario);
+}
+
+
+<table class="table table-striped table-hover table-sm" style="font-size:14px;" id="tableId">
+    <thead>
+        <tr class="table-primary ">
+            <td colspan="3" style="text-align:center; font-weight:500;"> SALDO INICIAL </td>
+            <td class="text-dark" style="text-align:right; font-weight:500;">$ @string.Format("{0:n}",saldoinicialmp)</td>
+            <td class="text-dark" style="text-align:right; font-weight:500;">$ @string.Format("{0:n}",saldoinicialtra)</td>
+            <td class="text-dark" style="text-align:right; font-weight:500;">$ @string.Format("{0:n}",saldoinicial)</td>
+        </tr>
+        <tr>
+            <th class="text-center"></th>
+            <th class="text-center">Fecha</th>
+            <th class="text-center">Detalle</th>
+            <th class="text-center">Merc. Pago</th>
+            <th class="text-center">Banco</th>
+            <th class="text-center">Efectivo</th>
+            
+        </tr>
+    </thead>
+        <tbody>
+        @foreach(var row in movimientos)
+        {      
+        <tr style="font-size:12px; vertical-align: middle;" id="@row.ID_MOV">
+            @if (@row.CODIGO_MOV=="I"){
+                <td style="text-align:center;"><button  type="button" class="btn btn-sm" data-bs-toggle="modal" data-bs-target="#ingresosModal" onclick="llamaingreso(@row.ID_MOV)"><span class="icon-pencil fg-blue" style="font-size: 12px;"></span></button></td>
+                }
+            else{
+                <td style="text-align:center;"><button type="button" class="btn btn-sm" data-bs-toggle="modal" data-bs-target="#gastosModal" onclick="llamaegreso(@row.ID_MOV)"><span class="icon-pencil fg-red" style="font-size: 12px;"></span></button></td>
+            }    
+            
+            <td class="text-center" >@string.Format("{0:dd/MM/yy}", @row.FECHA)</td>
+            <td>@row.DESCRIPCION  <span style="font-size: xx-small;color: #0094ff"> @row.DETALLE</span></td>
+            @if (@row.MP==0)
+            {
+            <td class="text-dark" style="text-align:right;font-weight:500 ">-</td> 
+            }
+            else if (@row.MP< 0)
+            {
+            <td class="text-danger" style="text-align:right;font-weight:500 ">@string.Format("{0:n}", @row.MP)</td>   
+            }
+            else{
+                <td class="text-primary" style="text-align:right;font-weight:500 ">@string.Format("{0:n}", @row.MP)</td>
+            }
+            @if (@row.TRANSF==0)
+            {
+            <td class="text-dark" style="text-align:right;font-weight:500 ">-</td> 
+            }
+            else if (@row.TRANSF < 0)
+            {
+            <td class="text-danger" style="text-align:right;font-weight:500 ">@string.Format("{0:n}", @row.TRANSF )</td>   
+            }
+            else{
+                <td class="text-primary" style="text-align:right;font-weight:500 ">@string.Format("{0:n}", @row.TRANSF)</td>
+            }
+            @if (@row.EFECTIVO>0)
+            {
+            <td class="text-primary" style="text-align:right;font-weight:500 ">@string.Format("{0:n}", @row.EFECTIVO)</td>
+            }
+            else if (@row.EFECTIVO<0)
+            {
+            <td class="text-danger" style="text-align:right;font-weight:500 ">@string.Format("{0:n}", @row.EFECTIVO)</td>   
+            }
+            else{
+                <td class="text-dark" style="text-align:right;font-weight:500">-</td> 
+            }
+         </tr>   
+         }    
+    </tbody>
+    <tfoot>
+            <tr class="table-primary ">    
+            <td colspan="3" style="text-align:center; font-weight:500;"> SALDO FINAL </td>
+            <td class="text-dark" style="text-align:right; font-weight:500;">$ @string.Format("{0:n}",saldofinalmp)</td>
+            <td class="text-dark" style="text-align:right; font-weight:500;">$ @string.Format("{0:n}",saldofinaltra)</td>
+            <td class="text-dark" style="text-align:right; font-weight:500;">$ @string.Format("{0:n}",saldofinal)</td>
+        </tr>
+    </tfoot>
+</table>

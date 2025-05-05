@@ -1,0 +1,73 @@
+﻿@{
+    
+    
+    var db = Database.Open("IntranetConnection");
+    var Tipo_Mov_elegido = Request.QueryString["TipoMov"];
+    var Fecha_desde = Request.QueryString["Fechadesde"].AsDateTime();
+    var Fecha_hasta = Request.QueryString["Fechahasta"].AsDateTime();
+    var sql = "";
+    if (Tipo_Mov_elegido == "TODOS")
+    {
+      sql = "SELECT dbo.REPUESTOS_ITEMS.FECHA,  dbo.REPUESTOS_ARTICULOS.DESCRIPCION, dbo.REPUESTOS_CATEGORIAS.CATEGORIA_DESC,   dbo.REPUESTOS_ITEMS.CANTIDAD * dbo.REPUESTOS_TIPOS_MOVIMIENTOS.MOV_STOCK AS 'CANTIDAD',   dbo.REPUESTOS_TIPOS_MOVIMIENTOS.DESCR_MOVIMIENTO FROM dbo.REPUESTOS_TIPOS_MOVIMIENTOS INNER JOIN dbo.REPUESTOS_ITEMS ON (dbo.REPUESTOS_TIPOS_MOVIMIENTOS.ID_TIPOMOV = dbo.REPUESTOS_ITEMS.ID_TIPO_MOV) INNER JOIN dbo.REPUESTOS_ARTICULOS ON (dbo.REPUESTOS_ITEMS.ARTICULO = dbo.REPUESTOS_ARTICULOS.ID_PRODUCTO) INNER JOIN dbo.REPUESTOS_CATEGORIAS ON (dbo.REPUESTOS_ARTICULOS.CATEGORIAS = dbo.REPUESTOS_CATEGORIAS.ID_CATEGORIA) ORDER BY dbo.REPUESTOS_ITEMS.FECHA,  dbo.REPUESTOS_ARTICULOS.DESCRIPCION"; 
+    }
+    else
+    {
+
+      sql = "SELECT dbo.REPUESTOS_ITEMS.FECHA,  dbo.REPUESTOS_ARTICULOS.DESCRIPCION, dbo.REPUESTOS_CATEGORIAS.CATEGORIA_DESC,   dbo.REPUESTOS_ITEMS.CANTIDAD * dbo.REPUESTOS_TIPOS_MOVIMIENTOS.MOV_STOCK AS 'CANTIDAD',   dbo.REPUESTOS_TIPOS_MOVIMIENTOS.DESCR_MOVIMIENTO FROM dbo.REPUESTOS_TIPOS_MOVIMIENTOS INNER JOIN dbo.REPUESTOS_ITEMS ON (dbo.REPUESTOS_TIPOS_MOVIMIENTOS.ID_TIPOMOV = dbo.REPUESTOS_ITEMS.ID_TIPO_MOV) INNER JOIN dbo.REPUESTOS_ARTICULOS ON (dbo.REPUESTOS_ITEMS.ARTICULO = dbo.REPUESTOS_ARTICULOS.ID_PRODUCTO) INNER JOIN dbo.REPUESTOS_CATEGORIAS ON (dbo.REPUESTOS_ARTICULOS.CATEGORIAS = dbo.REPUESTOS_CATEGORIAS.ID_CATEGORIA) WHERE dbo.REPUESTOS_TIPOS_MOVIMIENTOS.DESCR_MOVIMIENTO = '" + Tipo_Mov_elegido + "' ORDER BY dbo.REPUESTOS_ITEMS.FECHA,  dbo.REPUESTOS_ARTICULOS.DESCRIPCION";
+    }
+    
+
+    var movimientos = db.Query(sql);
+}
+
+<h5>
+    <a href="javascript:history.back()"><i class="icon-arrow-left-3 fg-darker smaller"></i></a>
+            @Tipo_Mov_elegido -- @Fecha_desde -- @Fecha_hasta<small class="on-right"></small>
+</h5>
+<table class="table striped hovered dataTable" id="example">
+    <thead>
+    <tr>
+        <th class="text-center">FECHA</th>
+        <th class="text-center">DESCRIPCION</th>
+        <th class="text-center">CATEGORIA</th>
+        <th class="text-center">CANTIDAD</th>
+        <th class="text-center">TIPO_MOVIMIENTO</th>
+
+    </tr>
+                </thead>
+    <tbody>
+        @foreach(var row in movimientos)
+        {      
+        <tr>
+            <td class="text-center">@string.Format("{0:dd/MM/yy}", @row.FECHA)</td>
+            <td>@row.DESCRIPCION</td>
+            <td>@row.CATEGORIA_DESC</td>
+            <td style="text-align:right ">@string.Format("{0:n}", @row.CANTIDAD)</td>
+            @if (@row.CANTIDAD>1)
+            {
+            <td class="text-info" style="text-align:left ">@row.DESCR_MOVIMIENTO</td>
+            }
+            else
+            {
+            <td class="text-alert" style="text-align:left ">@row.DESCR_MOVIMIENTO</td>   
+            }
+         </tr>   
+         }    
+    </tbody>
+</table>
+<script>
+            $(document).ready(function() {
+        $('#example').dataTable({
+            paging: true,
+            "order": [],
+            "pageLength": 50,
+            "lengthMenu": [[10, 25, 50, -1], [10, 25, 50, "All"]]
+        });
+    
+    } );
+</script>
+
+
+
+
+

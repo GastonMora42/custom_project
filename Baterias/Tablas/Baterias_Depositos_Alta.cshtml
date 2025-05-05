@@ -1,0 +1,88 @@
+﻿@{
+
+        var Usuario = WebSecurity.CurrentUserName;
+    Layout = "~/Baterias/Layout/_BateriasSiteLayout.cshtml";
+
+    var db = Database.Open("IntranetConnection");
+    var result = "";
+    Validation.RequireField("descripcion", "Debe ingresar el nombre del Depósito");    
+    var Description = Request.Form["descripcion"];
+
+    if (IsPost && Validation.IsValid()) {
+    // Process information here
+    var insertQuery =
+    "INSERT INTO dbo.Baterias_DEPOSITOS(NOMBRE_DEP) VALUES  (@0)";
+    db.Execute(insertQuery, Description);
+
+
+      result += @"<button class='btn btn-success''>Alta de Depósito " + Description + " realizado con exito !!</button>";
+
+      Description = "";
+
+}
+
+}
+<script>
+    $(function () {
+        $('#notify_btn_2').on('click', function () {
+            
+            setTimeout(function () {
+                $.Notify({ type: 'success', caption: 'Success', content: "Alta de Articulo realizada!!!" });
+            }, 3000);
+        });
+    });
+</script>
+<style type="text/css">
+    .field-validation-error {
+      font-weight:bold;
+      color:red;
+      background-color:yellow;
+     }
+    .validation-summary-errors{
+      border:2px dashed red;
+      color:red;
+      background-color:yellow;
+      font-weight:bold;
+      margin:12px;
+    }
+    .centertabla {
+        vertical-align: middle;
+        font-weight: 600;
+        color:navy;
+        font-size: 18px;
+    }
+</style>
+
+<div class="container mt-4 border">
+
+    <h4>Alta de Depósito</h4>
+    <div class="row">
+<form data-role="validator" method="post" action="">
+    <fieldset>
+        <table id="example" class="table table-striped" style="width:80%;margin-right:auto;margin-left:auto;">
+            <tr>
+                <td class="centertabla" style="vertical-align: middle;font-size: 18px">NOMBRE DEPOSITO</td>
+                <td>                
+                    <div class="input-control text">
+                    <input class="form-control" type="text" placeholder="Ingresar nombre" id="descripcion" name="descripcion" value="@Request["descripcion"]" />
+                    @Html.ValidationMessage("descripcion")
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td></td>
+                <td>        
+                    <button type="submit" class="btn btn-primary" id="notify_btn_2">
+                                    DAR DE ALTA
+                    </button>
+                </td>
+            </tr>
+        </table>
+        <div class="row">
+        @Html.Raw(result)
+
+        </div>
+    </fieldset>
+</form>
+</div> <!-- End of row -->
+</div> <!-- End of container -->

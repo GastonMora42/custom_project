@@ -1,0 +1,60 @@
+﻿@{
+    Layout = "_CombustibleSiteLayout.cshtml";
+    var db = Database.Open("IntranetConnection");
+    var result = "";
+var strsql2 = "SELECT DEP.DEPOSITO, DEP.IDDEP FROM dbo.COMBUSTIBLE_DEPOSITOS DEP ORDER BY DEP.DEPOSITO"; 
+    var bienes = db.Query(strsql2);  
+    Page.Title = "Detalle de Ingresos del Depósito Seleccionado ";
+ }
+<script>
+    function showCustomer(str) {
+        var xmlhttp;
+        if (str == "Seleccionar Destino") {
+            document.getElementById("txtHint").innerHTML = "";
+            return;
+        }
+        if (window.XMLHttpRequest) {// code for IE7+, Firefox, Chrome, Opera, Safari
+            xmlhttp = new XMLHttpRequest();
+        }
+        else {// code for IE6, IE5
+            xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+        }
+        xmlhttp.onreadystatechange = function () {
+            if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+                document.getElementById("txtHint").innerHTML = xmlhttp.responseText;
+            }
+        }
+        xmlhttp.open("GET", "Comb_Dep_sel.cshtml?q=" + str, true);
+        xmlhttp.send();
+    }
+</script>
+    <script>
+        $(document).ready(function() {
+            // Default Datatable
+
+            //Buttons examples
+            var table = $('#datatable-buttons').DataTable({
+                lengthChange: false,
+                "ordering": true,
+                "order": [[0, 'desc' ]],
+                buttons: [
+                { extend: 'copy', className: 'button primary' },
+                { extend: 'excel', className: 'button primary' },
+                { extend: 'pdf' , className:'button primary'}]
+            });
+
+            table.buttons().container()
+                .appendTo('#datatable-buttons_wrapper .col-md-6:eq(0)');
+            
+    } );
+</script>
+<select  class="input-control text-info" id="TipoMov" onchange="showCustomer(this.value)">
+<option value="1">Seleccionar</option>
+    @foreach (var row in bienes)
+    {
+        <option value="@row.IDDEP">@row.DEPOSITO</option>
+    }
+</select>
+<div class="row"><div id="txtHint"></div></div>
+
+

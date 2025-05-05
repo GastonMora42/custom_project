@@ -1,0 +1,138 @@
+﻿@{
+    
+    
+    var db = Database.Open("IntranetConnection");
+    var Tipo_Mov_elegido = Request.QueryString["TipoMov"].AsInt();
+    var Fecha_desde = Request.QueryString["Fechadesde"].AsDateTime();
+    var Fecha_hasta = Request.QueryString["Fechahasta"].AsDateTime();
+    var sql = "";
+    if (Tipo_Mov_elegido == 0)
+    {
+      sql = @"SELECT 
+                    dbo.NOMINA_ROPA_ITEMS.CANTIDAD,
+                    dbo.NOMINA_ROPA_DEPOSITOS.NOMBRE_DEP,
+                    dbo.NOMINA_ROPA_ITEMS.FECHA,
+                    dbo.NOMINA_ROPA_ITEMS.PROVEEDOR,
+                    dbo.NOMINA_ROPA_TIPOS_MOVIMIENTOS.DESCR_MOVIMIENTO,
+                    dbo.NOMINA_ROPA_ITEMS.USUARIO,
+                    dbo.NOMINA_ROPA_ARTICULOS.DESCRIPCION,
+                    dbo.NOMINA_ROPA_ARTICULOS.CODIGO,
+                    dbo.NOMINA_ROPA_ITEMS.ID_REGISTRO
+                    FROM
+                    dbo.NOMINA_ROPA_ITEMS
+                    INNER JOIN dbo.NOMINA_ROPA_ARTICULOS ON (dbo.NOMINA_ROPA_ITEMS.ARTICULO = dbo.NOMINA_ROPA_ARTICULOS.ID_PRODUCTO)
+                    INNER JOIN dbo.NOMINA_ROPA_CATEGORIAS ON (dbo.NOMINA_ROPA_ARTICULOS.CATEGORIAS = dbo.NOMINA_ROPA_CATEGORIAS.ID_CATEGORIA)
+                    INNER JOIN dbo.NOMINA_ROPA_UNIDADES_MEDIDA ON (dbo.NOMINA_ROPA_ARTICULOS.UNIDAD_MEDIDA = dbo.NOMINA_ROPA_UNIDADES_MEDIDA.ID_UNID_MEDIDA)
+                    INNER JOIN dbo.NOMINA_ROPA_DEPOSITOS ON (dbo.NOMINA_ROPA_ITEMS.DEPOSITO = dbo.NOMINA_ROPA_DEPOSITOS.ID_DEPOSITO)
+                    INNER JOIN dbo.NOMINA_ROPA_TIPOS_MOVIMIENTOS ON (dbo.NOMINA_ROPA_ITEMS.ID_TIPO_MOV = dbo.NOMINA_ROPA_TIPOS_MOVIMIENTOS.ID_TIPOMOV)
+                    WHERE
+                    dbo.NOMINA_ROPA_ITEMS.FECHA BETWEEN '" + Fecha_desde + "' AND ' " + Fecha_hasta + "'"; 
+
+      }
+    else
+    {
+
+      sql = @"SELECT 
+                    dbo.NOMINA_ROPA_ITEMS.CANTIDAD,
+                    dbo.NOMINA_ROPA_DEPOSITOS.NOMBRE_DEP,
+                    dbo.NOMINA_ROPA_ITEMS.FECHA,
+                    dbo.NOMINA_ROPA_ITEMS.PROVEEDOR,
+                    dbo.NOMINA_ROPA_TIPOS_MOVIMIENTOS.DESCR_MOVIMIENTO,
+                    dbo.NOMINA_ROPA_ITEMS.USUARIO,
+                    dbo.NOMINA_ROPA_ARTICULOS.DESCRIPCION,
+                    dbo.NOMINA_ROPA_ARTICULOS.CODIGO,
+                    dbo.NOMINA_ROPA_ITEMS.ID_REGISTRO
+                    FROM
+                    dbo.NOMINA_ROPA_ITEMS
+                    INNER JOIN dbo.NOMINA_ROPA_ARTICULOS ON (dbo.NOMINA_ROPA_ITEMS.ARTICULO = dbo.NOMINA_ROPA_ARTICULOS.ID_PRODUCTO)
+                    INNER JOIN dbo.NOMINA_ROPA_CATEGORIAS ON (dbo.NOMINA_ROPA_ARTICULOS.CATEGORIAS = dbo.NOMINA_ROPA_CATEGORIAS.ID_CATEGORIA)
+                    INNER JOIN dbo.NOMINA_ROPA_UNIDADES_MEDIDA ON (dbo.NOMINA_ROPA_ARTICULOS.UNIDAD_MEDIDA = dbo.NOMINA_ROPA_UNIDADES_MEDIDA.ID_UNID_MEDIDA)
+                    INNER JOIN dbo.NOMINA_ROPA_DEPOSITOS ON (dbo.NOMINA_ROPA_ITEMS.DEPOSITO = dbo.NOMINA_ROPA_DEPOSITOS.ID_DEPOSITO)
+                    INNER JOIN dbo.NOMINA_ROPA_TIPOS_MOVIMIENTOS ON (dbo.NOMINA_ROPA_ITEMS.ID_TIPO_MOV = dbo.NOMINA_ROPA_TIPOS_MOVIMIENTOS.ID_TIPOMOV)
+                    WHERE 
+                    dbo.NOMINA_ROPA_ITEMS.ID_TIPO_MOV = " + Tipo_Mov_elegido + " AND dbo.NOMINA_ROPA_ITEMS.FECHA BETWEEN '" + Fecha_desde + "' AND ' " + Fecha_hasta + "'"; 
+
+      }
+   
+    var Tipostr = "";
+    if (Tipo_Mov_elegido == 0)
+    { Tipostr = "TODOS";}
+    else if (Tipo_Mov_elegido == 1)
+    { Tipostr = "INGRESOS";}
+    else 
+    { Tipostr = "EGRESOS";}
+
+    var movimientos = db.Query(sql);
+}
+
+<h5>
+ @Tipostr -- @string.Format("{0:dd/MM/yy}", @Fecha_desde)  -- @string.Format("{0:dd/MM/yy}", @Fecha_hasta)<small class="on-right"></small>
+</h5>
+<table class="table striped hovered dataTable" id="example">
+    <thead>
+    <tr>
+        <th class="text-center">FECHA</th>
+        <th class="text-center">CODIGO</th>
+        <th class="text-center">DESCRIPCION</th>
+        <th class="text-center">CANTIDAD</th>
+        <th class="text-center">TIPO_MOVIMIENTO</th>
+        <th class="text-center">PROV - EMPLEADO</th>
+        <th class="text-center">ACCION</th>
+
+    </tr>
+                </thead>
+    <tbody>
+        @foreach(var row in movimientos)
+        {      
+        <tr>
+            <td class="text-center">@string.Format("{0:dd/MM/yy}", @row.FECHA)</td>
+                        <td>@row.CODIGO</td>
+            <td>@row.DESCRIPCION</td>
+                        @if (@row.CANTIDAD>0)
+            {
+            <td class="text-primary" style="text-align:right;font-weight: 700;color: #0026ff ">@string.Format("{0:n}", @row.CANTIDAD)</td>
+            }
+            else
+            {
+            <td class="text-alert" style="text-align:right ;font-weight: 700;color: #f00 ">@string.Format("{0:n}", @row.CANTIDAD * -1) </td> 
+            }
+            
+            @if (@row.CANTIDAD>0)
+            {
+            <td style="text-align:center;font-weight: 700;color: #0026ff ">@row.DESCR_MOVIMIENTO</td>
+            }
+            else
+            {
+            <td  style="text-align:center;font-weight: 700;color: #f00 ">@row.DESCR_MOVIMIENTO </td>   
+            }
+            <td class="text-center"> @row.PROVEEDOR</td>
+            <td class="text-center"><a href="Ropa_delete_record.cshtml?q=@row.ID_REGISTRO"><h6> <i class="icon-remove fg-red on-right on-left"></i></h6></a></td>
+         </tr>    
+         }    
+    </tbody>
+</table>
+    <script>
+        $(document).ready(function() {
+            // Default Datatable
+
+            //Buttons examples
+            var table = $('#example').DataTable({
+                lengthChange: false,
+                "ordering": true,
+                "order": [[0, 'desc' ]],
+                buttons: [
+                { extend: 'copy', className: 'button primary' },
+                { extend: 'excel', className: 'button primary' },
+                { extend: 'pdf' , className:'button primary'}]
+            });
+
+            table.buttons().container()
+                .appendTo('#example-buttons_wrapper .col-md-6:eq(0)');
+            
+    } );
+</script>
+
+
+
+
+

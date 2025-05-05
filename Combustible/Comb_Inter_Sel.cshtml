@@ -1,0 +1,50 @@
+﻿@{
+    var db = Database.Open("IntranetConnection");
+    string proveedorelegido = Request.QueryString["q"];
+    var movimientos = db.Query("Exec dbo.COMBUSTIBLE_DETALLE_X_INTERNO @INTERNO='"+ proveedorelegido + "'" );
+}
+
+
+<legend>Detalle de Consumos del Interno Seleccionado</legend>
+<table id="datatable-buttons" class="table striped hovered dataTable" style="font-size:85%">
+    <thead>
+    <tr> 
+        <th class="text-center">FECHA</th>
+        <th class="text-center">DEPOSITO</th>
+        <th class="text-center">CANTIDAD</th>
+        <th class="text-center">KMS_HS</th>
+        <th class="text-center">KMS_HS_ANT</th>
+        <th class="text-center">KMS_HS_DIF</th>
+        <th class="text-center">PROM_100_KMS</th>
+        <th class="text-center">PRECINTO</th>
+        <th class="text-center">CHOFER</th>
+        <th class="text-center">OBSERVACIONES</th>
+        <th></th>
+        <th></th>
+    </tr>
+    </thead>
+    <tbody>
+        @foreach(var row in movimientos)
+        {      
+        <tr>
+            
+            <td class="text-center">@string.Format("{0:dd/MM/yy}", @row.FECHA)</td>
+            <td class="text-center">@row.DEPOSITO</td>
+            <td style="text-align:right ">@string.Format("{0:n}", @row.CANTIDAD)</td>
+            <td style="text-align:right ">@string.Format("{0:n}", @row.KMS_HS)</td>
+            <td style="text-align:right ">@string.Format("{0:n}", @row.KMS_HS_ANT)</td>
+            <td style="text-align:right ">@string.Format("{0:n}", @row.KMS_HS_DIF)</td>
+            <td style="text-align:right ">@string.Format("{0:n}", @row.CONS_PROM)</td>
+            <td class="text-center">@row.PRECINTO</td>
+            <td class="text-center">@row.CHOFER</td>
+            <td>@row.OBSERVACIONES</td>
+            <td><a href="Comb_delete_record.cshtml?q=@row.IDCOMBDETAIL"><h6> <i class="icon-remove fg-red on-right on-left"></i></h6></a>
+                
+            </td>
+            <td><a href="Comb_edit_record.cshtml?q=@row.IDCOMBDETAIL"><h6> <i class="icon-pencil fg-primary on-right on-left"></i></h6></a></td>
+            
+         </tr>   
+         }
+    </tbody>
+</table>
+

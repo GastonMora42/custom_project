@@ -1,0 +1,58 @@
+﻿@{
+     int itemnum = 1;
+    var result = "";
+    var db = Database.Open("IntranetConnection");
+      if (IsPost) {
+            var equipo = Request.Form["itemselected"];
+            var fecha = Request.Form["fecha_sel"].AsDateTime();
+            var remito = Request.Form["remito"];
+            var cantidad = Request.Form["cantidad"].AsInt();
+            var deposito = Request.Form["depositos"].AsInt();
+            var dep_ing = Request.Form["deposito_ing"].AsInt();
+            var bsuso = Request.Form["bsuso"];
+            var retira = Request.Form["retira"];
+            var tipomov = "EE";
+            var externo = Request.Form["externo"];
+            if (retira=="EXTERNO"){
+                retira = "EXTERNO - " + externo;
+            }
+            if (retira=="OTROS"){
+                retira = "OTROS - " + externo;
+            }
+
+            // Process information here
+            var insertQuery =
+            @"INSERT INTO 
+            dbo.CUBIERTAS_MOVIMIENTOS(
+            ARTICULO,
+            FECHA,
+            REMITO,
+            CANTIDAD,
+            BS_USO,
+            RETIRO,
+            ID_TIPO_MOV) VALUES  (@0, @1, @2, @3, @4, @5, @6)";
+            db.Execute(insertQuery, equipo, fecha,remito,cantidad,bsuso,retira,tipomov);
+
+
+            // Ingreso de Cubiertas
+            // Process information here
+            var insertQuery2 =
+                @"INSERT INTO 
+                dbo.CUBIERTAS_MOVIMIENTOS(
+                ARTICULO,
+                FECHA,
+                REMITO,
+                CANTIDAD,
+                RETIRO,
+                ID_TIPO_MOV,
+                DEPOSITO,
+                PROVEEDOR) VALUES  (@0, @1, @2, @3, @4, @5, @6,@7)";
+            db.Execute(insertQuery2, equipo, fecha,"Egreso e Ingreso",cantidad,retira,"IE",dep_ing,bsuso);
+            
+        }
+
+
+            
+}
+
+

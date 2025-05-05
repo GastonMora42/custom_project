@@ -1,0 +1,22 @@
+﻿@{
+    if(IsPost){
+        var db = Database.Open("IntranetConnection");
+        var sql = @"UPDATE 
+                    dbo.LA_SARITA_FARDOS_DETAIL
+                    SET
+                        CANTIDAD = @0,
+                        IMPORTE_TOTAL = @1,
+                        FECHA_MOV = @2
+                        ALFALFA_TIPO = @3
+                    WHERE
+                    dbo.LA_SARITA_FARDOS_DETAIL.ID_MOV=@4";
+
+        var idmov = Request["id_fardos_edit"];
+        var cantidad = Request["cantidad_edit"];
+        var importetotal = Request["total_fardos_edit"];
+        var fecha = Request["fecha_fardos_edit"];
+        var tipoalfalfa = Request["tipoalfalfa"];
+        Response.Write(idmov);
+        db.Execute(sql, cantidad, importetotal,fecha, tipoalfalfa, idmov);
+    }
+}

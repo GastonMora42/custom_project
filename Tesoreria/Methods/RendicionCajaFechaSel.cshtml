@@ -1,0 +1,126 @@
+@{
+var Usuario = WebSecurity.CurrentUserName;
+
+var db = Database.Open("IntranetConnectionNew");
+var fecharendicion = Request.QueryString["fecharendicion"];
+
+var rendcajasql = @"EXEC dbo.RENDICION_DE_CAJA_DETALLE_FECHA_SEL @0";
+
+var rendcaja = db.Query(rendcajasql,fecharendicion);
+
+var rendcajatotalessql = @"EXEC dbo.RENDICION_DE_CAJA_DETALLE_FECHA_SEL_TOTALES @0";
+
+var rendcajatotales = db.Query(rendcajatotalessql,fecharendicion);
+
+var sqlcontroles = "EXEC dbo.RENDICION_DE_CAJA_CONTROLES @0";
+
+var controles = db.Query(sqlcontroles,fecharendicion);
+
+var fechahora = DateTime.Now.ToString("yyyy-MM-dd h:mm:ss tt");
+
+}
+<!-- BEGIN: .main-content -->
+
+
+    <table id="datatable-buttons"
+        class="table table-striped table-sm dt-responsive nowrap w-90 dataTable dtr-inline collapsed"
+        role="grid" aria-describedby="datatable-buttons_info"
+        style="align-content: center;font-size: 85%;margin-left:auto;margin-right:auto;">
+        <thead class="bg-200 text-900">
+            <tr style="text-align: center">
+                <th>HORA</th>
+                <th>TIPO</th>
+                <th>NUMERO RC</th>
+                <th>NUM. CHEQUE</th>
+                <th>MONEDA</th>
+                <th>VALORES</th>
+                <th>IMPORTE</th>
+                <th>OBSERV.</th>
+            </tr>
+
+        </thead>
+        <tbody style="font-size: 95%;">
+            @foreach(var row in rendcaja){
+            <tr>
+                <td style="text-align: center"> @row.FECHA</td>
+                @if (row.TIPO == "Ingreso")
+                {
+                <td class="text-primary" 
+                    style="text-align: center;font-weight:bold;">
+                    @row.TIPO
+                </td>
+                }
+                else 
+                {
+                <td class="text-danger"
+                    style="text-align: center;font-weight:bold;">
+                    @row.TIPO
+                </td>
+                }
+
+                <td
+                    style="text-align: center;font-weight:500;color: brown;font-size: 110%; ">
+                    @row.NUMERO</td>
+                <td style="text-align: center"> @row.N_CHEQUE</td>
+                <td style="text-align: center;font-weight: 500;"> @row.MONEDA</td>
+                @if (@row.TOTAL_VENTA < 0) 
+                {
+                <td style="font-weight: 500;text-align: right;color: red;">
+                    @string.Format("{0:n}",@row.TOTAL_VENTA)</td>
+                } 
+                else 
+                {
+                <td
+                    style="font-weight: 500;text-align: right;color: 	rgb(0,0,205);">
+                    @string.Format("{0:n}",@row.TOTAL_VENTA)</td>
+                }
+                @if (@row.IMPORTE < 0)
+                {
+                <td style="text-align: right;color: red;"> @string.Format("{0:n}",@row.IMPORTE)</td>
+                } 
+                else 
+                {
+                <td style="text-align: right;color: 	rgb(0,0,205);">
+                    @string.Format("{0:n}",@row.IMPORTE)</td>
+                }
+
+                <td> @row.DETALLE</td>
+            </tr>
+            }
+
+        </tbody>
+        <tfoot id="tablefoot">
+
+            @foreach(var row in rendcajatotales)
+                {
+                <tr class="bg-200 text-900" style="font-weight:bold;">
+                    <td colspan=4></td>
+                    <td style="text-align: center;">@row.MONEDA</td>
+                    @if (@row.MONEDA == "DOLARES")
+                    {
+                    <td style="text-align: right;"> @string.Format("{0:n}",@row.IMPORTE)</td>
+                    <td></td>
+                    }
+                    else 
+                    {
+                    <td></td>
+                    <td style="text-align: right;"> @string.Format("{0:n}",@row.IMPORTE)</td>
+                    }
+                    <td colspan=2></td>
+                </tr>
+                }
+            @foreach(var row in controles)
+                {
+                <tr  class="bg-100 " style="font-weight:500;">
+                <td colspan=4>@row.ORIGEN_NOMBRE  @row.FECHA -- @row.NUMERO  -- Correlatividad --> @row.CONTROL_MOV</td>
+                <td colspan=4></td>
+                </tr>
+                }
+                    <tr>
+                        <td colspan=8 style="font-weight:600;">Rendicion de Caja generada el : @fechahora</td>
+                    <tr>
+        </tfoot>
+    </table>
+
+
+<!-- end table-responsive -->

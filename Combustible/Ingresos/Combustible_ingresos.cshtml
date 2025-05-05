@@ -1,0 +1,171 @@
+﻿@{
+    Layout = "~/Combustible/Layout/_CombustibleSiteLayout.cshtml";
+    var db = Database.Open("IntranetConnection");
+    var Usuario = WebSecurity.CurrentUserName;
+    var result = "";
+    var proveedores = db.Query( "SELECT comb_provee.COD_PROVEE,comb_provee.NOM_PROVEE FROM dbo.COMBUSTIBLES_COMPRAS_PROVEEDORES comb_provee ORDER BY comb_provee.NOM_PROVEE");
+    var destinos = db.Query( "SELECT comb_dep.IDDEP, comb_dep.DEPOSITO FROM dbo.COMBUSTIBLE_DEPOSITOS comb_dep ORDER BY comb_dep.DEPOSITO");
+    int itemnum = 1;
+
+    Validation.Add("cantidad", Validator.Range(1, 99999, "debe ingresar una cantidad de combustible !!"));
+    Validation.Add("fecha", Validator.DateTime("Debe seleccionar una fecha"));
+
+
+    if (IsPost && Validation.IsValid())  {
+    var fecha = Request.Form["fecha"].AsDate();
+    
+    var observaciones = Request.Form["observaciones"];
+    var proveedor = Request.Form["proveedor"];
+    var destino = Request.Form["destino"];
+    var cantidad = Request.Form["cantidad"].AsInt();
+
+    // Process information here
+            var insertQuery ="INSERT INTO dbo.COMBUSTIBLE_DETAIL(FECHA,COD_PROVEEDOR,COD_DEPOSITO,CANTIDAD,TIPO_MOV,OBSERVACIONES,USUARIO) VALUES  (@0, @1, @2, @3, @4, @5, @6)";
+            
+            db.Execute(insertQuery , fecha, proveedor, destino, cantidad, 1, observaciones,Usuario);
+
+            result += @"<button class='command-button success'><i class='icon-checkmark on-left'></i><h4>El movimiento se cargo correctamente !!</h4></button>";
+            cantidad = 0;
+
+            }
+}
+<script>
+    $(document).ready(function () {
+        $("#Message").delay(3000).slideUp(300);
+    });
+
+    function showCustomer(str) {
+        var xmlhttp;
+        if (str == "Seleccionar Destino") {
+            document.getElementById("txtHint").innerHTML = "";
+            return;
+        }
+        if (window.XMLHttpRequest) {// code for IE7+, Firefox, Chrome, Opera, Safari
+            xmlhttp = new XMLHttpRequest();
+        }
+        else {// code for IE6, IE5
+            xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+        }
+        xmlhttp.onreadystatechange = function () {
+            if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+                document.getElementById("txtHint").innerHTML = xmlhttp.responseText;
+            }
+        }
+        xmlhttp.open("GET", "Comb_Dep_sel.cshtml?q=" + str, true);
+        xmlhttp.send();
+    }
+</script>
+
+<style type="text/css">
+    .field-validation-error {
+      font-weight:bold;
+      color:red;
+      background-color:yellow;
+     }
+    .validation-summary-errors{
+      border:2px dashed red;
+      color:red;
+      background-color:yellow;
+      font-weight:bold;
+      margin:12px;
+    }
+</style>
+
+<div class="container mt-4 border">
+
+    <h5>Ingreso de Combustible</h5>
+    <br/>
+    <div class="row">
+        <form method="post" enctype="multipart/form-data" autocomplete="off">
+            <div class="row cells4">
+                <table id="example" class="table table-striped"
+                    style="width:90%;margin-right:auto;margin-left:auto;">
+                    <tr>
+                        <td class="centertabla"
+                            style="vertical-align: middle;font-size:16px">FECHA</td>
+                        <td>
+                            <div class="input-control  text"
+                                data-role="datepicker" data-format='dd/mm/yyyy'>
+                                <input type="text" id="fecha"
+                                    placeholder="seleccionar fecha" name="fecha">
+                                <button class="button"><span
+                                        class="mif-calendar"></span></button>
+                            </div>
+                        </td>
+                        <td class="centertabla"
+                            style="vertical-align: middle;font-size:16px">PROVEEDOR</td>
+                        <td colspan="2">
+                            <div>
+                                <select id="proveedor" name="proveedor">
+                                    <option>Seleccionar Proveedor</option>
+                                    @foreach(var row in proveedores)
+                                    {
+                                    <option value="@row.COD_PROVEE">@row.NOM_PROVEE</option>
+                                    }
+                                </select>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="centertabla"
+                            style="vertical-align: middle;font-size:16px">DESTINO</td>
+                        <td>
+                            <div>
+                                <select id="destino"
+                                    onchange="showCustomer(this.value)"
+                                    name="destino">
+                                    <option>Seleccionar Destino</option>
+                                    @foreach(var row in destinos)
+                                    {
+                                    <option value="@row.IDDEP">@row.DEPOSITO</option>
+                                    }
+                                </select>
+                            </div>
+                        </td>
+
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td class="centertabla"
+                            style="vertical-align: middle;font-size:16px">CANTIDAD</td>
+                        <td>
+                            <div class="input-control text warning">
+                                <input type="text"
+                                    placeholder="Ingresar Cantidad de litros"
+                                    id="cantidad" name="cantidad" />
+                                @Html.ValidationMessage("cantidad")
+                            </div></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td class="centertabla"
+                            style="vertical-align: middle;font-size:16px">OBSERVACIONES</td>
+                        <td colspan="2">
+                            <div class="input-control text"
+                                data-role="input-control">
+                                <input type="text"
+                                    placeholder="Observaciones del Ingreso"
+                                    id="observaciones" name="observaciones">
+
+                            </div>
+                        </td>
+                        <td colspan="2"></td>
+                    </tr>
+                </table>
+            </div>
+            <button type="submit" class="btn btn-primary" id="notify_btn_2">INGRESO</button>
+
+            <div class="row" id="mensajealerta">
+                @Html.Raw(result)
+            </div>
+        </form>
+    </div>
+
+    <div class="row"><div id="txtHint"></div></div>
+</div>
+
+
+

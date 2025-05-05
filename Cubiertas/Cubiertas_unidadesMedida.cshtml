@@ -1,0 +1,34 @@
+﻿@{
+    Layout = "_RopaSiteLayout.cshtml";
+    var db = Database.Open("IntranetConnection");
+    var unidadesmedida = db.Query ("SELECT dbo.REPUESTOS_UNIDADES_MEDIDA.ID_UNID_MEDIDA,  dbo.REPUESTOS_UNIDADES_MEDIDA.DESCRIPCION_UNIDAD FROM dbo.REPUESTOS_UNIDADES_MEDIDA ORDER BY   dbo.REPUESTOS_UNIDADES_MEDIDA.DESCRIPCION_UNIDAD");
+}
+<legend>Listado de Unidades de Medida</legend>
+<div class="row">
+    <div class="span1" ></div>
+    <div class="span5">
+        <table class="table striped hovered dataTable" id="example">
+            <thead>
+            <tr>
+
+                <th class="text-center">EDITAR</th>
+                
+                <th class="text-center">UNIDAD DE MEDIDA</th>
+
+            </tr>
+                </thead>
+            <tbody>
+                @foreach(var row in unidadesmedida)
+                {
+                
+                <tr>
+                    <td style="text-align:center"><a href="Rep_detalle_movimientos.cshtml?Bienselected=@row.ID_UNID_MEDIDA"><span class="mif-pencil fg-blue"></span></a></td>
+                    <td>@row.DESCRIPCION_UNIDAD</td>
+                </tr>
+            }
+                </tbody>
+        </table>
+    </div>
+
+</div> <!-- End of row -->
+

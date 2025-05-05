@@ -1,0 +1,420 @@
+﻿@{
+    Layout = "_CombustibleSiteLayout.cshtml";
+    var Usuario = WebSecurity.CurrentUserName;
+    var db = Database.Open("IntranetConnection");
+    Page.Title = "Combustible Egresos";
+    var result = "";
+    var products = db.QueryValue("SELECT dbo.USERS_TABLE.EsAdmin FROM dbo.USERS_TABLE WHERE dbo.USERS_TABLE.Usuario ='" + Usuario + "'");
+    
+    var Internos = db.Query(@"SELECT 
+                              dbo.BIENES_DE_USO.INTERNO, dbo.BIENES_DE_USO.INTERNO + ' - ' + dbo.BIENES_DE_USO.NOMBRE_BIEN + ' ' + dbo.BIENES_DE_USO.DOMINIO AS 'NOMBRE' 
+                              FROM dbo.BIENES_DE_USO  
+                              UNION ALL 
+                              SELECT DISTINCT 
+                              dbo.COMBUSTIBLE_DETAIL.BIEN_DE_USO,dbo.COMBUSTIBLE_DETAIL.BIEN_DE_USO
+                              FROM dbo.COMBUSTIBLE_DETAIL
+                              WHERE
+                              dbo.COMBUSTIBLE_DETAIL.BIEN_DE_USO NOT IN (SELECT 
+                              dbo.BIENES_DE_USO.INTERNO 
+                              FROM dbo.BIENES_DE_USO) 
+                              ORDER BY  dbo.BIENES_DE_USO.INTERNO");
+    var destinos = db.Query( "SELECT comb_dep.COD_DEPOSITO, comb_dep.NOMBRE_DEPOSITO FROM dbo.COMBUSTIBLES_COMPRAS_DEPOSITOS comb_dep ORDER BY comb_dep.NOMBRE_DEPOSITO");
+    var choferes = db.Query( "SELECT ACT.LEGAJO,ACT.APELLIDO_Y_NOMBRE FROM dbo.NOMINA_LISTADO_CHOFERES ACT ORDER BY ACT.APELLIDO_Y_NOMBRE");
+    var bsdeuso = "";
+    var chofercarga ="";
+    int itemnum = 1;
+
+    Validation.Add("cantidad", Validator.Range(1, 99999, "debe ingresar una cantidad de combustible !!"));
+    Validation.Add("fecha", Validator.DateTime("Debe seleccionar una fecha"));
+
+
+    if (IsPost && Validation.IsValid())  {
+    var fecha = Request.Form["fecha"];
+    var externo = Request.Form["externo"];
+    var chofer = Request.Form["chofer"];
+    var externochofer = Request.Form["externochofer"];
+    var motkmshs = Request.Form["motkmhoras"];
+    var motprecinto = Request.Form["motprecinto"];
+    var observaciones = Request.Form["observaciones"];
+    var interno = Request.Form["interno"];
+    var destino = Request.Form["destino"];
+    var cantidad = Request.Form["cantidad"].AsInt();
+    var hskms =Request.Form["hskms"];
+    var precinto = Request.Form["precinto"];
+        if (interno=="EXT"){
+            bsdeuso = externo;
+        }
+        else {
+            bsdeuso = interno;
+        
+        }
+        if (chofer=="EXT"){
+            chofercarga = externochofer;
+        }
+        else{
+            chofercarga = chofer;
+        }
+    // Process information here
+            var insertQuery ="INSERT INTO dbo.COMBUSTIBLE_DETAIL(BIEN_DE_USO,FECHA,CANTIDAD,OBSERVACIONES,COD_DEPOSITO,TIPO_MOV,USUARIO,KMS_HS,PRECINTO,CHOFER,MOTPRECINTO,MOTKMSHS) VALUES (@0,@1,@2,@3,@4,@5,@6,@7,@8,@9,@10,@11)";   
+            db.Execute(insertQuery , bsdeuso,fecha, cantidad, observaciones,destino,-1,Usuario, hskms,precinto, chofercarga,motprecinto,motkmshs);
+            result += @"<button class='command-button success'><i class='icon-checkmark on-left'></i><h3>El movimiento se cargo correctamente !!</h3></button>";
+            cantidad = 0;
+
+            }
+}
+<script>
+    $(document).ready(function () {
+        $("#Message").delay(3000).slideUp(300);
+        $.ajax({
+                url: "Comb_ultimos_registros",
+                type: "GET",
+                success: function (data) {
+                     var json = $.parseJSON(data);
+                     
+                     $("#fecha").val(json.FECHA);
+                     $("#destino").val(json.COD_DEPOSITO).change();
+                }
+            });
+    });
+
+document.getElementById("cargaegresos").onkeypress = function(e) {
+  var key = e.charCode || e.keyCode || 0;     
+  if (key == 13) {
+    e.preventDefault();
+  }
+}
+
+document.getElementById("fecha").onkeypress = function(e) {
+  var key = e.charCode || e.keyCode || 0;     
+  if (key == 13) {
+    e.preventDefault();
+  }
+}
+
+function calculaprom (){
+        var anterior = $('#kmshorasant').val()
+        //$('#cantidad').val()
+        var consumprom =  100 * $('#cantidad').val() / $('#hskms').val() - anterior
+        $('#promkmscant').val(consumprom)
+    }
+
+
+
+
+
+
+    function ExtChofer(str) {
+
+        if (str == "EXT") {
+            $("#externochofer").removeAttr('disabled');
+        }
+        else {
+            $("#externochofer").attr('disabled', 'disabled');
+
+        }
+    }
+
+    function cantstock (deposito){
+                    $.ajax({
+                url: "Comb_stock_actual_dep_sel?q=" + deposito,
+                type: "GET",
+                success: function (data) {
+                    $("#cantdisponible").removeAttr('disabled');
+                    $("#cantdisponible").val(data)
+                }
+            });
+    }
+    function showCustomer(str) {
+
+        if (str == "EXT") {
+            $("#externo").removeAttr('disabled');
+            $("#precintoant").attr('disabled', 'disabled');
+            $("#kmshorasant").attr('disabled', 'disabled');
+        } 
+        else if (str=="1") {
+            $("#precintoant").attr('disabled', 'disabled');
+            $("#kmshorasant").attr('disabled', 'disabled');
+        }                  
+        else {
+            $("#externo").attr('disabled', 'disabled');
+            $("#precintoant").removeAttr('disabled');
+            $("#kmshorasant").removeAttr('disabled');
+            $.ajax({
+                url: "Comb_precinto_ant.cshtml?q=" + str,
+                type: "GET",
+                success: function (data) {
+                    
+                    $('#precintoant').val(data)
+                }
+            });
+            $.ajax({
+                url: "Comb_KmHs_ant.cshtml?q=" + str,
+                type: "GET",
+                success: function (data) {
+                    
+                    $('#kmshorasant').val(data)
+
+
+                }
+            });
+
+            var xmlhttp;
+            if (str == "Seleccionar Destino") {
+                document.getElementById("txtHint").innerHTML = "";
+                return;
+            }
+            if (window.XMLHttpRequest) {// code for IE7+, Firefox, Chrome, Opera, Safari
+                xmlhttp = new XMLHttpRequest();
+            }
+            else {// code for IE6, IE5
+                xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+            }
+            xmlhttp.onreadystatechange = function () {
+                if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+                    document.getElementById("txtHint").innerHTML = xmlhttp.responseText;
+                    $.ajax({
+                    url: "UltfechaVTV.cshtml?q=" + str,
+                    type: "GET",
+                    success: function (data) {
+                    
+                    $('#vtv').val(data)
+                    }
+                    });
+                    $.ajax({
+                    url: "Ult_Obs_Comb.cshtml?q=" + str,
+                    type: "GET",
+                    success: function (data) {
+                    
+                    $('#observaciones').val(data)
+                    }
+                    });
+
+
+                }
+            }
+            xmlhttp.open("GET", "Comb_Inter_Sel.cshtml?q=" + str, true);
+            xmlhttp.send();
+        }
+
+
+
+
+    }
+
+</script>
+
+<style type="text/css">
+    .field-validation-error {
+      font-weight:bold;
+      color:red;
+      background-color:yellow;
+     }
+    .validation-summary-errors{
+      border:2px dashed red;
+      color:red;
+      background-color:yellow;
+      font-weight:bold;
+      margin:12px;
+    }
+</style>
+
+<div class="row">
+   <form data-role="validator" method="post" action="" id="cargaegresos">
+    <div class="row">
+        <div class="input-control text size2">
+            <label>Fecha</label>  
+                            
+                    <div class="input-control  text" data-role="datepicker" data-format='dd/mm/yyyy'>
+                        <input type="text" id="fecha" placeholder="fecha" name="fecha" >
+                        <button type="button" class="button"><span class="mif-calendar"></span></button>
+                    </div>
+                     
+        </div>
+
+        <div class="input-control text size3">
+            <label>Origen</label>
+            <div class="input-control  select">
+                <select  id="destino" onchange="cantstock(this.value)" name="destino">
+                    
+                    @if(products==5){
+                        <option value="2">PQUE. INDUSTRIAL NEUQUEN</option>
+                    }
+                    else{
+                        <option>Seleccionar Origen</option>
+                     foreach(var row in destinos)
+                     {                    
+                        <option value="@row.COD_DEPOSITO">@row.NOMBRE_DEPOSITO</option>
+                    }
+                        <option value="90">O052</option>
+                        <option value="95">X048</option>
+                        <option value="96">X058</option>
+                        <option value="99">CHULENGO AÑELO</option>
+                        
+                    }
+
+
+                </select>
+            </div>
+        </div>
+        <div class="input-control text size4" data-role="input-control">
+            <label>Interno</label>
+            <div class="input-control select">
+                <select id="interno" name="interno" onchange="showCustomer(this.value)">
+                    <option value="1">Seleccionar Destino</option>
+                    @foreach(var row in Internos)
+                    {                     
+                        <option value="@row.INTERNO">@row.NOMBRE</option>
+                    }
+                    <option value="99">CHULENGO AÑELO</option>
+                    <option value="EXT">EXTERNO</option>
+                </select>
+
+            </div>
+        </div>
+        <div class="input-control text size4">
+            <label>Externo</label>
+            <div class="input-control text warning">
+                <input type="text"  id="externo" name="externo" disabled />
+                
+            </div>
+
+        </div>
+
+
+      </div>
+    <div class="row">
+
+
+                    <div class="input-control text size4">
+            <label>Chofer</label>
+            <div class="input-control  select">
+                <select id="chofer" name="chofer" onchange="ExtChofer(this.value)">
+                    <option>Seleccionar Chofer</option>
+                    @foreach(var row in choferes)
+                    {                     
+                        <option value="@row.APELLIDO_Y_NOMBRE">@row.APELLIDO_Y_NOMBRE</option>
+                    }
+                    <option value="EXT">EXTERNO</option>
+                </select>
+            </div>
+        </div> 
+                        <div class="input-control text size4">
+            <label>Externo</label>
+            <div class="input-control text warning">
+                <input type="text"  id="externochofer" name="externochofer" placeholder="Apellido y Nombre" disabled />
+                
+            </div>
+
+        </div>
+                 <div class="input-control text size2">
+            <label>Cantidad Disponible</label>
+            <div class="input-control text warning">
+                <input type="text"  style="text-align: right;font-weight:bold;color:red;background-color:#ececec " id="cantdisponible" name="cantdisponible" disabled />
+                
+            </div>
+
+        </div>
+                <div class="input-control text size3">
+            <label>Cantidad</label>
+            <div class="input-control text warning">
+                <input type="text" placeholder="Ingresar Cantidad de litros" id="cantidad" name="cantidad"  value="@Request["cantidad"]"/>
+                @Html.ValidationMessage("cantidad")
+            </div>
+
+        </div>
+       </div> 
+
+      <div class="row">
+
+
+        <div class="input-control text size2">
+        <label>Kms u Horas</label>
+        <div class="input-control text warning">
+        <input type="text" placeholder="Ingresar Kms u Horas" id="hskms" name="hskms"  onchange="calculaprom()" /> 
+        </div>
+        </div>
+        <div class="input-control text size2">
+        <label>Kms u Horas Anterior</label>
+        <div class="input-control text warning">
+        <input style="text-align: center;font-weight:bold;color:navy;" type="text"  id="kmshorasant" name="kmshorasant" disabled />
+        </div>
+        </div>
+        <div class="input-control text size2">
+        <label>Consumo Promedio</label>
+        <div class="input-control text warning">
+        <input style="text-align: center;font-weight:bold;color:navy;" type="text"  id="promkmscant" name="promkmscant" disabled />
+        </div>
+        </div>
+        <div class="input-control text size2">
+        <label>Motivo</label>
+            <div class="input-control  select">
+                <select id="motkmhoras" name="motkmhoras" >
+                    <option value="CORRECTO" selected>CORRECTO</option>
+                    <option value="EXTERNO">EXTERNO</option>
+                    <option value="NO_APLICABLE">MEDIDOR ROTO  </option>
+                    <option value="NO_SE_INFORMA">NO SE INFORMA </option>
+
+                </select>
+            </div>
+        </div>
+                  <div class="input-control text size2">
+            <label>Precinto Anterior</label>
+            <div class="input-control text warning">
+                <input style="text-align: center;font-weight:bold;color:navy;" type="text"  id="precintoant" name="precintoant" disabled />
+                
+            </div>
+
+        </div>
+        <div class="input-control text size2">
+        <label>Precinto Nuevo</label>
+            <div class="input-control text warning">
+            <input type="text" placeholder="# Precinto" id="precinto" name="precinto"  /> 
+            </div>
+        </div>
+        <div class="input-control text size2">
+        <label>Motivo</label>
+            <div class="input-control  select">
+                <select id="motprecinto" name="motprecinto" >
+                    <option value="CORRECTO" selected>CORRECTO</option>
+                    <option value="EXTERNO">EXTERNO</option>
+                    <option value="NO_APLICABLE">NO APLICABLE </option>
+                    <option value="NO_SE_INFORMA">NO SE INFORMA </option>
+
+                </select>
+            </div>
+        </div>
+
+
+    </div>  
+    <div class="row ">
+        <div class="input-control text size8">
+           <label> Observaciones</label>
+            <div class="input-control text"  >
+                <input type="text" id="observaciones" name="observaciones">
+                
+            </div>
+        </div>
+                <div class="input-control text size2">
+           <label> VTV</label>
+            <div class="input-control text" data-role="input-control" >
+                <input type="text" style="background-color: #ececec;font-weight: bold;color: navy;text-align: center" id="vtv" name="vtv">
+                
+            </div>
+        </div>
+    </div>
+    <div class="row ">
+        <button class="image-button large bg-darkGreen fg-white image-right">
+            Cargar Egreso
+        </button>
+    </div>
+    <div id="Message" class="row">
+    @Html.Raw(result)
+    </div>
+</form>
+</div>
+<div class="row"><div id="txtHint"></div></div>
+
+
+
+
+

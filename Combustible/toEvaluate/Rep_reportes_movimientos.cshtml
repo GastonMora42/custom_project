@@ -1,0 +1,71 @@
+﻿@{
+    Layout = "_RepSiteLayout.cshtml";
+
+    }
+
+<legend>Reporte de Movimientos</legend>
+<div class="row">
+    <form>
+        <div class="row cells4">
+            <div class="cell colspan1">
+                <label>Fecha Desde</label>
+                <div class="input-control  text" data-role="datepicker">
+                    <input type="text" id="fechadesde" placeholder="seleccionar fecha">
+                    <button class="button"><span class="mif-calendar"></span></button>
+                </div>
+            </div>
+            <div class="cell colspan1">
+                <label>Fecha Hasta</label>
+                <div class="input-control  text" data-role="datepicker">
+                    <input type="text" id="fechahasta" placeholder="seleccionar fecha">
+                    <button class="button"><span class="mif-calendar"></span></button>
+                </div>
+            </div>
+            <div class="cell colspan1">
+                <label>Tipo de Movimiento</label>
+                <div class="input-control  select">
+                    <select id="TipoMov">
+                        <option value="">Seleccionar</option>
+                        <option value="INGRESO">INGRESOS</option>
+                        <option value="EGRESO">EGRESOS</option>
+                        <option value="TODOS">TODOS</option>
+                    </select>
+                </div>
+            </div>
+
+        </div>
+    </form>
+    <button class="" onclick="showCustomer()">Consultar</button>
+        
+
+</div>
+<script>
+    function showCustomer() {
+        var fechadesde = $("#fechadesde").val();
+        var fechahasta = $("#fechahasta").val();
+        var str = $("#TipoMov").val();
+        var xmlhttp;
+        if (str == "Seleccionar un Cliente") {
+            document.getElementById("txtHint").innerHTML = "";
+            return;
+        }
+        if (window.XMLHttpRequest) {// code for IE7+, Firefox, Chrome, Opera, Safari
+            xmlhttp = new XMLHttpRequest();
+        }
+        else {// code for IE6, IE5
+            xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+        }
+        xmlhttp.onreadystatechange = function () {
+            if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+                document.getElementById("txtHint").innerHTML = xmlhttp.responseText;
+            }
+        }
+        xmlhttp.open("GET", "Rep_reportes_movimientos_detail.cshtml?TipoMov=" + str +"&Fechadesde=" + fechadesde+"&Fechahasta=" + fechahasta, true);
+        xmlhttp.send();
+    }
+</script>
+
+<div id="txtHint"></div>
+
+
+

@@ -1,0 +1,43 @@
+@{
+    var db = Database.Open("IntranetConnectionNew");
+    var eventosel = Request["eventoid"];
+    var eventoselssql = @"SELECT 
+                        VTOS.IDVENC,
+                        CONVERT(VARCHAR(10),VTOS.FECHA,126) AS 'FECHA',
+                        VTOS.CONCEPTO,
+                        VTOS.DETALLE,
+                        VTOS.EMPID,
+                        VTOS.IMPORTE,
+                        VTOS.RESPONSABLE,
+                        RESP.Usuario,
+                        RESP.Avatar,
+                        RESP.ID,
+                        VTOS.CONTROL,
+                        VTOS.FECHA_CTRL,
+                        VTOS.USER_CTRL,
+                        VTOS.DETAIL_CTRL,
+                        VTOSEMP.EMPRESA,
+                        VTOSEMP.FORMATO,
+                        VTOS.RUBROID,
+                        RUB.RUBRO,
+                        RUB.RUBRO_DISPLAY,
+
+                        CASE 
+                            WHEN VTOS.CONTROL = 1 THEN 'CTRL' 
+                            WHEN CAST(VTOS.FECHA AS DATE) <  CAST(GETDATE() AS DATE) THEN 'SI' 
+                            ELSE 'NO' END AS 'VENCIDO'
+                        FROM
+                        dbo.VENCIMIENTOS VTOS
+                        INNER JOIN dbo.VENCIMIENTOS_EMPRESAS VTOSEMP ON (VTOS.EMPID = VTOSEMP.IDEMPEV) 
+                        INNER JOIN dbo.USERS_TABLE RESP ON (VTOS.RESPONSABLE = RESP.ID)
+                        INNER JOIN dbo.VENCIMIENTOS_RUBROS RUB ON (VTOS.RUBROID = RUB.IDVENCRUBRO)
+                        WHERE
+                        VTOS.IDVENC = @0
+                        ORDER BY
+                        VTOS.FECHA";
+
+    var eventoselres = db.Query(eventoselssql,eventosel);
+    
+    Json.Write(eventoselres, Response.Output);
+}  
+

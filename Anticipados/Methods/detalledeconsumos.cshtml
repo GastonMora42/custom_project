@@ -1,0 +1,39 @@
+@{
+    var Usuario = WebSecurity.CurrentUserName;
+    
+        var db = Database.Open("IntranetConnectionNew");
+        var numrecibo = Request.QueryString["num_recibo"];
+        var sqlRecibo =@"  SELECT 
+                            cab.IDCAB,
+                            CONVERT(VARCHAR(10), cab.FECHA,103) AS 'FECHA',
+                            cab.TIPO_COMP,
+                            cab.N_COMP,
+                            det1.NOMBRE_ART,
+                            det1.CANTIDAD,
+                            APL.CANTIDAD,
+                            REM.FECHA,
+                            REM.REMITO
+                            FROM
+                            dbo.COMP_ANTICIPADOS_CAB cab
+                            INNER JOIN dbo.COMP_ANTICIPADOS_RES_APLICACIONES  det1 ON (cab.IDCAB=det1.IDCAB)
+                            INNER JOIN dbo.COMP_ANTICIPADOS_APLICACIONES APL ON (det1.IDDETAIL=APL.IDCOMP_DETAIL)
+                            INNER JOIN dbo.REMITOS_DETALLE REM ON (APL.IDREMITO=REM.ID)
+                            WHERE
+                            cab.IDCAB = " + numrecibo + "ORDER BY REM.REMITO";
+        var recibo = db.Query(sqlRecibo);      
+    
+    }
+
+
+<tbody>
+  @foreach (var row in recibo)
+  {
+    <tr>
+      <td class="sort align-middle text-center" style="font-weight:500;color:blue">@row.REMITO</td>
+      <td class="sort align-middle text-center">@row.FECHA</td>
+      <td class="sort align-middle" style="text-align: left;color:rgb(153, 51, 0)">@row.NOMBRE_ART</td>
+      <td class="sort align-middle" style="text-align: right;color:navy">@row.CANTIDAD</td>
+
+    </tr>
+  }
+</tbody>

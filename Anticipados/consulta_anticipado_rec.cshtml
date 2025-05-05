@@ -1,0 +1,26 @@
+@{
+    var Usuario = WebSecurity.CurrentUserName;
+    
+        Layout = "../Inicio/_ConfluenciaLayout.cshtml";
+        var db = Database.Open("IntranetConnectionNew");
+        var title = "Consulta Anticipado";
+        var numcomp = Request.QueryString["num_comp"];   
+    }
+<!-- BEGIN: .main-content -->
+
+
+<div id="Table_detail"></div>
+
+
+<script>
+    $(document).ready(function(){
+     recibosel();
+     
+
+    });
+
+         function recibosel() {
+            
+            $('#Table_detail').load("Methods/consulta_anticipado_det_rec.cshtml?num_comp="+ @numcomp);
+    }
+</script>

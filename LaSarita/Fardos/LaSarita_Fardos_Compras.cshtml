@@ -1,0 +1,27 @@
+@{
+    if (WebSecurity.IsAuthenticated == false)
+    {
+        Response.Redirect("~/Account/Login.cshtml");
+    }
+    
+    
+    var Usuario = WebSecurity.CurrentUserName;
+    
+    var db = Database.Open("IntranetConnection");
+    var fecha = Request.Form["fecha_fardos"];  
+    var totalfardos = Request.Form["total_fardos"].AsFloat();
+    var cantidad = Request.Form["cantidad"].AsInt();
+    var tipoalfalfa = Request.Form["tipoalfalfa"];
+    // Process information here
+      var insertQueryfardos = @"INSERT INTO
+                                dbo.LA_SARITA_FARDOS_DETAIL(
+                                FECHA_MOV,    
+                                CANTIDAD,
+                                IMPORTE_TOTAL,
+                                MOV_CTA_CTE,
+                                ALFALFA_TIPO,
+                                USUARIO) VALUES (@0, @1, @2, @3, @4, @5)";
+        db.Execute(insertQueryfardos,fecha,cantidad,totalfardos,1,tipoalfalfa, Usuario);
+
+  
+}

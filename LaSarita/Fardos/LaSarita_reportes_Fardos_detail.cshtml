@@ -1,0 +1,57 @@
+﻿@{
+    if (WebSecurity.IsAuthenticated == false)
+    {
+        Response.Redirect("~/Account/Login.cshtml");
+    }
+    var Usuario = WebSecurity.CurrentUserName;
+    var db = Database.Open("IntranetConnection");
+    var Fecha_desde = Request.QueryString["Fechadesde"].AsDateTime();
+
+
+    var sql = @"SELECT 
+                dbo.YEARANDMONTH(DETF.FECHA_MOV) as 'PERIODO',
+                SUM(CASE WHEN DETF.ALFALFA_TIPO = 1 THEN DETF.CANTIDAD ELSE 0 END) AS 'FARDOS',
+                SUM(CASE WHEN DETF.ALFALFA_TIPO = 2 THEN DETF.CANTIDAD ELSE 0 END) AS 'ROLLOS'
+            FROM
+                dbo.LA_SARITA_FARDOS_DETAIL DETF
+            WHERE
+                DETF.FECHA_MOV >= @0
+            GROUP BY 
+                dbo.YEARANDMONTH(DETF.FECHA_MOV)
+            ORDER BY 
+                dbo.YEARANDMONTH(DETF.FECHA_MOV) DESC ";
+    var reporte = db.Query(sql, Fecha_desde);
+
+
+
+
+}
+
+<div class="tab-content" id="myTabContent">
+
+        <table class="table table-striped table-hover table-sm" style="font-size:14px;width: fill-available" id="tableId">
+        <thead>
+            <tr style="background-color:rgb(160,31,111);color:white;font-size:15px;" >
+                <th class="text-center">Periodo</th>
+                <th class="text-center">Fardos</th>
+                <th class="text-center">Rollos</th>                
+            </tr>
+        </thead>
+            <tbody>
+            @foreach(var row in reporte)
+            {      
+             <tr style="font-size:12px; vertical-align: middle;" >
+                <td class="text-primary" style="text-align:center;font-weight:500 "> @row.PERIODO</td>
+                <td class="text-primary" style="text-align:center;font-weight:500 "> @row.FARDOS</td> 
+                <td class="text-primary" style="text-align:center;font-weight:500 "> @row.ROLLOS</td>   
+             </tr>   
+                }    
+        </tbody>
+
+        </table>
+  </div>
+
+
+
+
+

@@ -1,0 +1,14 @@
+﻿@{
+    if (WebSecurity.IsAuthenticated == false)
+    {
+    Response.Redirect("~/Account/Login.cshtml");
+    }
+    var db = Database.Open("IntranetConnection");
+    var idselected = Request["id_fardos_del"];
+    var deleteQueryString = "DELETE FROM dbo.LA_SARITA_FARDOS_DETAIL WHERE dbo.LA_SARITA_FARDOS_DETAIL.ID_MOV=@0";
+    db.Execute(deleteQueryString,idselected);
+    
+    Json.Write(idselected ,Response.Output);
+}
+
+

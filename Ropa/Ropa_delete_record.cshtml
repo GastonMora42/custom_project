@@ -1,0 +1,96 @@
+﻿@{
+   Layout = "_RopaSiteLayout.cshtml";
+    Page.Title = "Borrar Registro";
+    if (WebSecurity.IsAuthenticated == false)
+    {
+        Response.Redirect("~/Account/Login.cshtml");
+    }
+    var db = Database.Open("IntranetConnection");
+    string proveedorelegido = Request.QueryString["q"];
+    var result = "";
+    
+    var stringquery = @"SELECT 
+                    dbo.NOMINA_ROPA_ITEMS.CANTIDAD,
+                    dbo.NOMINA_ROPA_DEPOSITOS.NOMBRE_DEP,
+                    dbo.NOMINA_ROPA_ITEMS.FECHA,
+                    dbo.NOMINA_ROPA_ITEMS.PROVEEDOR,
+                    dbo.NOMINA_ROPA_TIPOS_MOVIMIENTOS.DESCR_MOVIMIENTO,
+                    dbo.NOMINA_ROPA_ITEMS.USUARIO,
+                    dbo.NOMINA_ROPA_ARTICULOS.DESCRIPCION,
+                    dbo.NOMINA_ROPA_ARTICULOS.CODIGO
+                    FROM
+                    dbo.NOMINA_ROPA_ITEMS
+                    INNER JOIN dbo.NOMINA_ROPA_ARTICULOS ON (dbo.NOMINA_ROPA_ITEMS.ARTICULO = dbo.NOMINA_ROPA_ARTICULOS.ID_PRODUCTO)
+                    INNER JOIN dbo.NOMINA_ROPA_CATEGORIAS ON (dbo.NOMINA_ROPA_ARTICULOS.CATEGORIAS = dbo.NOMINA_ROPA_CATEGORIAS.ID_CATEGORIA)
+                    INNER JOIN dbo.NOMINA_ROPA_UNIDADES_MEDIDA ON (dbo.NOMINA_ROPA_ARTICULOS.UNIDAD_MEDIDA = dbo.NOMINA_ROPA_UNIDADES_MEDIDA.ID_UNID_MEDIDA)
+                    INNER JOIN dbo.NOMINA_ROPA_DEPOSITOS ON (dbo.NOMINA_ROPA_ITEMS.DEPOSITO = dbo.NOMINA_ROPA_DEPOSITOS.ID_DEPOSITO)
+                    INNER JOIN dbo.NOMINA_ROPA_TIPOS_MOVIMIENTOS ON (dbo.NOMINA_ROPA_ITEMS.ID_TIPO_MOV = dbo.NOMINA_ROPA_TIPOS_MOVIMIENTOS.ID_TIPOMOV)
+                    WHERE
+                    dbo.NOMINA_ROPA_ITEMS.ID_REGISTRO =" + proveedorelegido;
+
+    var movimientos = db.Query(stringquery);
+
+    if (IsPost)  {
+            var deleteQueryString = "DELETE FROM dbo.NOMINA_ROPA_ITEMS WHERE dbo.NOMINA_ROPA_ITEMS.ID_REGISTRO=@0";
+            db.Execute(deleteQueryString, proveedorelegido);
+
+            
+            
+            Response.Redirect("Ropa_Dashboard.cshtml?resultado=1");
+            }
+
+    
+}
+<legend>Desea Borrar el siguiente Registro</legend>  
+<div class="row">
+            @foreach(var row in movimientos)
+        {  
+   <form data-role="validator" method="post" action="">
+    <div class="row">
+        <div class="input-control text size2">
+            <label>Fecha</label>
+            <div class="input-control  info-state select">
+                <input type="text" value="@string.Format("{0:dd/MM/yy}", @row.FECHA)" disabled style="font-weight: 500">
+            </div>
+        </div>
+
+        <div class="input-control text size3">
+            <label>Descrpcion</label>
+            <div class="input-control  info-state select">
+                <input type="text" value="@row.DESCRIPCION" disabled style="font-weight: 500">
+            </div>
+        </div>
+            <div class="input-control text size2">
+            <label>Cantidad</label>
+            <div class="input-control  info-state select">
+            <input type="text" value="@string.Format("{0:n}", @row.CANTIDAD)" disabled style="font-weight: 500">
+            </div>
+
+        </div>
+
+      </div>
+    <div class="row">
+         <div class="input-control text size5" data-role="input-control">
+            <label>Proveedor - Empleado</label>
+            <div class="input-control  info-state select">
+                <input type="text" value="@row.PROVEEDOR" disabled style="font-weight: 500">
+            </div>
+        </div>
+        <div class="input-control text size2">
+        <label>Movimiento</label>
+            <div class="input-control  info-state select">
+                <input type="text" id="precinto" name="precinto"  value="@row.DESCR_MOVIMIENTO" disabled style="font-weight: 500"> 
+            </div>
+        </div>
+       </div> 
+    <div class="row ">
+        <button class="large bg-red fg-white ">
+            Borrar Registro
+        </button>
+    </div>
+    <div id="Message" class="row">
+    @Html.Raw(result)
+    </div>
+</form>
+}
+</div>

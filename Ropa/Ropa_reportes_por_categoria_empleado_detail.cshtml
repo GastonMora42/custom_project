@@ -1,0 +1,61 @@
+﻿@{
+    if (WebSecurity.IsAuthenticated == false)
+    {
+        Response.Redirect("~/Account/Login.cshtml");
+    }
+
+    var Usuario = WebSecurity.CurrentUserName;
+    var strsql = "";
+    var interno = Request.QueryString["interno"];
+    var db = Database.Open("IntranetConnectionNew");
+    strsql = @"SELECT 
+  dbo.NOMINA_ROPA_ITEMS.FECHA,
+  dbo.NOMINA_ROPA_ARTICULOS.DESCRIPCION,
+  dbo.NOMINA_ROPA_CATEGORIAS.CATEGORIA_DESC,
+  dbo.NOMINA_ROPA_ITEMS.CANTIDAD,
+  dbo.NOMINA_ROPA_DEPOSITOS.NOMBRE_DEP
+FROM
+  dbo.NOMINA_ROPA_ITEMS
+  
+  INNER JOIN dbo.NOMINA_ROPA_TIPOS_MOVIMIENTOS ON (dbo.NOMINA_ROPA_ITEMS.ID_TIPO_MOV = dbo.NOMINA_ROPA_TIPOS_MOVIMIENTOS.ID_TIPOMOV)
+  INNER JOIN dbo.NOMINA_ROPA_ARTICULOS ON (dbo.NOMINA_ROPA_ITEMS.ARTICULO = dbo.NOMINA_ROPA_ARTICULOS.ID_PRODUCTO)
+  INNER JOIN dbo.NOMINA_ROPA_CATEGORIAS ON (dbo.NOMINA_ROPA_ARTICULOS.CATEGORIAS = dbo.NOMINA_ROPA_CATEGORIAS.ID_CATEGORIA)
+  INNER JOIN dbo.NOMINA_ROPA_DEPOSITOS ON (dbo.NOMINA_ROPA_ITEMS.DEPOSITO = dbo.NOMINA_ROPA_DEPOSITOS.ID_DEPOSITO)
+  LEFT OUTER JOIN dbo.NOMINA_LISTADO_DE_ACTIVOS NOM ON (dbo.NOMINA_ROPA_ITEMS.PROVEEDOR = NOM.APELLIDO_Y_NOMBRE COLLATE Modern_Spanish_CI_AI)
+WHERE 
+dbo.NOMINA_ROPA_ITEMS.PROVEEDOR = '" + interno + "' ORDER BY dbo.NOMINA_ROPA_ITEMS.FECHA DESC";
+
+    var products = db.Query(strsql);    
+}
+
+<table id="datatable-buttons" class="table striped hovered dataTable">
+    <thead>
+        <tr>
+            <th class="text-center">FECHA</th>
+            <th class="text-center">ARTICULO</th>
+            <th class="text-center">CATEGORIA</th>
+            <th class="text-center">CANTIDAD</th>
+            <th class="text-center">DEPOSITO</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach(var row in products)
+        {      
+        <tr>
+            <td class="text-center">
+                @string.Format("{0:dd/MM/yy}", @row.FECHA)
+            </td>
+            <td>@row.DESCRIPCION</td>
+            <td>@row.CATEGORIA_DESC</td>
+            <td class="text-right">
+                @string.Format("{0:n}", @row.CANTIDAD)
+            </td>       
+            <td>@row.NOMBRE_DEP</td>
+        </tr>
+        }
+    </tbody>
+</table>
+
+
+
+

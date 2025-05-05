@@ -1,0 +1,50 @@
+﻿@{
+        var socio_id = Request.QueryString["q"];
+        var db = Database.Open("IntranetConnection");
+        var sql = @"SELECT 
+                  ROW_NUMBER() OVER(ORDER BY lscab.IDCABALLO) AS 'NUM',
+                  lscab.NOMBRE,
+                  CONVERT(VARCHAR(10),lscab.FECHA_ALTA,103) AS 'FECHA_ALTA',
+                  lscab.OBSERVACIONES,
+                  lscab.IDCABALLO
+                FROM
+                  dbo.LA_SARITA_SOCIOS_CABALLOS lscab
+                WHERE
+                  lscab.IDSOCIO = @0 AND
+                  lscab.FECHA_BAJA IS NULL
+                ORDER BY 
+                lscab.IDCABALLO";
+        var book = db.Query(sql,socio_id);
+}
+
+   <table class="table table-striped table-advance table-hover" style="width: 90%; margin-left: auto; margin-right: auto;">
+       <thead>
+           <tr>
+               <th>#</th>
+               <th>NOMBRE</th>
+               <th>ALTA</th>
+               <th>OBSERVACIONES</th>
+                <th>ACCIONES</th>
+               
+               
+          </tr>
+       </thead>
+       <tbody>
+           @foreach(var row in book){
+            <tr style="text-align:center " id="@row.IDCABALLO">
+               <td style="text-align:center ">@row.NUM</td>
+               <td style="text-align:center "> @row.NOMBRE</td> 
+                <td style="text-align:center "> @row.FECHA_ALTA</td> 
+                <td style="text-align:center "> @row.OBSERVACIONES</td> 
+               <td >
+                    <button class="btn btn-outline-light btn-sm" style="border-color: rgb(160,31,111)" type="button" data-bs-toggle="modal" data-bs-target="#editCaballoModal" onclick="editacaballo(@row.IDCABALLO)">
+                        <span class="icon-pencil" style="color:rgb(160,31,111);text-align:center;font-size: 14px;"></span> 
+                    </button>
+                    <button class="btn btn-outline-light btn-sm" style="border-color: rgb(160,31,111)" type="button" data-bs-toggle="modal" data-bs-target="#deleteCaballoModal" onclick="deletecaballo(@row.IDCABALLO)">
+                        <i class="bi-trash" style="color:rgb(160,31,111);text-align:center;font-size: 14px;"></i> 
+                    </button>
+                </td>
+            </tr>
+           }
+       </tbody>
+   </table>

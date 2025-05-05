@@ -1,0 +1,17 @@
+@{
+    var db = Database.Open("IntranetConnectionNew");
+    var clientesel = Request["clienteid"].AsInt();
+    var clienteselssql = @"SELECT           
+                    dbo.HABILITADOS_OBRAS.IDOBRA,
+                    dbo.HABILITADOS_OBRAS.CODIGO
+                    FROM
+                    dbo.HABILITADOS_CLIENTES
+                    INNER JOIN dbo.HABILITADOS_OBRAS ON (dbo.HABILITADOS_CLIENTES.IDCLIENTE = dbo.HABILITADOS_OBRAS.IDCLIENTE)
+                    WHERE
+                    dbo.HABILITADOS_CLIENTES.IDCLIENTE = @0 AND 
+                    dbo.HABILITADOS_OBRAS.STATUS = 1";
+
+    var clienteselres = db.Query(clienteselssql,clientesel);
+    
+    Json.Write(clienteselres, Response.Output);
+}  

@@ -1,0 +1,44 @@
+@{
+
+        var db = Database.Open("IntranetConnectionNew");
+        var InformeCtoSumTipoSQL = @"SELECT 
+                            REPLACE(dbo.INFORME_CEMENTO_COMPRAS.DESCRIPCIO,'Cemento ','') AS 'TIPO',
+                            ROUND(SUM(dbo.INFORME_CEMENTO_COMPRAS.CAN_PEDIDA),0) AS 'CANTIDAD',
+                            ROUND(SUM(dbo.INFORME_CEMENTO_COMPRAS.CAN_PEDIDA) * 100 /  SUM(SUM(dbo.INFORME_CEMENTO_COMPRAS.CAN_PEDIDA)) over(),0) AS 'PORCENTAJE'
+                            FROM
+                            dbo.INFORME_CEMENTO_COMPRAS
+                            WHERE
+                            YEAR(dbo.INFORME_CEMENTO_COMPRAS.FECHA_CONT) = @0
+                            GROUP BY
+                            dbo.INFORME_CEMENTO_COMPRAS.DESCRIPCIO,
+                            YEAR(dbo.INFORME_CEMENTO_COMPRAS.FECHA_CONT)
+                            UNION ALL
+                            SELECT 
+                            'TOTAL',
+                            ROUND(SUM(dbo.INFORME_CEMENTO_COMPRAS.CAN_PEDIDA),0) AS 'CANTIDAD',
+                            ROUND(SUM(dbo.INFORME_CEMENTO_COMPRAS.CAN_PEDIDA) * 100 /  SUM(SUM(dbo.INFORME_CEMENTO_COMPRAS.CAN_PEDIDA)) over(),2) AS 'PORCENTAJE'
+                            FROM
+                            dbo.INFORME_CEMENTO_COMPRAS
+                            WHERE
+                            YEAR(dbo.INFORME_CEMENTO_COMPRAS.FECHA_CONT) = @0
+                            GROUP BY
+                            YEAR(dbo.INFORME_CEMENTO_COMPRAS.FECHA_CONT)";
+        var InformeCtoSumTipo = db.Query(InformeCtoSumTipoSQL ,2025);
+        
+        Json.Write(InformeCtoSumTipo , Response.Output);
+
+    
+    
+//    @foreach(var row in InformeCtoSumTipo)
+  //  {
+    //    <div class="d-flex flex-between-center border-bottom py-3 pt-md-0 pt-xxl-3">
+      //      <div class="d-flex">
+        //        <h6 class="text-700 mb-0">@row.TIPO </h6>
+        //    </div>
+        //<h6 class="text-700 mb-0">@string.Format("{0:n}",@row.CANTIDAD )</h6>    
+        //<p class="fs--1 text-500 mb-0 fw-semi-bold">@string.Format("{0:p}",@row.PORCENTAJE / 100 )</p>
+        
+       // </div>
+  //  }
+
+}

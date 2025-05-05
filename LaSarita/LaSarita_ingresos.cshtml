@@ -1,0 +1,34 @@
+﻿@{
+    if (WebSecurity.IsAuthenticated == false)
+    {
+        Response.Redirect("~/Account/Login.cshtml");
+    }
+    
+    
+    var Usuario = WebSecurity.CurrentUserName;
+    
+    var db = Database.Open("IntranetConnection");
+    var fecha = Request.Form["fecha_ingreso"];
+    var socioid= Request.Form["socioid"];
+    var formadecobro = Request.Form["formadecobro"];    
+    var importe = Request.Form["importe_ingresos"].AsFloat();
+    var descripcion = Request.Form["descripcion"];
+    var codmov = "I";
+    // Process information here
+            var insertQuery =
+                    @"INSERT INTO
+                    dbo.LA_SARITA_SOCIOS_MOVIMIENTOS(
+                    FECHA,
+                    CODIGO_MOV,
+                    TIPO_MOV,
+                    MEDIO_PAGO,
+                    ID_SOCIO,
+                    IMPORTE,
+                    DESCRIPCION,
+                    USUARIO,
+                    ESTAD_MOV)
+                    VALUES  (@0, @1, @2, @3, @4, @5, @6, @7, @8)";
+            db.Execute(insertQuery, fecha,codmov,"Ingresos",formadecobro,socioid,importe,descripcion,Usuario, 1);
+           
+            
+}

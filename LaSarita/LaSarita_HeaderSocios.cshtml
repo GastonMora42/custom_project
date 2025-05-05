@@ -1,0 +1,29 @@
+@{
+    var Usuario = WebSecurity.CurrentUserName;
+    var db = Database.Open("IntranetConnection");
+    var products = db.QueryValue("SELECT dbo.USERS_TABLE.EsAdmin FROM dbo.USERS_TABLE WHERE dbo.USERS_TABLE.Usuario ='" + Usuario + "'");
+
+}
+
+@if (WebSecurity.IsAuthenticated)
+{
+
+    <style>
+        nav {
+    border: 1px solid;
+    background-color: #fae7f3;
+    border-color: rgb(160,31,111);
+    } 
+    </style>
+
+    <nav class="navbar bg-white navbar-expand-lg " >
+        <div class="container-fluid">
+    <a class="navbar-brand" href="#" style="color: rgb(160,31,111);">
+      <img src="LaSarita.jpg" alt="" width="40" height="34" class="d-inline-block align-text-top">
+      La Sarita Socios
+    </a>
+
+        <a class="navbar-brand" style="color: rgb(160,31,111);" href="LaSarita_Dashboard.cshtml">Inicio</a>
+        </div>
+    </nav>
+}

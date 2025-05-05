@@ -1,0 +1,86 @@
+@{
+    var Usuario = WebSecurity.CurrentUserName;
+    
+        var db = Database.Open("IntranetConnectionNew");
+        var num_factura = Request.QueryString["num_comp"];
+
+        var statusquery = "SELECT sta.IDSTATUS, sta.STATUS FROM dbo.COMP_ANTICIPADOS_CAB_STATUS sta ORDER BY sta.STATUS";
+        var statuslist = db.Query(statusquery);
+
+
+        var sqlcabeanticipado = @"SELECT DISTINCT
+                                COMP_ANTICIPADOS_CAB.N_COMP
+                              FROM
+                                COMP_ANTICIPADOS_CAB
+                                LEFT OUTER JOIN dbo.COMP_ANTICIPADOS_CAB_STATUS STA ON (COMP_ANTICIPADOS_CAB.STATUS=STA.IDSTATUS)
+                              WHERE
+                                COMP_ANTICIPADOS_CAB.IDCAB = '" + num_factura   + "'";
+
+        var cabanticipado = db.QuerySingle(sqlcabeanticipado); 
+        var ncompcab = cabanticipado.N_COMP;
+
+
+
+        var sqlVenta =@"SELECT 
+                      DETVTA.COD_ART,
+                      DETVTA.NOMBRE_ART,
+                      DETVTA.N_RENGLON,
+                      DETVTA.PRECIO,
+                      DETVTA.CANTIDAD,
+                      DETVTA.TOTAL
+                    FROM
+                      dbo.COMP_ANTICIPADOS_DETAIL DETVTA
+                    WHERE
+                      DETVTA.IDCAB= '" + num_factura + "' ORDER BY  DETVTA.N_RENGLON ";
+        var venta = db.Query(sqlVenta);
+        var sqlTotalVenta =@"SELECT   
+                        SUM(DETVTA.TOTAL) AS 'TOTAL'
+                        FROM
+                        dbo.COMP_ANTICIPADOS_DETAIL DETVTA
+                        WHERE 
+                        DETVTA.IDCAB = '" + num_factura + "' GROUP BY DETVTA.IDCAB";
+        var TotalVenta= db.QueryValue(sqlTotalVenta);
+
+
+        
+
+    
+    }
+
+<table class="table table-sm table-responsive table-striped table-centered border table-nowrap mb-lg-0"style="font-size:75%;">
+    
+    <thead class="bg-light">
+        <tr>
+            <th style="text-align: center;">#</th>
+            <th style="text-align: center;">Cantidad</th>
+            <th style="text-align: center;">Descripcion</th>
+            <th style="text-align: center;">Precio Unit.</th>
+            <th style="text-align: center;">Total</th>
+        </tr>
+    </thead>
+    <tbody>
+        
+        @foreach(var row in venta)
+        {      
+        
+        <tr>
+            <td style="text-align: center;font-weight: 600;">@row.N_RENGLON</td>
+            <td style="text-align: right;">@string.Format("{0:n}", @row.CANTIDAD)</td>
+            <td style="text-align: center;">@row.NOMBRE_ART</td>
+            <td style="text-align: right;">@string.Format("{0:n}", @row.PRECIO)</td>
+            <td style="text-align: right;">@string.Format("{0:n}", @row.TOTAL)</td>
+            
+        </tr>
+        }
+        <tr> 
+
+            
+            <td style="text-align: right;"></td>
+            <td style="text-align: center;"></td>
+            <td style="text-align: center;font-weight: 600;color: dodgerblue;">TOTAL</td>
+            <td style="text-align: right;"></td>
+            <td style="text-align: right;font-weight: 600;color: dodgerblue;" id="totalventa">@string.Format("{0:n}", @TotalVenta)</td>
+            
+        </tr>
+    </tbody>
+</table>

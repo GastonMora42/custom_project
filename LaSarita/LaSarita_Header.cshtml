@@ -1,0 +1,258 @@
+﻿@{
+    var Usuario = WebSecurity.CurrentUserName;
+    var db = Database.Open("IntranetConnection");
+    var products = db.QueryValue("SELECT dbo.USERS_TABLE.EsAdmin FROM dbo.USERS_TABLE WHERE dbo.USERS_TABLE.Usuario ='" + Usuario + "'");
+        var sqlcumple = @"SELECT 
+                        LSS.NOMBRES + ' ' + LSS.APELLIDO + CASE WHEN LSS.APODO IS NULL THEN '' ELSE ' ( ' + LSS.APODO + ' )' END AS 'DATOS_SOCIO',
+                        LEFT(CONVERT(VARCHAR(10),LSS.FECHA_NACIMIENTO,103),5) AS 'FECHA_NAC',
+                        CASE WHEN DAY(LSS.FECHA_NACIMIENTO) = DAY(GETDATE()) THEN 1 ELSE 0 END AS 'EVAL'
+                    FROM
+                    dbo.LA_SARITA_SOCIOS LSS
+                    WHERE
+					MONTH(LSS.FECHA_NACIMIENTO) = MONTH(GETDATE()) 
+                    ORDER BY 
+                    DAY(LSS.FECHA_NACIMIENTO)";
+    var cumple = db.Query(sqlcumple);
+            var sqlcumpleCant = @"SELECT  COUNT(LSS.IDSOCIO) AS 'EVAL'
+                    FROM
+                    dbo.LA_SARITA_SOCIOS LSS
+                    WHERE
+                    DAY(LSS.FECHA_NACIMIENTO) = DAY(GETDATE())  AND
+					MONTH(LSS.FECHA_NACIMIENTO) = MONTH(GETDATE()) ";
+    var cumpleCant = db.QuerySingle(sqlcumpleCant);
+    var sqlclub = @"SELECT 
+                    LSSC.ID_CLUB,
+                    LSSC.NOMBRE_CLUB
+                    FROM
+                    dbo.LA_SARITA_SOCIOS_CLUBES LSSC
+                    ORDER BY 
+                    LSSC.ID_CLUB";
+    var club = db.Query(sqlclub);
+    var sqlcategoria = @"SELECT 
+                    LSSCAT.ID_CAT,
+                    LSSCAT.CATEGORIA
+                    FROM
+                    dbo.LA_SARITA_SOCIOS_CATEGORIAS LSSCAT
+                    ORDER BY 
+                    LSSCAT.CATEGORIA";
+    var categoria = db.Query(sqlcategoria);
+}
+<style>
+.button2:hover {
+  background-color:white;
+  color:rgb(160,31,111) !important;
+}
+</style>
+
+@if (WebSecurity.IsAuthenticated)
+{
+
+
+    <nav class="navbar navbar-expand-lg" style="background-color:rgb(160,31,111);margin-bottom:20px;">
+    <div class="container-fluid">
+          <a class="navbar-brand" href="~/LaSarita/LaSarita_Dashboard.cshtml" style="color: white;">
+      <img src="~/LaSarita/LaSarita2.jpg" alt="" width="40" height="34" class="d-inline-block align-text-top">
+      La Sarita
+    </a>
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+          <li class="nav-item">
+            <a style="color: white;" class="nav-link active" href="~/LaSarita/LaSarita_Dashboard.cshtml">Inicio</a>
+          </li>
+        </ul>
+        <form class="d-flex" role="search">
+          <button class="btn btn-outline-light" type="button" data-bs-toggle="modal" data-bs-target="#altausuarioModal">
+          <span class="fas fa-plus text-light fs-5 button2 " ></span> </button>
+          <button class="btn btn-outline-light position-relative button2" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasExample" aria-controls="offcanvasExample">
+              <span class="fas fa-birthday-cake text-light fs-5 button2"></span> 
+            <span style="color:white;text-align:center;font-size: 16px;"> 
+                
+                @if (cumpleCant.EVAL>0)
+                {
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-light text-danger">@cumpleCant.EVAL</span>
+                }
+                
+            </span>
+          </button>
+            <a class="btn btn-outline-light button2" type="button" href="~/LaSarita/LaSarita_reportes_mantenimiento.cshtml">
+              <span class="fas fa-wrench text-light fs-5 button2"></span> 
+            </a>
+            <a class="btn btn-outline-light button2" type="button" href="~/LaSarita/Socios/LaSarita_Socios_Datos.cshtml">
+              <span class="far fa-user text-light button2 fs-5" ></span> 
+            </a>
+            <a class="btn btn-outline-light button2" type="button" href="~/LaSarita/Caballos/LaSarita_Caballos_gestion.cshtml">
+              <span class="fas fa-horse text-light button2 fs-5"></span> 
+            </a>
+             <a class="btn btn-outline-light button2" type="button" href="~/LaSarita/LaSarita_reportes_socios.cshtml">
+              <span class="fa-solid fa-dollar-sign text-light button2 fs-5" > </span> 
+            </a>
+            <a class="btn btn-outline-light button2" type="button" href="~/LaSarita/LaSarita_fardos.cshtml">
+              <span class="fas fa-utensils text-light button2 fs-5"></span> 
+            </a>
+        </form>
+      <div class="collapse navbar-collapse" id="navbarColor02">
+
+      </div>
+    </div>
+  </nav>
+
+  <div class="offcanvas offcanvas-start" tabindex="-1" id="offcanvasExample" aria-labelledby="offcanvasExampleLabel">
+  <div class="offcanvas-header">
+    <h5 class="offcanvas-title" id="offcanvasExampleLabel">Notificaciones</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+  </div>
+  <div class="offcanvas-body">
+    <div>
+      Listado de Cumpleaños del Mes !!
+    </div>
+              <table class="table table-striped table-hover table-sm " style="font-size:14px;" id="tableId">
+        <thead>
+            <tr>
+                <th class="text-center">Socio</th>
+                <th class="text-center">Fecha</th>
+                
+            </tr>
+        </thead>
+            <tbody class="table-group-divider">
+            @foreach(var row in cumple)
+            {      
+                if (@row.EVAL==1)
+                {
+                    <tr style="font-size:12px; vertical-align: middle;color:green" class="table-success">
+                        <td>@row.DATOS_SOCIO</td>
+                        <td>@row.FECHA_NAC</td>  
+                    </tr>   
+                }
+                else{
+                    <tr style="font-size:12px; vertical-align: middle;" >
+                        <td>@row.DATOS_SOCIO</td>
+                        <td>@row.FECHA_NAC</td>  
+                    </tr>   
+                }      
+  
+            }    
+        </tbody>
+
+        </table>
+  </div>
+</div>
+
+<!-- Carga de Alta de Nuevo Socio -->
+
+<div class="modal fade" id="altausuarioModal" tabindex="-1" aria-labelledby="altausuarioModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header text-white" style="background-color:rgb(160,31,111)"> 
+          <h1 class="modal-title fs-5" id="altausuarioModalLabel">ALTA DE SOCIO</h1>
+          
+          <button  type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <form class="was-validated" role="form" enctype = "multipart/form-data" action="../LaSarita/LaSarita_alta_socio.cshtml" method="POST" id="MyFormAltaSocio" name="MyFormAltaSocio">
+        <div class="modal-body">
+            <div class="input-group mb-3">
+                <span class="input-group-text etiq" id="inputGroup-sizing-sm">Apellido:</span>
+                <input type="text" class="form-control form-control-sm" id="apellido" name="apellido" required>
+            </div>    
+            <div class="input-group mb-3">
+                <span class="input-group-text etiq" id="inputGroup-sizing-sm">Nombre/s:</span>
+                <input type="text" class="form-control form-control-sm" id="nombre" name="nombre" required>
+            </div>   
+            <div class="input-group mb-3">
+                <span class="input-group-text etiq" id="inputGroup-sizing-sm">Apodo:</span>
+                <input type="text" class="form-control form-control-sm" id="apodo" name="apodo">
+            </div>  
+            <div class="input-group mb-3">
+                <span class="input-group-text etiq" id="inputGroup-sizing-sm">DNI:</span>
+                <input type="text" class="form-control form-control-sm" id="dni" name="dni" placeholder="# doc sin puntos">
+            </div> 
+            <div class="input-group mb-3">
+                <span class="input-group-text etiq" id="inputGroup-sizing-sm">Teléfono:</span>
+                <input type="text" class="form-control form-control-sm" id="telefono" name="telefono" placeholder="# teléfono">
+            </div> 
+            <div class="input-group mb-3">
+                <span class="input-group-text etiq" id="inputGroup-sizing-sm">Mail:</span>
+                <input type="text" class="form-control form-control-sm" id="email" name="email" placeholder="name@example.com">
+            </div>   
+            <div class="input-group mb-3">
+                <span class="input-group-text etiq" id="inputGroup-sizing-sm">Fecha Nac.:</span>
+                <input class="form-control form-control-sm" type="date" id="fecha_nacimiento" name="fecha_nacimiento" required>
+            </div>
+            <div class="input-group mb-3">
+            <label class="input-group-text etiq" for="inputGroupSelect01">Club:</label>
+              <select class="form-select" id="select_club" name="select_club" aria-label="Default select example" >
+                <option selected>Seleccionar</option>
+                @foreach(var row in club)
+                    {
+                    <option value=@row.ID_CLUB>@row.NOMBRE_CLUB</option>  
+                    } 
+
+              </select>
+            </div>
+            <div class="input-group mb-3">
+            <label class="input-group-text etiq" for="inputGroupSelect01">Categoría:</label>
+              <select class="form-select" id="select_categoria" name="select_categoria" aria-label="Default select example" >
+                <option selected>Seleccionar</option>
+                @foreach(var row in categoria)
+                    {
+                    <option value=@row.ID_CAT>@row.CATEGORIA</option>  
+                    } 
+
+              </select>
+            </div>
+            <div class="input-group mb-3">
+                <span class="input-group-text etiq" id="inputGroup-sizing-sm">Grupo / Flia:</span>
+                <div class="input-group-text">
+                <input class="form-check-input mt-0" type="checkbox" value="" aria-label="Checkbox for following text input">
+                </div>
+                              <select class="form-select" id="select_motivo" name="select_motivo" aria-label="Default select example" disabled>
+                <option selected>Seleccionar</option>
+                @foreach(var row in categoria)
+                    {
+                    <option value=@row.ID_CAT>@row.CATEGORIA</option>  
+                    } 
+
+              </select>
+            </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+          <button type="button" class="btn btn-primary" id="submitButtonAltaSocio" name="submitButtonAltaSocio" >Guardar</button>
+        </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+<script>
+            $("#submitButtonAltaSocio").click(function(ev) {
+
+            var form = $("#MyFormAltaSocio");
+            var url = $("#MyFormAltaSocio").attr("action");
+            
+            $.ajax({
+                type: "POST",
+                url: url,
+                data: form.serialize(),
+                datatype: "html",
+                success: function(data) {
+                    document.getElementById("MyFormAltaSocio").reset();
+                    $('#altausuarioModal').modal('hide');  
+                    $.toast({
+                    heading: 'Information',
+                    position: 'bottom-center',
+                    text: 'Los datos fueron guardados con exito !!!!',
+                    icon: 'info',
+                    loader: true,        // Change it to false to disable loader
+                    loaderBg: '#9EC600'  // To change the background
+                    })
+                },
+                error: function(xhr, status, error) {
+                  var err = eval("(" + xhr.responseText + ")");
+                  alert(err.Message);
+                }
+            });
+        });
+
+</script>
+
+
+}

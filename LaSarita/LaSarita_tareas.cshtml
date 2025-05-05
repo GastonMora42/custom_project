@@ -1,0 +1,41 @@
+﻿@{
+    if (WebSecurity.IsAuthenticated == false)
+    {
+        Response.Redirect("~/Account/Login.cshtml");
+    }
+    
+    
+    var Usuario = WebSecurity.CurrentUserName;
+    
+    var db = Database.Open("IntranetConnection");
+
+    var motivo = Request.Form["tarea"];
+    var fecha = Request.Form["fechatarea"];
+    var descripcion = Request.Form["descripciontareas"];
+    var cambio = Request.Form["select_cambio"].AsInt();
+    var boca = Request.Form["select_boca"].AsInt();
+    var lugar = Request.Form["select_lugar"].AsInt();
+    // Process information here
+            var insertQuery =
+                    @"INSERT INTO
+                    dbo.LA_SARITA_TAREAS(
+                    TAREA,
+                    FECHA,
+                    DESCRIPCION,
+                    USUARIO,
+                    LUGAR,
+                    BOCA_RIEGO,
+                    CAMBIO)
+                    VALUES  (@0, @1, @2, @3,@4 ,@5, @6)";
+            db.Execute(insertQuery, motivo,fecha,descripcion,Usuario,lugar,boca,cambio);
+
+    Json.Write(motivo, Response.Output);   
+    Json.Write(fecha, Response.Output);   
+    Json.Write(descripcion, Response.Output);   
+    Json.Write(cambio, Response.Output);   
+    Json.Write(lugar, Response.Output);   
+    Json.Write(boca, Response.Output);    
+    
+            
+}
+

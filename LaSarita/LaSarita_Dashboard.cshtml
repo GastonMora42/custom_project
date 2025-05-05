@@ -1,0 +1,386 @@
+﻿@{
+if (WebSecurity.IsAuthenticated == false)
+    {
+        Response.Redirect("~/Account/Login.cshtml");
+    }
+var Usuario = WebSecurity.CurrentUserName;
+
+    Layout = "_LaSaritaSiteLayout.cshtml";
+    var db = Database.Open("IntranetConnectionNew");
+
+var sql =@"SELECT   LSS.IDSOCIO,
+                    LSS.NOMBRES,
+                    LSS.APELLIDO,
+                    LSS.APODO,
+                    LSS.COBRO,
+                    LSS.NOMBRES + ' ' + LSS.APELLIDO + CASE WHEN LSS.APODO IS NULL THEN '' ELSE ' ( ' + LSS.APODO + ' )' END AS 'DATOS_SOCIO' 
+                    FROM LA_SARITA_LIST_SOCIOS LSS 
+                    WHERE 
+                    LSS.COBRO = 1 AND
+                    LSS.ACTIVO = 1
+                    ORDER BY 
+                    LSS.NOMBRES,
+                    LSS.APELLIDO";
+var socios = db.Query(sql);
+
+  
+
+}
+<style>
+  .btn-close {
+    color: #fff; 
+    opacity: 1;
+}
+</style>
+
+<div class="d-grid gap-2 col-4 mx-auto">
+
+
+<button type="button" class="btn text-white btn-lg" style="background-color:rgb(160,31,111);padding-bottom: 20px;padding-top: 20px;margin-top:40px;" data-bs-toggle="modal" data-bs-target="#ingresosModal">
+INGRESOS
+</button>
+<button type="button" class="btn text-white btn-lg" style="background-color:rgb(160,31,111);padding-bottom: 20px;padding-top: 20px;margin-top:40px;" data-bs-toggle="modal" data-bs-target="#gastosModal">
+GASTOS    
+</button>
+<a class="btn text-white btn-lg" style="background-color:rgb(160,31,111); padding-bottom: 20px;padding-top: 20px;margin-top:40px;" href="LaSarita_Fardos.cshtml" role="button">
+FARDOS   
+</a>
+<a class="btn text-white btn-lg" style="background-color:rgb(160,31,111);padding-bottom: 20px;padding-top: 20px;margin-top:40px;" href="LaSarita_reportes_movimientos.cshtml" role="button">
+    CAJA
+</a>
+<a class="btn text-white btn-lg" style="background-color:rgb(160,31,111);padding-bottom: 20px;padding-top: 20px;margin-top:40px;" href="LaSarita_reportes_socios.cshtml" role="button">
+    SOCIOS CUOTAS
+</a>
+<button type="button" class="btn text-white btn-lg" style="background-color:rgb(160,31,111);padding-bottom: 20px;padding-top: 20px;margin-top:40px;" data-bs-toggle="modal" data-bs-target="#tareasModal">
+MANTENIMIENTO   
+</button>
+
+<div class="modal fade" id="ingresosModal" tabindex="-1" aria-labelledby="ingresosModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header text-white" style="background-color:rgba(160,31,111)"> 
+        <h1 class="modal-title fs-5" id="ingresosModalLabel">INGRESOS</h1>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form class="was-validated" role="form" enctype = "multipart/form-data" action="LaSarita_ingresos.cshtml" method="POST" id="MyForm" name="MyForm">
+          <div class="mb-3">
+            <label for="fecha_ingreso" class="col-form-label">Fecha:</label>
+            <input class="form-control" type="date" id="fecha_ingreso" name="fecha_ingreso" >
+          </div>
+          <div class="mb-3">
+            <label for="message-text" class="col-form-label">Socio:</label>
+            <select class="form-select" aria-label="Default select example" id="socioid" name="socioid">
+                <option selected>Seleccionar</option>
+                <option value="99999" >ESCUELA RENDICION</option>
+                <option value="99998" >INGRESO EFECTIVO</option>
+                <option value="99997" >VARIOS</option>
+                @foreach(var row in socios)
+                {                     
+                <option value="@row.IDSOCIO" >@row.DATOS_SOCIO</option>
+                }
+
+            </select>
+          </div>
+                 
+         <div class="mb-3">
+            <label for="message-text" class="col-form-label">Forma de Cobro:</label>
+            <select class="form-select" aria-label="Default select example" id="formadecobro" name="formadecobro"> 
+                <option selected>Seleccionar</option>
+                <option value="Efectivo">Efectivo</option>
+                <option value="Bonificado">Bonificado</option>
+                <option value="MercadoPago">Mercado Pago</option>
+                <option value="Transferencias">Transferencia</option>
+            </select>
+          </div>  
+        <div class="mb-3">
+            <label for="importe_ingresos" class="col-form-label">Importe $:</label>
+            <input type="text" class="form-control" id="importe_ingresos" name="importe_ingresos">
+          </div>  
+        <div class="mb-3">
+            <label for="descripcion" class="col-form-label">Descripcion:</label>
+            <textarea class="form-control" id="descripcion" name="descripcion"></textarea>
+          </div>
+
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+        <button type="button" class="btn btn-primary" id="submitButtonIng" name="submitButtonIng">Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Carga de Gastos -->
+
+<div class="modal fade" id="gastosModal" tabindex="-1" aria-labelledby="gastosModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header text-white" style="background-color:rgba(160,31,111)"> 
+        <h1 class="modal-title fs-5" id="gastosModalLabel">GASTOS</h1>
+        
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form class="was-validated" role="form" enctype = "multipart/form-data" action="LaSarita_egresos.cshtml" method="POST" id="MyFormEgr" name="MyFormEgr">
+          <div class="mb-3">
+            <label for="fecha_egreso" class="col-form-label">Fecha:</label>
+            <input class="form-control is-invalid" type="date" id="fecha_egreso" name="fecha_egreso" required>
+          </div>
+           <div class="mb-3">
+            <label for="message-text" class="col-form-label">Forma de Pago:</label>
+            <select class="form-select" aria-label="Default select example" id="formadepago" name="formadepago"> 
+                <option selected value="Efectivo">Efectivo</option>
+                <option value="MercadoPago">Mercado Pago</option>
+                <option value="Transferencias">Transferencia</option>
+            </select>
+          </div>  
+        <div class="mb-3">
+            <label for="message-text" class="col-form-label">Motivo:</label>
+            <select class="form-select" id="select_motivo" name="select_motivo" aria-label="Default select example" >
+            <option selected>Seleccionar</option>
+            <option value="Fardos_Pago">PAGO FARDOS</option>
+            <option value="Varios">VARIOS</option>
+            <option value="Veterinario">VETERINARIO</option>
+            </select>
+        </div>   
+        <div class="mb-3">
+            <label for="importe_egresos" class="col-form-label">Importe $:</label>
+            <input type="text" class="form-control" id="importe_egresos" name="importe_egresos" required>
+        </div>    
+        <div class="mb-3">
+            <label for="descripcion" class="col-form-label">Descripcion:</label>
+            <textarea class="form-control" id="descripciongastos" name="descripciongastos" required></textarea>
+          </div>
+
+        </form>
+    
+     </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+        <button type="button" class="btn btn-primary" id="submitButtonEg" name="submitButtonEg" >Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+<!-- Carga de Mantenimiento -->
+
+<div class="modal fade" id="tareasModal" tabindex="-1" aria-labelledby="gastosModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header text-white" style="background-color:rgb(160,31,111)"> 
+        <h1 class="modal-title fs-5" id="gastosModalLabel">MANTENIMIENTO</h1>
+        
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form class="was-validated" role="form" enctype = "multipart/form-data" action="LaSarita_tareas.cshtml" method="POST" id="MyFormTareas" name="MyFormTareas">
+          <div class="mb-3">
+            <label for="fecha_tarea" class="col-form-label">Fecha:</label>
+            <input class="form-control is-invalid" type="date" id="fechatarea" name="fechatarea" required>
+          </div>
+          <div class="mb-3">
+            <label for="message-text" class="col-form-label">Motivo:</label>
+            <select class="form-select" id="select_lugar" name="select_lugar" >
+            <option selected value="1">LA SARITA 1</option>
+            <option value="2">LA SARITA 2</option>
+            </select>
+        </div>   
+                <div class="mb-3">
+            <label for="message-text" class="col-form-label">Motivo:</label>
+            <select class="form-select" id="tarea" name="tarea" onchange="opcionbomba()">
+            <option value="AIREADORA">AIREADORA</option>
+            <option value="ARENADO">ARENADO</option>
+            <option value="CORTE_CESPED">CORTE DE CESPED</option>
+            <option value="FERTILIZACION">FERTILIZACION</option>
+            <option value="FUMIGADO">FUMIGADO</option>
+            <option value="RESEMBRADO">RESEMBRADO</option>
+            <option value="RIEGO">RIEGO</option>
+            </select>
+        </div>   
+        <div id="circle">
+        <div class="row">
+                  <div class="col">
+                    <select class="form-select" id="select_boca" name="select_boca" >
+                        <option selected value="0">Seleccionar Boca</option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+
+                    </select>
+                    </div>
+                    <div class="col">
+                    <select class="form-select" id="select_cambio" name="select_cambio" >
+                        <option selected value="0">Seleccionar Cambio</option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                        <option value="6">6</option>
+                        <option value="7">7</option>
+                        <option value="8">8</option>
+                    </select>
+                    </div>
+                </div>   
+            </div>
+
+ 
+        <div class="mb-3">
+            <label for="descripcion" class="col-form-label">Descripcion:</label>
+            <textarea class="form-control" id="descripciontareas" name="descripciontareas" required></textarea>
+          </div>
+
+       </form>
+    
+     </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+        <button type="button" class="btn btn-primary" id="submitButtontareas" name="submitButtontareas" >Guardar</button>
+      </div>
+         
+    </div>
+  </div>
+</div>
+
+
+
+    <script>
+        var formingreso = document.getElementById("MyForm"); 
+        formingreso.onkeypress = function (key) { 
+            var btn = 0 || key.keyCode || key.charCode; 
+            if (btn == 13) { 
+                alert("Enter Key is Pressed!"); 
+                key.preventDefault(); 
+            } 
+        }  
+            var formegreso = document.getElementById("MyFormEgr"); 
+        formegreso.onkeypress = function (key) { 
+            var btn = 0 || key.keyCode || key.charCode; 
+            if (btn == 13) { 
+                alert("Enter Key is Pressed!"); 
+                key.preventDefault(); 
+            } 
+        }  
+                var formingreso = document.getElementById("MyFormTareas"); 
+        formingreso.onkeypress = function (key) { 
+            var btn = 0 || key.keyCode || key.charCode; 
+            if (btn == 13) { 
+                alert("Enter Key is Pressed!"); 
+                key.preventDefault(); 
+            } 
+        }  
+
+        function opcionbomba() {
+            var e = $("#select_tarea").val();
+
+            if (e == "RIEGO") {
+                document.getElementById("circle").style.display = "inline";
+            } else {
+                document.getElementById("circle").style.display = "none";
+            }
+
+        };
+        // When DOM is loaded this 
+        // function will get executed
+        $(document).ready(function () {
+            // function will get executed 
+            // on click of submit button
+
+            document.getElementById("circle").style.display = "none";
+
+            $("#submitButtonIng").click(function (ev) {
+
+                var form = $("#MyForm");
+                var url = $("#MyForm").attr("action");
+
+                $.ajax({
+                    type: "POST",
+                    url: url,
+                    data: form.serialize(),
+                    datatype: "html",
+                    success: function (data) {
+                        document.getElementById("MyForm").reset();
+                        $('#ingresosModal').modal('hide');
+                        $.toast({
+                            heading: 'Information',
+                            position: 'bottom-center',
+                            text: 'Los datos fueron guardados con exito !!!!',
+                            icon: 'info',
+                            loader: true,        // Change it to false to disable loader
+                            loaderBg: '#9EC600'  // To change the background
+                        })
+                    },
+                    error: function (data) {
+
+                        // Some error in ajax call
+                        alert("some Error");
+                    }
+                });
+            });
+
+            $("#submitButtonEg").click(function (ev) {
+
+                var form = $("#MyFormEgr");
+                var url = $("#MyFormEgr").attr("action");
+
+                $.ajax({
+                    type: "POST",
+                    url: url,
+                    data: form.serialize(),
+                    datatype: "html",
+                    success: function (data) {
+                        document.getElementById("MyFormEgr").reset();
+                        $('#gastosModal').modal('hide');
+                        $.toast({
+                            heading: 'Information',
+                            text: 'Los datos fueron guardados con exito !!!!',
+                            icon: 'info',
+                            loader: true,        // Change it to false to disable loader
+                            loaderBg: '#9EC600'  // To change the background
+                        })
+                    },
+                    error: function (data) {
+
+                        // Some error in ajax call
+                        alert("some Error");
+                    }
+                });
+            });
+
+            $("#submitButtontareas").click(function (ev) {
+
+                var form1 = $("#MyFormTareas");
+                var url = $("#MyFormTareas").attr("action");
+                $.ajax({
+                    type: "POST",
+                    url: url,
+                    data: form1.serialize(),
+                    success: function (data) {
+                        document.getElementById("MyFormTareas").reset();
+                        $('#tareasModal').modal('hide');
+                        $.toast({
+                            heading: 'Information',
+                            text: 'Los datos fueron guardados con exito !!!!',
+                            icon: 'info',
+                            loader: true,        // Change it to false to disable loader
+                            loaderBg: '#9EC600'  // To change the background
+                        })
+                    },
+                    error: function (XMLHttpRequest, textStatus, errorThrown) {
+                        console.log(errorThrown);
+                        console.log(textStatus);
+
+                    }
+                });
+            });
+
+        });
+    </script>
+
+</div>

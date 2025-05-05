@@ -1,0 +1,18 @@
+            $.ajax({
+                type: "POST",
+                url: $("#MyFormEditSocio").attr('action'),
+                data: $("#MyFormEditSocio").serialize(),
+                dataType: "html",
+                success: function (response) {
+                    $('#editausuarioModal').dialog('close');
+                    $("#tablacategorias").load('Methods/Bancos_acuerdos_list.cshtml', function () {
+                        var id = $('#edit-banco').text(); ;
+                        $('#' + id).parent('tr').effect("highlight", {}, 2300)
+                    });
+                },
+                error: function (response) {
+                    console.log($("#MyFormEditSocio").serialize())
+                    alert(response);
+                    $('#editausuarioModal').dialog('close');
+                }
+            });

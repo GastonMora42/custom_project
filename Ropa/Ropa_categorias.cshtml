@@ -1,0 +1,49 @@
+﻿@{
+    Layout = "_RopaSiteLayout.cshtml";
+    var db = Database.Open("IntranetConnection");
+
+}
+<legend>Listado de Categorías</legend>
+<div class="row">
+    <div class="span2">
+             <button class="primary" id="createFlatWindow">
+                                    Nueva Categoria
+            </button>
+    </div>
+    <div class="span5">
+        <div id="tablacategorias">
+            @RenderPage("Ropa_categorias_list.cshtml")
+        </div>
+    </div>
+
+</div> <!-- End of row -->
+
+<script>
+                    $(function(){
+                        $("#createFlatWindow").on('click', function(){
+                            $.Dialog({
+                                overlay: true,
+                                shadow: true,
+                                flat: true,
+                                draggable: true,
+                                icon: '<img src="images/excel2013icon.png">',
+                                title: 'Alta de Categoria',
+                                content: '',
+                                padding: 10,
+                                onShow: function(_dialog){
+                                    var content = '<form role="form" method="post" enctype="multipart/form-data" id="add-book-form" action="@Href("Methods/Rep_categorias_add.cshtml")">' +                                             '<legend>Nombre de la Categoria</legend>' +                                             '<div class="input-control text"><input type="text" name="categoria" id="categoria">' + 
+    '   <button class="btn-clear"></button></div>' +                                             '<div class="form-actions">' +                                            '<button class="button primary" id="guarda_categoria">Alta</button>'+ 
+                                               '<button class="button" type="button" onclick="$.Dialog.close()">Cancelar</button> '+
+                                            '</div>'+
+                                            '</form><button class="button primary" id="guarda_categoria2" 
+        ">Prueba</button>   ';
+
+                                    $.Dialog.title("Alta de Categoria");
+                                    $.Dialog.content(content);
+                                }
+                            });
+                        });
+
+                        });
+                </script>
+

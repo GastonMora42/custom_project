@@ -1,0 +1,121 @@
+@{
+    var Usuario = WebSecurity.CurrentUserName;
+    
+    Layout = "../Inicio/_ConfluenciaLayout.cshtml";
+    var db = Database.Open("IntranetConnectionNew");
+    var title = "Listado de Recibos por Cliente ";  
+
+    var pendientessql = @" SELECT 
+                        CASE	
+                        WHEN LEFT(aplic.COD_ART,5) = '20.01' THEN RIGHT(aplic.NOMBRE_ART,4) 
+                        ELSE aplic.NOMBRE_ART END AS 'ARTICULO',
+                        SUM(aplic.CANTIDAD - aplic.APLICADO) AS 'PENDIENTE'
+                      FROM
+                        dbo.COMP_ANTICIPADOS_RES_APLICACIONES aplic
+                      GROUP BY 
+                        aplic.COD_ART,
+                          CASE	
+                        WHEN LEFT(aplic.COD_ART,5) = '20.01' THEN RIGHT(aplic.NOMBRE_ART,4) 
+                        ELSE aplic.NOMBRE_ART END
+                      ORDER BY 
+                        aplic.COD_ART,
+                          CASE	
+                        WHEN LEFT(aplic.COD_ART,5) = '20.01' THEN RIGHT(aplic.NOMBRE_ART,4) 
+                        ELSE aplic.NOMBRE_ART END";
+    
+    var pendientes = db.Query(pendientessql);
+    
+    }
+
+
+<div class="card mb-3">
+    <div class="card-header">
+        <div class="row flex-between-end">
+            <div class="col-auto align-self-center">
+                <h5 class="mb-0" data-anchor="data-anchor" id="jquery-datatables-default-example">Detalle de Anticipados
+                </h5>
+            </div>
+
+        </div>
+    </div>
+    <div class="card-body px-0">
+        <div class="tab-content">
+            <div class="tab-pane preview-tab-pane active" role="tabpanel"
+                aria-labelledby="tab-dom-41652773-160b-4cf3-9789-a0613d09ac47"
+                id="dom-41652773-160b-4cf3-9789-a0613d09ac47">
+                <table class="table mb-0 data-table fs--1">
+                    <thead class="bg-200 text-900">
+                        <tr>
+                            <th class="sort align-middle">R</th>
+                            <th class="sort align-middle">Cliente</th>
+                            <th class="sort align-middle">Fecha</th>
+                            <th class="sort align-middle">Origen</th>
+                            <th class="sort align-middle">Status</th>
+                            <th class="sort align-middle">Comprobante</th>
+                            <th class="sort align-middle">Pendiente</th>
+                            <th class="sort align-middle">Tel.</th>
+                            <th class="sort align-middle">Obra</th>
+                        </tr>
+                    </thead>
+                    <tbody style="font-size: 90%;">
+                        @foreach (var row in ant_listado)
+                        {
+                            <tr id="@row.IDCAB">
+
+                                @if (@row.CANT_APLIC > 0)
+                                {
+                                    <td>
+                                        <button class="btn btn-outline-warning rounded-circle btn-sm  me-1 mb-1"
+                                            onclick="detalleremitos(@row.IDCAB)" type="button" data-bs-toggle="modal"
+                                            data-bs-target="#error-modal">R
+                                        </button>
+                                    </td>
+                                }
+                                else
+                                {
+                                    <td></td>
+                                }
+                                <td>@row.RAZON_SOCIAL</td>
+                                <td class="sort align-middle">@row.FECHA</td>
+                                @if (@row.TIPO_COMP == "FAC")
+                                {
+                                    <td><small class="badge rounded badge-subtle-success false">@row.TIPO_COMP</small> </td>
+                                }
+                                else
+                                {
+                                    <td><small class="badge rounded badge-subtle-danger false">@row.TIPO_COMP</small> </td>
+                                }
+                                @if (@row.ABREV == "PAR")
+                                {
+                                    <td><small class="badge badge-subtle-primary false">@row.STATUS</small> </td>
+                                }
+                                else
+                                {
+                                    <td><small class="badge badge-subtle-info false">@row.STATUS</small> </td>
+                                }
+
+                                @if (@row.ABREV == "FAC")
+                                {
+                                    <td class="sort align-middle"><a class="fw-semi-bold"
+                                            href="consulta_anticipado_fac.cshtml?num_fac=@row.N_COMP">@row.N_COMP</a> </td>
+                                }
+                                else
+                                {
+                                    <td class="sort align-middle"><a class="fw-semi-bold"
+                                            href="consulta_anticipado_rec.cshtml?num_recibo=@row.N_COMP">@row.N_COMP</a> </td>
+                                }
+                                <td class="sort align-middle" style="text-align: left;color:rgb(153, 51, 0)">@row.ARTICULOS
+                                </td>
+
+                                <td class="sort align-middle" style="text-align: left;color:rgb(153, 51, 0)">@row.TELEFONO
+                                </td>
+                                <td class="sort align-middle" style="text-align: left;color:rgb(153, 51, 0)">@row.OBRA</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+    </div>
+</div>

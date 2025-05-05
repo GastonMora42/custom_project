@@ -1,0 +1,47 @@
+﻿@{
+    var db = Database.Open("IntranetConnection");
+    string proveedorelegido = Request.QueryString["q"];
+    var movimientos = db.Query(@"SELECT 
+                      cubmov.FECHA,
+                      cubart.DESCRIPCION,
+                      cubdep.NOMBRE_DEP,
+                      CASE 
+                      WHEN cubmov.REMITO IS NULL THEN RIGHT('00000' + CAST(cubmov.PREFIJO AS VARCHAR),5) + '-' + RIGHT('00000000' + CAST(cubmov.NUMERO AS VARCHAR),8)
+                      ELSE cubmov.REMITO END AS 'REMITO',
+                      cubmov.CANTIDAD
+                    FROM
+                      dbo.CUBIERTAS_MOVIMIENTOS cubmov
+                      INNER JOIN dbo.CUBIERTAS_ARTICULOS cubart ON (cubmov.ARTICULO = cubart.ID_PRODUCTO)
+                      INNER JOIN dbo.CUBIERTAS_DEPOSITOS cubdep ON (cubmov.DEPOSITO = cubdep.ID_DEPOSITO)
+                    WHERE
+                      cubmov.PROVEEDOR='"+ proveedorelegido + "' ORDER BY cubmov.FECHA DESC" );
+}
+
+
+<h5>Detalle de Ingresos del Proveedor -- @proveedorelegido</h5>
+<table id="datatable-buttons" class="table table-striped hovered dataTable" style="font-size:85%;width: 85%;margin-left:auto;margin-right:auto;">
+    <thead>
+    <tr> 
+        <th class="text-center">FECHA</th>
+        <th class="text-center">ARTICULO</th>
+        <th class="text-center">DEPOSITO</th>
+        <th class="text-center">REMITO</th>
+        <th class="text-center">CANTIDAD</th>
+
+    </tr>
+    </thead>
+    <tbody>
+        @foreach(var row in movimientos)
+        {      
+        <tr>
+            
+            <td class="text-center">@string.Format("{0:dd/MM/yy}", @row.FECHA)</td>
+            <td class="text-center">@row.DESCRIPCION</td>
+            <td class="text-center">@row.NOMBRE_DEP</td>
+            <td class="text-center">@row.REMITO</td>
+            <td style="text-align:right ">@string.Format("{0:n}", @row.CANTIDAD)</td>         
+         </tr>   
+         }
+    </tbody>
+</table>
+

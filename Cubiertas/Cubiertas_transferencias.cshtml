@@ -1,0 +1,247 @@
+﻿@{
+                if (WebSecurity.IsAuthenticated == false)
+    {
+        Response.Redirect("~/Account/Login.cshtml");
+    }
+
+    var Usuario = WebSecurity.CurrentUserName;
+    Layout = "Layout/_CubiertasSiteLayout2.cshtml";
+    var db = Database.Open("IntranetConnection");
+    var strsql2 = "SELECT BSUSO.INTERNO, BSUSO.INTERNO + ' ' + BSUSO.NOMBRE_BIEN + ' ' + ISNULL(BSUSO.MODELO,'') + ' ' + ISNULL(BSUSO.DOMINIO,'') AS'BIEN' FROM dbo.BIENES_DE_USO BSUSO ORDER BY  BSUSO.INTERNO ";
+    var bienes = db.Query(strsql2); 
+    var productos = db.Query( @"SELECT 
+                      CUBART.ID_PRODUCTO,
+                      CUBART.DESCRIPCION + ' -- ' + CUBEST.CATEGORIA_DESC AS DESCRIPCION
+                    FROM
+                      dbo.CUBIERTAS_ARTICULOS CUBART
+                      INNER JOIN dbo.CUBIERTAS_ESTADOS CUBEST ON (CUBART.CATEGORIAS = CUBEST.ID_CATEGORIA)
+                      ORDER BY 
+                      CUBART.DESCRIPCION + ' -- ' + CUBEST.CATEGORIA_DESC");
+
+    var personal = db.Query(@"SELECT 
+                              dbo.NOMINA_LISTADO_DE_ACTIVOS.APELLIDO_Y_NOMBRE,  
+                              dbo.NOMINA_LISTADO_DE_ACTIVOS.DESC_DEPARTAMENTO 
+                              FROM 
+                              dbo.NOMINA_LISTADO_DE_ACTIVOS 
+                              ORDER BY
+                              dbo.NOMINA_LISTADO_DE_ACTIVOS.APELLIDO_Y_NOMBRE");
+    var depositos = db.Query(@"SELECT 
+                    CUB.ID_DEPOSITO,
+                    CUB.NOMBRE_DEP
+                    FROM
+                    dbo.CUBIERTAS_DEPOSITOS CUB
+                    ORDER BY 
+                    CUB.NOMBRE_DEP");
+    int itemnum = 1;
+    var result = "";
+    if (IsPost) {
+    var equipo = Request.Form["itemselected"];
+    var fecha = Request.Form["fecha_sel"].AsDateTime();
+    var remito = Request.Form["remito"];
+    var cantidad = Request.Form["cantidad"].AsInt();
+    var dep_sal = Request.Form["deposito_sal"].AsInt();
+    var dep_ing = Request.Form["deposito_ing"].AsInt();
+    var bsuso = Request.Form["bsuso"];
+    var retira = Request.Form["retira"];
+    // Process information here
+            var insertQuery =
+                @"INSERT INTO 
+                dbo.CUBIERTAS_MOVIMIENTOS(
+                ARTICULO,
+                FECHA,
+                REMITO,
+                CANTIDAD,
+                RETIRO,
+                ID_TIPO_MOV,
+                DEPOSITO) VALUES  (@0, @1, @2, @3, @4, @5, @6)";
+            db.Execute(insertQuery, equipo, fecha,remito,cantidad,retira,"EE",dep_sal);
+    // Ingreso de Cubiertas
+            // Process information here
+            var insertQuery2 =
+                @"INSERT INTO 
+                dbo.CUBIERTAS_MOVIMIENTOS(
+                ARTICULO,
+                FECHA,
+                REMITO,
+                CANTIDAD,
+                RETIRO,
+                ID_TIPO_MOV,
+                DEPOSITO,
+                PROVEEDOR) VALUES  (@0, @1, @2, @3, @4, @5, @6,@7)";
+            db.Execute(insertQuery2, equipo, fecha,remito,cantidad,retira,"IE",dep_ing,"Transferencia");
+        
+            result += @"<button type='button' class='btn btn-success''> Transferencias de Cubiertas realizada con exito !!</button>";
+
+            }
+}
+
+<script type="text/javascript">
+    $(document).ready(function () {
+        $("#mensajealerta").delay(3000).slideUp(300);
+        var linea = 1;
+        $("#agregarfila").click(function () {
+            var cantidad = $("#cantidad").val();
+            $("#cantidad").val('');
+            var a = $("#fecha_sel").val();
+            var formattedDate = new Date(a);
+            var d = formattedDate.getDate();
+            var m = formattedDate.getMonth();
+            m += 1;  // JavaScript months are 0-11
+            var y = formattedDate.getFullYear();
+
+            var retira = $("#retira").val();
+
+
+            $("#fecha_sel").val('');
+            var aplicacion = $("#aplicacion").val();
+            $("#aplicacion").val('');
+            var itemsel = $("#itemselected").val();
+            $("#itemselected").val('Seleccionar');
+            var markup = "<tr><td><input type='checkbox' name='record'><span class='check'></span></td><td>" + linea + "</td><td>" + itemsel + "</td><td>" + cantidad + "</td><td>" + d + "/" + m + "/" + y + "</td><td>" + aplicacion + "</td><td>" + retira + "</td></tr>";
+            $("table tbody").append(markup);
+            linea += 1;
+        });
+
+        // Find and remove selected table rows
+        $("#borrarfila").click(function () {
+            $("table tbody").find('input[name="record"]').each(function () {
+                if ($(this).is(":checked")) {
+                    $(this).parents("tr").remove();
+                }
+            });
+        });
+    });    
+
+
+        function cantstock(articulo) {
+        var deposito = $("#deposito_sal").val();
+        console.log(deposito);
+        if (deposito == 0) {
+        $.toast({
+            heading: 'Error',
+            text: 'Debe seleccionar un depósito !!!',
+            showHideTransition: 'fade',
+            icon: 'error'
+        })
+
+        };
+
+
+        $.ajax({
+            url: "Cubiertas_stock_actual_dep_sel?dep=" + deposito + "&art=" + articulo,
+            type: "GET",
+            success: function (data) {
+
+                $("#stock_actual").val(data)
+            }
+        });
+    };
+</script>
+
+<style type="text/css">
+    .field-validation-error {
+      font-weight:bold;
+      color:red;
+      background-color:yellow;
+     }
+    .validation-summary-errors{
+      border:2px dashed red;
+      color:red;
+      background-color:yellow;
+      font-weight:bold;
+      margin:12px;
+    }
+    .centertabla {
+        vertical-align: middle;
+        font-weight: 600;
+        color:navy;
+        font-size: 16px;
+    }
+</style>
+<div class="container mt-4 border">
+<h5>Transferencias de Cubiertas</h5>
+<div class="row">
+    <div class="row cells4">
+        <form data-role="validator" method="post" action="">
+        <table id="example" class="table table-striped" style="width:90%;margin-right:auto;margin-left:auto;">
+            <tr>
+                <td class="centertabla" style="vertical-align: middle;font-size: 16px">FECHA</td>
+                <td> 
+                    <div class="input-control  text" data-role="datepicker">
+                    <input class="form-control" type="date" id="fecha_sel" name="fecha_sel" placeholder="seleccionar fecha">
+                    </div>
+                </td>
+                <td class="centertabla" style="vertical-align: middle;font-size: 16px">DEPOSITO ORIGEN</td>
+                <td>                    
+                    <div >
+                        <select id="deposito_sal" name="deposito_sal" class="form-select" >
+                            <option>Seleccionar</option>
+                            @foreach(var row in depositos)
+                            {                     
+                            <option value="@row.ID_DEPOSITO">@row.NOMBRE_DEP</option>
+                            }
+                        </select>
+                    </div>
+                </td>
+                <td class="centertabla" style="vertical-align: middle;font-size: 16px">REMITO</td>
+                <td> 
+                    <div>
+                    <input type="text" class="form-control" id="Remito" name="remito" placeholder="Remito Salida">
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td class="centertabla" style="vertical-align: middle;font-size: 16px">ITEM</td>
+                <td colspan="2"> 
+                    <div >
+                    <select id="itemselected" name="itemselected" onchange="cantstock(this.value)" class="form-select">
+                        <option>Seleccionar</option>
+                        @foreach(var row in productos)
+                        {                     
+                            <option value="@row.ID_PRODUCTO">@row.DESCRIPCION</option>
+                        }
+                    </select>
+                    </div>
+                </td>
+                
+                <td><div><input type="text" class="form-control" placeholder="CANT. STOCK" id="stock_actual" disabled><div id="error-canti "></div></div></td>
+                <td class="centertabla" style="vertical-align: middle;font-size: 16px">CANTIDAD</td>
+                <td><div><input type="text" class="form-control" placeholder="cantidad" id="cantidad"  name="cantidad" ><div id="error-canti "></div></div></td>
+            </tr>
+            <tr>
+                <td class="centertabla" style="vertical-align: middle;font-size: 16px">RETIRA</td>
+                <td colspan="2"> 
+                <div>
+                    <select id="retira" name="retira" class="form-select">
+                        <option>Seleccionar ....</option>
+                        @foreach(var row in personal)
+                        {                     
+                            <option>@row.APELLIDO_Y_NOMBRE</option>
+                        }
+                        <option>OTROS..</option>
+                    </select>
+                </div>
+                </td>
+                <td  class="centertabla" style="vertical-align: middle;font-size: 16px">DEPOSITO DESTINO</td>
+                <td colspan="2">
+                    <div >
+                        <select id="deposito_ing" name="deposito_ing" class="form-select" >
+                            <option>Seleccionar</option>
+                            @foreach(var row in depositos)
+                            {                     
+                            <option value="@row.ID_DEPOSITO">@row.NOMBRE_DEP</option>
+                            }
+                        </select>
+                    </div>
+                </td>
+            </tr>
+        </table>
+            <button type="submit" class="btn btn-primary">CARGAR TRANSFERENCIA</button>
+            <div class="row" id="mensajealerta">@Html.Raw(result)</div>
+    </form>
+    
+</div>
+
+</div>
+
+</div>

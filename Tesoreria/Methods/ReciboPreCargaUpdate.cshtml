@@ -1,0 +1,16 @@
+@{
+    if(IsPost){
+        var db = Database.Open("IntranetConnection");
+        var sql = @"UPDATE 
+                    dbo.RECIBOS_CLIENTES_PRE_CARGA
+                    SET
+                        RECIBO = @0
+                    WHERE
+                        dbo.RECIBOS_CLIENTES_PRE_CARGA.IDRECCLI=@1";
+
+        var idreccli = Request["idreccli"];
+        var valor = Request["valor"];
+        Response.Write(idreccli);
+        db.Execute(sql, valor , idreccli);
+    }
+}

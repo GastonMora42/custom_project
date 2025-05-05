@@ -1,0 +1,170 @@
+@{
+    var Usuario = WebSecurity.CurrentUserName;
+    
+    Layout = "../Inicio/_ConfluenciaLayout.cshtml";
+    var db = Database.Open("IntranetConnectionNew");
+    var title = "Detalle de Anticipados";
+    
+    var sql1 = @"dbo.ANTICIPADOS_IMPORTAR_COMPROBANTES";
+    var actualizalistado = db.Query(sql1); 
+    
+    var sql =@"dbo.ANTICIPADOS_LISTADO_PENDIENTES";
+    var ant_listado = db.Query(sql); 
+    
+    
+}
+
+<!-- Titulo -->
+<div class="row">
+    <div class="col-12">
+              <div class="d-flex mb-2"><span class="fa-stack me-2 ms-n1"><i class="fas fa-circle fa-stack-2x text-300"></i><i class="fa-inverse fa-stack-1x text-primary fas fa-file-invoice-dollar"></i></span>
+                <div class="col">
+                  <h5 class="mb-0 text-primary position-relative">
+                    <span class="bg-200 dark__bg-1100 pe-3">
+                        @title
+                    </span>
+                    <span class="border position-absolute top-50 translate-middle-y w-100 start-0 z-n1"></span>
+                  </h5>
+                  <p class="mb-0">Facturas y Recibos</p>
+                </div>
+              </div>
+    </div>
+</div>
+<!-- Cuerpo -->
+<div class="card mb-1">
+    <div class="card-body">
+        <div class="table-responsive fs--1" id="Table_detail">
+            
+                <table id="datatable-buttons" class="table table-sm table-striped " style=" margin-left: auto; margin-right: auto;">
+                    <thead class="bg-200 text-900">
+                        <tr>
+                            <th class="sort align-middle">R</th>
+                            <th class="sort align-middle">Cliente</th>
+                            <th class="sort align-middle">Fecha</th>
+                            <th class="sort align-middle">Origen</th>
+                            <th class="sort align-middle">Status</th>
+                            <th class="sort align-middle">Comprobante</th>
+                            <th class="sort align-middle">Pendiente</th>
+                            <th class="sort align-middle">Rel.F&iacutesico</th>
+                            <th class="sort align-middle">Tel.</th>
+                            <th class="sort align-middle">Obra</th>
+                        </tr>
+                    </thead>
+                    <tbody style="font-size: 90%;">
+                        @foreach(var row in ant_listado)
+                        {
+                        <tr id="@row.IDCAB">
+
+                            @if(@row.CANT_APLIC > 0 )
+                            {
+                            <td>
+                                <button class="btn btn-outline-warning rounded-circle btn-sm  me-1 mb-1"
+                                    onclick="detalleremitos(@row.IDCAB)" type="button" data-bs-toggle="modal"
+                                    data-bs-target="#error-modal">R
+                                </button>
+                            </td>
+                            }
+                            else
+                            {
+                            <td></td>
+                            }
+                            <td>@row.RAZON_SOCIAL</td>
+                            <td class="sort align-middle">@row.FECHA</td>
+                            @if(@row.TIPO_COMP == "FAC")
+                            {
+                            <td><small class="badge rounded badge-subtle-success false">@row.TIPO_COMP</small> </td>
+                            }
+                            else
+                            {
+                            <td><small class="badge rounded badge-subtle-danger false">@row.TIPO_COMP</small> </td>
+                            }
+                            <td><small class="badge badge-subtle-@row.STYLE false">@row.STATUS</small> </td>
+
+
+                            @if(@row.TIPO_COMP== "FAC")
+                            {
+                            <td class="sort align-middle"><a class="fw-semi-bold"
+                                    href="consulta_anticipado_fac.cshtml?num_comp=@row.IDCAB">@row.N_COMP</a> </td>
+                            }
+                            else
+                            {
+                            <td class="sort align-middle"><a class="fw-semi-bold"
+                                    href="consulta_anticipado_rec.cshtml?num_comp=@row.N_COMP">@row.N_COMP</a> </td>
+                            }
+                            <td class="sort align-middle" style="text-align: left;color:rgb(153, 51, 0)">@row.ARTICULOS
+                            </td>
+                            @if (@row.FECHA_CTRL_FISICO== null)
+                            {
+                            <td class="sort align-middle" style="text-align: left;color:rgb(153, 51, 0)">--</td>
+                            } else
+                            {
+                            <td class="sort align-middle" style="text-align: left;color:navy;font-weight:bold;">
+                                @string.Format("{0:dd/MM/yyyy}", @row.FECHA_CTRL_FISICO)</td>
+                            }
+
+                            <td class="sort align-middle" style="text-align: left;color:rgb(153, 51, 0)">@row.TELEFONO
+                            </td>
+                            <td class="sort align-middle" style="text-align: left;color:rgb(153, 51, 0)">@row.OBRA</td>
+                        </tr>
+                        }
+                    </tbody>
+                </table>
+            
+
+        </div>
+    </div>
+</div>
+
+             
+
+
+
+<script>
+
+    $(document).ready(function () {
+        var table = $('#datatable-buttons').DataTable({
+        lengthChange: true,
+        lengthMenu: [10, 25, 50, 100],
+        dom: 'Bfltip',
+        buttons: [
+            'copyHtml5',
+            'csvHtml5',
+            'pdfHtml5'
+        ],
+        buttons: [
+            { extend: 'copy', className: 'btn-light' },
+            { extend: 'print', className: 'btn-light' },
+            { extend: 'pdf', className: 'btn-light' }
+        ]
+    });  
+    });
+
+
+  function detalleremitos(numrecibo){
+    $('#listadorem').load("Methods/detalledeconsumos.cshtml?num_recibo="+ numrecibo );
+  }
+</script>
+
+<div class="modal fade" id="error-modal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content position-relative">
+      <div class="position-absolute top-0 end-0 mt-2 me-2 z-1">
+
+        <button class="btn-close btn btn-sm btn-circle d-flex flex-center transition-base" data-bs-dismiss="modal"
+          aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-0">
+        <div class="rounded-top-3 py-3 ps-4 pe-6 bg-light">
+          <h4 class="mb-1" id="modalExampleDemoLabel">Detalle de Remitos </h4>
+        </div>
+        <div class="p-4 pb-0" id="listadorem">
+
+        </div>
+      </div>
+      <div class="modal-footer">
+
+        <button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>

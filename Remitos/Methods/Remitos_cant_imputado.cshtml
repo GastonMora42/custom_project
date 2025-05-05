@@ -1,0 +1,48 @@
+@{
+
+    Response.Cache.SetCacheability(HttpCacheability.NoCache);
+    var remitonum = Request.QueryString["num_remito"];
+    var db = Database.Open("IntranetConnection");
+    var sql = @"SELECT
+                dbo.REMITOS_DETALLE.REMITO,
+                dbo.COMP_ANTICIPADOS_APLICACIONES.CANTIDAD,
+                dbo.COMP_ANTICIPADOS_CAB.TIPO_COMP,
+                dbo.COMP_ANTICIPADOS_CAB.N_COMP 
+                FROM
+                dbo.COMP_ANTICIPADOS_APLICACIONES
+                INNER JOIN dbo.REMITOS_DETALLE ON (dbo.COMP_ANTICIPADOS_APLICACIONES.IDREMITO = dbo.REMITOS_DETALLE.ID)
+                INNER JOIN dbo.COMP_ANTICIPADOS_CAB ON (dbo.COMP_ANTICIPADOS_APLICACIONES.ID_COMP_CAB = dbo.COMP_ANTICIPADOS_CAB.IDCAB)
+                WHERE
+                dbo.REMITOS_DETALLE.REMITO=@0";
+    var products = db.Query(sql,remitonum);
+
+
+} 
+<table class="table table-sm table-striped fs--1 mb-0">
+
+                       <thead class="text-800 bg-light">
+                       <tr>
+                        <td class="sort align-middle pe-5">Comp.</td>
+                        <td class="sort align-middle pe-5">N&uacutemero</td>
+                        <td></td>
+                       </tr>
+                       </thead>
+                       
+                   
+    <tbody style="font-size: 90%;">
+        @foreach (var row in products)
+        {
+            <tr>
+                 
+                 <td class="sort align-middle fs-0" style="text-align: center;color:rgb(153, 51, 0);font-weight:600;">@row.TIPO_COMP</td>
+                 <td class="sort align-middle fs-0" style="text-align: center;color:rgb(153, 51, 0);font-weight:600;">@row.N_COMP</td>
+                 <td>
+                 <button class="btn btn-outline-danger btn-sm me-1 mb-1" type="button">
+                    <span class="fas fa-trash-alt  fs--2"></span>
+                    </button>
+                 </td>
+            </tr>
+        }
+    </tbody>
+
+ </table>

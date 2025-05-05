@@ -1,0 +1,458 @@
+@{
+    var Usuario = WebSecurity.CurrentUserName;
+    
+    var db = Database.Open("IntranetConnectionNew");
+    var Vencempresassql = @"SELECT 
+                            dbo.VENCIMIENTOS_EMPRESAS.IDEMPEV,
+                            dbo.VENCIMIENTOS_EMPRESAS.EMPRESA
+                            FROM
+                            dbo.VENCIMIENTOS_EMPRESAS
+                            ORDER BY
+                            dbo.VENCIMIENTOS_EMPRESAS.EMPRESA ";
+
+    var VencempresasQuery= db.Query(Vencempresassql);
+
+    var VenRubrossql = @"   SELECT 
+                            RUB.IDVENCRUBRO,
+                            RUB.RUBRO
+                            FROM
+                            dbo.VENCIMIENTOS_RUBROS RUB
+                            ORDER BY
+                            RUB.RUBRO";
+    var VenRubrosQuery= db.Query(VenRubrossql);
+
+    var Vencresponsablessql = @"SELECT DISTINCT 
+                                dbo.USERS_TABLE.Avatar,
+                                dbo.USERS_TABLE.Usuario,
+                                dbo.USERS_TABLE.ID
+                                FROM
+                                dbo.USERS_TABLE
+                                WHERE
+                                dbo.USERS_TABLE.user_vencimientos = 1
+                                ORDER BY 
+                                dbo.USERS_TABLE.Usuario ";
+
+    var VencresponsablesQuery= db.Query(Vencresponsablessql);
+
+
+    var periodo_sel = Request.QueryString["perselected"];
+    var emp_selected = Request.QueryString["empselected"].AsInt();
+    var rubro_sel = Request.QueryString["rubro_selected"].AsInt();
+    var Vencimientodetailsql2 = "";
+    var Vencimientodetailsql3 = "";
+    var Vencimientodetailsql4 = "";
+    var Vencimientodetailsql1 = @"SELECT 
+                            VTOS.IDVENC,
+                            VTOS.FECHA,
+                            DATEPART(day,VTOS.FECHA) as 'DIAV',
+                            LEFT(UPPER(DATENAME(month,VTOS.FECHA)),3) as 'DWV',
+                            UPPER(VTOS.CONCEPTO) AS 'CONCEPTO',
+                            ISNULL(UPPER(VTOS.DETALLE),'--') AS 'DETALLE',
+                            VTOS.EMPID,
+                            VTOS.IMPORTE,
+                            VTOS.RESPONSABLE,
+                            RESP.Usuario,
+                            RESP.Avatar,
+                            VTOS.CONTROL,
+                            VTOS.FECHA_CTRL,
+                            VTOS.USER_CTRL,
+                            VTOS.DETAIL_CTRL,
+                            VTOSEMP.EMPRESA,
+                            VTOSEMP.FORMATO,
+                            RUB.RUBRO,
+                            RUB.RUBRO_DISPLAY,
+                            CASE 
+                                WHEN VTOS.CONTROL = 1 THEN 'CTRL' 
+                                WHEN CAST(VTOS.FECHA AS DATE) <  CAST(GETDATE() AS DATE) THEN 'SI' 
+                                ELSE 'NO' END AS 'VENCIDO'
+                            FROM
+                            dbo.VENCIMIENTOS VTOS
+                            INNER JOIN dbo.VENCIMIENTOS_EMPRESAS VTOSEMP ON (VTOS.EMPID = VTOSEMP.IDEMPEV) 
+                            INNER JOIN dbo.USERS_TABLE RESP ON (VTOS.RESPONSABLE = RESP.ID)
+                            INNER JOIN dbo.VENCIMIENTOS_RUBROS RUB ON (VTOS.RUBROID = RUB.IDVENCRUBRO)";
+
+
+    if (emp_selected == 999){
+        Vencimientodetailsql2 = @" ";
+                if (periodo_sel == "9999") {
+                Vencimientodetailsql3 = @" WHERE VTOS.CONTROL = 0 AND VTOS.FECHA <= DATEADD(dd,30,CAST(GETDATE() AS DATE))" ;
+                }
+                else {
+                Vencimientodetailsql3 = @" AND VTOS.CONTROL = 0 AND YEAR(VTOS.FECHA)  = '" + periodo_sel + "'";
+                }
+                if (rubro_sel > 0){
+                    Vencimientodetailsql3 = Vencimientodetailsql3  + "AND VTOS.RUBROID  ="  + rubro_sel ;
+                }
+    }
+    else {
+        Vencimientodetailsql2 = @" WHERE VTOS.EMPID = @0 ";
+                if (periodo_sel == "9999") {
+                Vencimientodetailsql3 = @" AND VTOS.CONTROL = 0 AND VTOS.FECHA <= DATEADD(dd,30,CAST(GETDATE() AS DATE))";
+                }
+                else {
+                Vencimientodetailsql3 = @" AND VTOS.CONTROL = 1 AND YEAR(VTOS.FECHA) = '" + periodo_sel + "'";
+                }
+                if (rubro_sel > 0){
+                    Vencimientodetailsql3 = Vencimientodetailsql3  + "AND VTOS.RUBROID ="  + rubro_sel ;
+                }
+
+    }
+
+
+    
+    Vencimientodetailsql4 = @" ORDER BY VTOS.FECHA, VTOS.EMPID ";
+
+    var Vencimientodetailsql = Vencimientodetailsql1 + Vencimientodetailsql2 + Vencimientodetailsql3 + Vencimientodetailsql4;
+
+   // var products = db.Query("Exec dbo.PROVEEDOR_SELECCIONADO_ESTADISTICA @CLIENTE='"+ proveedorelegido + "'" );
+
+    var VencimientodetailQuery = db.Query(Vencimientodetailsql,emp_selected);
+}
+
+<style>
+.intro:hover{
+  color: dodgerblue;
+}
+</style>
+
+
+                    <table class="table table-sm mb-0 fs--1 table-view-tickets table-striped">
+                      <thead class="text-800 bg-light fs-0">
+                        <tr>
+
+                          <th  style="text-align:center" class="sort" data-sort="status">FECHA</th>
+                          <th  style="text-align:center" class="sort" data-sort="status">CONCEPTO</th>
+                          <th  style="text-align:center" class="sort" data-sort="subject" >IMPORTE</th>
+                          <th  style="text-align:center" class="sort" data-sort="status">STATUS</th>
+                          <th  style="text-align:center" class="sort" data-sort="empresa">EMPRESA</th>
+                          <th  style="text-align:center" class="sort" data-sort="empresa">RUBRO</th>
+                          <th  style="text-align:center" class="sort" data-sort="responsable">RESPONSABLE</th>
+                          <th  style="text-align:center" class="sort" data-sort="responsable">CTRL</th>  
+                          <th  style="text-align:center" class="sort" data-sort="status"></th>
+                        </tr>
+                      </thead>
+                      <tbody class="list" id="table-ticket-body">
+                        @foreach (var row in VencimientodetailQuery)
+                            {
+                                <tr class="align-middle">
+
+                                    <td style="text-align:center;color:brown;font-weight:700;">@string.Format("{0:d}",@row.FECHA)  </td>
+                                    <td class="address py-2 align-middle white-space-nowrap" style="text-align:center;color:blue;font-weight:700;">
+                                        @row.CONCEPTO
+                                        <p class="mb-0 text-500">@row.DETALLE</p>
+                                    </td>
+                                    
+                                    <td style="text-align:right;font-weight:700;" class="total">@string.Format("{0:n}",@row.IMPORTE)  </td>
+                                    <td style="text-align:center">     
+                                                           @if(@row.VENCIDO == "SI")
+                                {
+                                <span class="far fa-calendar-times text-danger fs-2"></span>
+                                } 
+                            else if (@row.VENCIDO == "CTRL") 
+                                {
+                                <span class="far fa-calendar-check text-success fs-2"></span>
+                                }   </td>
+                                    <td style="text-align:center"> <span class="badge badge-subtle-@row.FORMATO rounded-pill fs-0">@row.EMPRESA</span></td>
+                                    <td style="text-align:center"> 
+                                    <small class="badge rounded badge-subtle-@row.RUBRO_DISPLAY text-@row.RUBRO_DISPLAY">@row.RUBRO</small>
+                                    </td>
+                                    <td style="text-align:center"> <div class="avatar avatar-xl">
+                                <div class="avatar-name rounded-circle" ><span>@row.Avatar </span></div>
+                              </div> </td>
+                                    <td style="text-align:center"> 
+                                    
+                                    <span  data-bs-toggle="modal" data-bs-target="#actualiza-concepto" onclick="cargardatosmodalctrl(@row.IDVENC)" class="fas fa-check text-dark fs-0" ></span>
+                                    
+                                        
+                                    </td>
+                                    <td style="text-align:center">  
+                                     @if (@row.VENCIDO == "CTRL") {
+
+                                         } 
+                                	    else 
+                                        {                                                                             
+                                        <span  data-bs-toggle="modal" data-concepto="@row.CONCEPTO" data-id="@row.IDVENC" data-bs-target="#delete-modal" onclick= filldeletemodal(this) class="fas fa-trash-alt text-danger"></span>                              
+                                        <span  data-bs-toggle="modal" data-bs-target="#error-modal2" onclick="cargardatosmodal(@row.IDVENC)" class="fa fa-edit text-primary"></span>  
+                                        }
+                                    </td>
+                                </tr>
+                            } 
+                       </tbody>
+                    </table>
+
+<! --  Modal Update Evento -->
+
+<div class="modal fade" id="error-modal2" tabindex="-1" aria-hidden="true" style="display: none;">
+    <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 700px">
+        <div class="modal-content position-relative">
+            <div class="position-absolute top-0 end-0 mt-2 me-2 z-1">
+                <button class="btn-close btn btn-sm btn-circle d-flex flex-center transition-base"
+                    data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="rounded-top-3 py-3 ps-4 pe-6 bg-light">
+                    <h5 class="mb-1" id="modalExampleDemoLabel">Editar Evento </h5>
+                </div>
+                <div class="p-2 pb-0">
+                    <form id="edit-vto" action="Methods/EventosUpdate.cshtml" method="post" dataType: "text/plain">
+                        <input class="form-control" id="idevento_edit" name="idevento_edit" type="hidden" value>
+                        <div class="mb-1">
+                            <label class="col-form-label" for="fechavto_edit">Fecha Vto :</label>
+                            <input type="date" class="form-control" id="fechavto_edit" name="fechavto_edit" value>
+                        </div>
+                        <div class="mb-1">
+                            <label class="col-form-label" for="concepto_edit">Concepto : </label>
+                            <input type="text" class="form-control" id="concepto_edit" name="concepto_edit" value>
+                        </div>
+                        <div class="mb-1">
+                            <label class="col-form-label" for="detalle_edit">Detalle : </label>
+                            <input type="text" class="form-control" id="detalle_edit" name="detalle_edit" value>
+                        </div>
+                        <div class="mb-1">
+                            <label class="col-form-label" for="rubro_edit">Rubro : </label>
+                            <select class="form-select" id="rubro_edit" name="rubro_edit">
+                                @foreach (var row in VenRubrosQuery)
+                                { <option value=@row.IDVENCRUBRO>@row.RUBRO</option> }
+                            </select>
+                        </div>
+                        <div class="mb-1">
+                            <label class="col-form-label" for="importe_edit">Importe : </label>
+                            <input type="text" class="form-control" id="importe_edit" name="importe_edit" value>
+                        </div>
+                        <div class="mb-1">
+                            <label class="col-form-label" for="empresa_sel_modal_edit">Empresa : </label>
+                            <select class="form-select" id="empresa_sel_modal_edit" name="empresa_sel_modal_edit">
+                                @foreach (var row in VencempresasQuery)
+                                { <option value=@row.IDEMPEV>@row.EMPRESA</option> }
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="col-form-label" for="responsable_edit">Responsable : </label>
+                                <select class="form-select" id="responsable_edit" name="responsable_edit">
+                                @foreach (var row in VencresponsablesQuery)
+                                { <option value=@row.ID>@row.Usuario</option> }
+                                </select>
+                        </div>
+                </div>
+            </div>
+                <div class="modal-footer">
+
+                    <button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Close</button>
+
+                    <button class="btn btn-primary" type="submit" onclick="updatevto()">Modificar </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<! -- Modal cargar control Evento -->
+
+<div class="modal fade" id="actualiza-concepto" tabindex="-1" aria-hidden="true" style="display: none;">
+    <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 700px">
+        <div class="modal-content position-relative">
+            <div class="position-absolute top-0 end-0 mt-2 me-2 z-1">
+
+                <button class="btn-close btn btn-sm btn-circle d-flex flex-center transition-base"
+                    data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="rounded-top-3 py-3 ps-4 pe-6 bg-light">
+                    <h5 class="mb-1" id="modalExampleDemoLabel">Registar Control </h5>
+                </div>
+                <div class="p-4 pb-0">
+                    <form id="edit-ctrl" action="Methods/EventosUpdateCtrl.cshtml" method="post" dataType: "text/plain">
+                        <input class="form-control" id="ideventoctrl" name="ideventoctrl" type="hidden" value>
+                        <div class="mb-3">
+                            <label class="col-form-label" for="observacionesctrl">Observaciones Control:</label>
+                            <input class="form-control" id="observacionesctrl" name="observacionesctrl" value>
+
+                        </div>
+
+                </div>
+            </div>
+            <div class="modal-footer">
+
+                <button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Close</button>
+
+                <button class="btn btn-info" type="submit" onclick="updatectrl()">Actualizar </button>
+            </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<! -- Modal Borrar Evento -->
+
+<div class="modal fade" id="delete-modal" tabindex="-1" aria-hidden="true" style="display: none;">
+    <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 700px">
+        <div class="modal-content position-relative">
+            <div class="position-absolute top-0 end-0 mt-2 me-2 z-1">
+
+                <button class="btn-close btn btn-sm btn-circle d-flex flex-center transition-base"
+                    data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="rounded-top-3 py-3 ps-4 pe-6 bg-light">
+                    <h5 class="mb-1" id="modalExampleDemoLabel">Borrar Control </h5>
+                </div>
+                <div class="p-4 pb-0">
+                    <form id="delete" action="Methods/EventosDelete.cshtml" method="post" dataType: "text/plain">
+                        <input class="form-control" id="ideventodelete" name="ideventodelete" type="hidden" value>
+                        <div class="mb-1">
+                            <label class="col-form-label" for="conceptotodelete">Concepto a Borrar:</label>
+                            <input style="color:blue;font-weight:600;" class="form-control-plaintext outline-none" id="conceptotodelete" name="conceptotodelete" readonly="" value >
+
+                        </div>
+
+                </div>
+            </div>
+            <div class="modal-footer">
+
+                <button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Close</button>
+
+                <button class="btn btn-danger badge-subtle-danger" type="submit" onclick="delete_evento()">Borrar </button>
+            </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<! -- Modal Alta Evento -->
+
+<div class="modal fade" id="alta_evento" tabindex="-1" aria-hidden="true" style="display: none;">
+    <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 700px">
+        <div class="modal-content position-relative">
+            <div class="position-absolute top-0 end-0 mt-2 me-2 z-1">
+
+                <button class="btn-close btn btn-sm btn-circle d-flex flex-center transition-base"
+                    data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="rounded-top-3 py-3 ps-4 pe-6 bg-light">
+                    <h5 class="mb-1" id="modalExampleDemoLabel">Alta de Evento </h5>
+                </div>
+                <div class="p-2 pb-0">
+                
+                    <form class="row m-3 needs-validation" novalidate id="alta-evento" name="alta-evento" action="Methods/EventosAlta.cshtml" method="post"  dataType: "text/plain" >
+                    <div class="row gx-2">
+                        <div class="col-sm-4 mb-3">
+                            <label class="col-form-label" for="fechavto_alta">Fecha Vto :</label>
+                            
+                            <input type="date" class="form-control " id="fechavto_alta" name="fechavto_alta" required>
+                        </div>
+                        <div class="col-sm-4 mb-3">
+                            <label class="col-form-label" for="rubro_alta">Frecuencia: </label>
+                            <select class="form-select" id="repeticion_alta" name="repeticion_alta" onchange="habilitafechafin(this.value)">
+                                <option value=0>Unica vez</option>
+                                <option value=1>Mensual</option>
+                                <option value=2>Anual</option>
+                            </select>
+                        </div>
+                        <div class="col-sm-4 mb-3">
+                            <label class="col-form-label" for="fechafin_alta">Fecha Fin :</label>
+                            <input type="text" class="form-control disabled" id="fechafin_alta" name="fechafin_alta" disabled onchange="getnumber()">
+                            <div class="invalid-feedback">Please choose a username.</div>
+                        </div>
+                                                <div class="col-sm-6 mb-3">
+                            <label class="col-form-label" for="rubro_alta">Rubro : </label>
+                            <select class="form-select" id="rubro_alta" name="rubro_alta">
+                                <option value="" selected disabled>Rubro ...</option>
+                                @foreach (var row in VenRubrosQuery)
+                                { <option value=@row.IDVENCRUBRO>@row.RUBRO</option> }
+                            </select>
+                        </div>
+                                                <div class="col-sm-6 mb-3">
+                            <label class="col-form-label" for="empresa_sel_alta">Empresa : </label>
+                            <select class="form-select" id="empresa_sel_alta" name="empresa_sel_alta" required>
+                                <option value="" selected disabled>Empresa ...</option>
+                                @foreach (var row in VencempresasQuery)
+                                { <option value=@row.IDEMPEV>@row.EMPRESA</option> }
+                            </select>
+                                   <div class="invalid-feedback">
+                                    Please select gender.
+                                </div>
+                        </div>
+                                                <div class="col-sm-6 mb-3">
+                            <label class="col-form-label" for="responsable_alta">Responsable : </label>
+                                <select class="form-select" id="responsable_alta" name="responsable_alta">
+                                <option value="" selected disabled>Responsable ...</option>
+                                @foreach (var row in VencresponsablesQuery)
+                                { <option value=@row.ID>@row.Usuario</option> }
+                                </select>
+                                <div class="invalid-feedback">Please choose a username.</div>
+                        </div>
+                                                 <div class="col-sm-6 mb-3">
+                            <label class="col-form-label" for="importe_alta">Importe : </label>
+                            <input type="text" class="form-control" id="importe_alta" name="importe_alta" value='0'>
+                        </div>
+
+                        <div class="mb-1">
+                            <label class="col-form-label" for="concepto_alta">Concepto : </label>
+                            <input type="text" class="form-control" id="concepto_alta" name="concepto_alta" required>
+                            <div class="invalid-feedback">
+                                Username is required!
+                            </div>
+                        </div>
+                        <div class="mb-1">
+                            <label class="col-form-label" for="detalle_alta">Detalle : </label>
+                            <input type="text" class="form-control" id="detalle_alta" name="detalle_alta" value>
+                        </div>
+
+
+                </div>
+
+                </div>
+            </div>
+            <div class="modal-footer">
+
+                <button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Close</button>
+
+                <button class="btn btn-success badge-subtle-success" type="submit" onclick="alta_evento()">Nuevo Evento
+                </button>
+            </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<! -- Modal Nuevo Rubro -->
+
+<div class="modal fade" id="alta_rubro" tabindex="-1" aria-hidden="true" style="display: none;">
+    <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 700px">
+        <div class="modal-content position-relative">
+            <div class="position-absolute top-0 end-0 mt-2 me-2 z-1">
+
+                <button class="btn-close btn btn-sm btn-circle d-flex flex-center transition-base"
+                    data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="rounded-top-3 py-3 ps-4 pe-6 bg-light">
+                    <h5 class="mb-1" id="modalExampleDemoLabel">Nuevo Rubro </h5>
+                </div>
+                <div class="p-3 pb-0">
+                    <form id="alta-rubro" action="Methods/EventosRubroAlta.cshtml" method="post" dataType: "text/plain">
+                        <div class="mb-3">
+                            
+                            <input class="form-control" id="nvorubro" name="nvorubro" required autofocus>
+
+                        </div>
+
+                </div>
+            </div>
+            <div class="modal-footer">
+
+                <button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Close</button>
+
+                <button class="btn btn-info" type="submit" onclick="altarubro()">Nuevo Rubro </button>
+            </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+
+
+

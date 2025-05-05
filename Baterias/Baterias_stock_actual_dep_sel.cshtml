@@ -1,0 +1,17 @@
+﻿@{
+    var db = Database.Open("IntranetConnection");
+    string depositosel = Request.QueryString["dep"];
+    string articulosel = Request.QueryString["art"];
+
+    
+    var StockComb = db.QuerySingle(@"SELECT 
+                                    COALESCE(
+                                            (SELECT SUM(dbo.Baterias_MOVIMIENTOS.CANTIDAD * dbo.Baterias_TIPOS_MOVIMIENTOS.MOV_STOCK) 
+                                                FROM dbo.Baterias_MOVIMIENTOS
+                                                INNER JOIN dbo.Baterias_TIPOS_MOVIMIENTOS ON (dbo.Baterias_MOVIMIENTOS.ID_TIPO_MOV = dbo.Baterias_TIPOS_MOVIMIENTOS.ID_TIPOMOV) 
+                                                WHERE 
+                                                dbo.Baterias_MOVIMIENTOS.ARTICULO = " + articulosel + " AND dbo.Baterias_MOVIMIENTOS.DEPOSITO  = " + depositosel + " AND dbo.Baterias_MOVIMIENTOS.ELIMINADO = 0 GROUP BY  dbo.Baterias_MOVIMIENTOS.ARTICULO,  dbo.Baterias_MOVIMIENTOS.DEPOSITO     ),0) AS 'CANT' ");
+
+}
+@string.Format("{0:n}", StockComb.CANT)
+        

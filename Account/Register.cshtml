@@ -1,0 +1,147 @@
+﻿@{
+    Page.Title = "Registrar";
+    Layout = "_AccountLayout.cshtml";
+    // Inicializar variables de página generales
+    var Usuario = "";
+    var password = "";
+    var message = "";
+    var message2 = "";
+    
+
+    // Validación de la instalación
+    Validation.RequireField("Usuario", "Debe especificar un usuario.");
+    Validation.RequireField("password", "La contraseña no puede estar en blanco.");
+    Validation.Add("password",
+        Validator.StringLength(
+            maxLength: Int32.MaxValue,
+            minLength: 6,
+            errorMessage: "La contraseña debe tener al menos seis caracteres"));
+
+    // Si esta es una solicitud  POST , valide y procese los datos
+    if (IsPost)
+    {
+        AntiForgery.Validate();
+        Usuario = Request.Form["Usuario"];
+        password = Request.Form["password"];
+        var entidad = Request.Form["entidad"];
+       
+
+        // Validar la respuesta captcha del usuario
+        // if (!ReCaptcha.Validate("PRIVATE_KEY")) {
+        //     ModelState.AddError("recaptcha", "La respuesta captcha no es correcta");
+        // }
+
+        // Si toda la información es válida, crear una nueva cuenta
+        if (Validation.IsValid())
+        {
+            // Insertar un nuevo usuario en la base de datos
+            var db = Database.Open("IntranetConnection");
+
+            // Comprobar si el usuario ya existe
+            var user = db.QuerySingle("SELECT Usuario FROM USERS_TABLE WHERE LOWER(Usuario) = LOWER(@0)", Usuario);
+            if (user == null)
+            {
+                // Insertar correo electrónico en la tabla de perfiles
+                db.Execute("INSERT INTO USERS_TABLE (Usuario) VALUES (@0)", Usuario);
+
+                // Cree y asocie una nueva entrada en la base de datos de miembros.
+                // Si la operación se realiza correctamente, siga procesando la solicitud
+                try
+                {
+                    bool requireUsuarioConfirmation = !WebMail.SmtpServer.IsEmpty();
+                    var token = WebSecurity.CreateAccount(Usuario, password, requireUsuarioConfirmation);
+
+                    if (requireUsuarioConfirmation)
+                    {
+                        // Agradecer al usuario que se haya registrado e informarle de que recibirá un correo
+                        Response.Redirect("~/Account/Thanks");
+                    }
+                    else
+                    {
+                        // Retroceder a la página principal y salir
+                        message = @"<h3><i class='icon-thumbs-up fg-darker smaller'></i></a> El usuario " + Usuario + " fue dado de alta correctamente <small class='on-right></small></h3></br><input type='submit' value='Registrar'/>";
+                        
+                    }
+                }
+                catch (System.Web.Security.MembershipCreateUserException e)
+                {
+                    ModelState.AddFormError(e.Message);
+                }
+            }
+            else
+            {
+                // El usuario ya existe
+                ModelState.AddFormError("Usuario ya existente.");
+            }
+        }
+    }
+}
+    <style>
+        /* styles for validation helpers */
+        .field-validation-error {
+            color: #e80c4d;
+            font-weight: bold;
+        }
+
+        .field-validation-valid {
+            display: none;
+        }
+
+        input.input-validation-error {
+            border: 1px solid #e80c4d;
+        }
+
+        input[type="checkbox"].input-validation-error {
+            border: 0 none;
+        }
+
+        .validation-summary-errors {
+            color: #e80c4d;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
+        .validation-summary-valid {
+            display: none;
+        }
+
+    </style>
+
+        <div class="row flex-center min-vh-100 py-6">
+          <div class="col-sm-10 col-md-8 col-lg-6 col-xl-5 col-xxl-4"><a class="d-flex flex-center mb-4" href="#"><img class="me-2" src="../assets/img/logoc.ico" alt="" width="80" /><span class="font-sans-serif fw-bolder fs-5 d-inline-block">Confluencia</span></a>
+             <div class="card">
+              <div class="card-body p-4 p-sm-5">
+                <div class="row flex-between-center mb-2">
+                  <div class="col-auto">
+                    <h5>Nuevo Usuario</h5>
+                  </div>
+                </div>
+                            <form id ="loginform" class="form-signin" role="form" method="post">
+                @if (IsPost)
+                {
+                    <strong>@Html.Raw(message)</strong>
+             
+                }
+                @AntiForgery.GetHtml()
+                @* Si existe al menos un error de validación, informar al usuario *@
+                @Html.ValidationSummary("No se creó la cuenta. Corrija los errores e inténtelo de nuevo.", excludeFieldErrors: true, htmlAttributes: null)
+                  <div class="mb-3">
+                                            <input class="form-control" placeholder="Usuario" type="text" id="Usuario" name="Usuario" value="@Usuario" @Validation.For("Usuario")>
+                        @* Escribir los errores de validación del correo electrónico en la página *@
+                            @Html.ValidationMessage("Usuario")
+                  </div>
+                  <div class="row gx-2">
+                    <div class="mb-3">
+                                                  <input class="form-control" placeholder="Contraseña" type="password" id="password" name="password" @Validation.For("password") />
+                            @* Escribir los errores de validación de contraseña en la página *@
+                            @Html.ValidationMessage("password")
+                    </div>
+                  </div>
+                  <div class="mb-3">
+                    <button id="botonsubmit" class="btn btn-lg btn-primary btn-block" type="submit">Registrar</button>      
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>

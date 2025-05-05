@@ -1,0 +1,49 @@
+﻿@{
+
+
+    var Usuario = WebSecurity.CurrentUserName;
+    var strsql = "";
+    var interno = Request.QueryString["interno"];
+    var db = Database.Open("IntranetConnectionNew");
+    strsql = @"SELECT 
+              CUB_ART.DESCRIPCION,
+              CUB_MOV.FECHA,
+              CUB_MOV.RETIRO,
+              CUB_MOV.CANTIDAD
+            FROM
+              dbo.Baterias_MOVIMIENTOS CUB_MOV
+              INNER JOIN dbo.Baterias_ARTICULOS CUB_ART ON (CUB_MOV.ARTICULO = CUB_ART.ID_PRODUCTO)
+            WHERE
+              CUB_MOV.ID_TIPO_MOV = 'EE' AND 
+              CUB_MOV.BS_USO = @0
+            ORDER BY
+              CUB_MOV.FECHA DESC";
+    var products = db.Query(strsql,interno);    
+}
+
+<table class="table striped" id="DetalleEMpleado" style="width: 100%;font-size: 80%; margin-left:auto;margin-right:auto;color: #000">
+<thead>
+<tr>
+    <th class="text-center">FECHA</th>    
+    <th class="text-center">ITEM</th>
+    <th class="text-center">RETIRO</th>
+    <th class="text-center">CANTIDAD</th>
+</tr>
+</thead>
+<tbody>
+@foreach(var row in products)
+{      
+    <tr>
+        <td class="text-center">@string.Format("{0:dd/MM/yy}", @row.FECHA)</td>
+        <td class="text-center">@row.DESCRIPCION</td>
+        <td class="text-center">@row.RETIRO</td>
+        <td class="text-right">@string.Format("{0:n}", @row.CANTIDAD)</td>       
+
+    </tr>
+    }
+</tbody>
+
+
+</table>
+
+

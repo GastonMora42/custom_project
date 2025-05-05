@@ -1,0 +1,22 @@
+﻿@{
+    if(IsPost){
+        var Usuario = WebSecurity.CurrentUserName;
+        string json;
+        using(var reader = new StreamReader(Request.InputStream)){
+        json = reader.ReadToEnd();
+    }
+        var car = Json.Decode(json);
+
+        var db = Database.Open("IntranetConnection");
+        var sql = @"INSERT INTO dbo.NOMINA_ROPA_ITEMS(ARTICULO,CANTIDAD,FECHA,PROVEEDOR,ID_TIPO_MOV,ELIMINADO,DEPOSITO,UBICACION,USUARIO,TIPO_MOV)
+                    VALUES (@0, @1, @2, @3, @4,@5,@6,@7,@8,@9)";
+        var itemsel1 = car.itemsel;
+        var cantsel1 = car.cantsel;
+        var depositosel1 = car.depositosel;
+        var fechasel1 = car.fechasel;
+        var empleadosel1 = car.empleadosel;
+        db.Execute(sql, itemsel1, cantsel1, fechasel1, empleadosel1, 2,0,depositosel1,1,Usuario, "E");
+        Response.Write(car);
+
+    }
+}

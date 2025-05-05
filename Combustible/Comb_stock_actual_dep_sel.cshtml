@@ -1,0 +1,13 @@
+﻿@{
+    var db = Database.Open("IntranetConnection");
+    string proveedorelegido = Request.QueryString["q"];
+    var StockComb = db.QuerySingle(@"SELECT 
+          SUM(dbo.COMBUSTIBLE_DETAIL.CANTIDAD * dbo.COMBUSTIBLE_DETAIL.TIPO_MOV) AS 'CANTIDAD'
+        FROM
+          dbo.COMBUSTIBLE_DETAIL
+          INNER JOIN dbo.COMBUSTIBLE_DEPOSITOS ON (dbo.COMBUSTIBLE_DETAIL.COD_DEPOSITO = dbo.COMBUSTIBLE_DEPOSITOS.IDDEP)
+        WHERE
+         dbo.COMBUSTIBLE_DEPOSITOS.IDDEP='" + proveedorelegido + "'");
+}
+@string.Format("{0:n}", StockComb.CANTIDAD)
+        

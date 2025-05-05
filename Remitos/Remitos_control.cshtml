@@ -1,0 +1,153 @@
+@{
+    var Usuario = WebSecurity.CurrentUserName;
+    
+        Layout = "../Inicio/_ConfluenciaLayout.cshtml";
+        var db = Database.Open("IntranetConnectionNew");
+        var title = "Control de Remitos";
+     
+    
+    }
+<!-- Titulo -->
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex mb-2"><span class="fa-stack me-2 ms-n1"><i class="fas fa-circle fa-stack-2x text-300"></i><i class="fa-inverse fa-stack-1x text-primary fas fa-tasks"></i></span>
+        <div class="col">
+            <h5 class="mb-0 text-primary position-relative"><span class="bg-200 dark__bg-1100 pe-3">Remitos Control</span>
+            <span class="border position-absolute top-50 translate-middle-y w-100 start-0 z-n1"></span>
+            </h5>
+            <p class="mb-0">Verificacion de Datos del Remito</p>
+        </div>
+        </div>
+    </div>
+</div>
+<!-- Cuerpo -->
+<div class="card mb-3">
+    <div class="bg-holder d-none d-lg-block bg-card " >
+    </div>
+    <!--/.bg-holder-->
+
+    <div class="card-body position-relative">
+
+        <form class="row gy-2 gx-3 align-items-center">
+            <div class="col-auto">
+                <h5>Remito #</h5>
+            </div>
+            <div class="col-auto">
+                <label class="visually-hidden" for="numremito">Remito</label>
+                <div class="input-group">
+                    <input class="form-control" id="numremito" type="text" placeholder="Ingrese # remito" />
+                </div>
+            </div>
+            <div class="col-auto">
+                <button type="button" class="btn btn-primary" onclick="recibosel()">Buscar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+
+
+<div id="Table_detail"></div>
+
+
+<div id="Error_detail" class="card mb-3" style="display:none;">
+    <div class="card-header">
+        <div class="row flex-between-end">
+            <div class="col-auto align-self-center">
+                <h5 class="mb-0" data-anchor="data-anchor" id="form-grid-layout">Datos del Remito</h5>
+            </div>
+
+        </div>
+    </div>
+    <div class="card-body bg-light">
+        <div class="tab-content">
+            <div class="tab-pane preview-tab-pane active" role="tabpanel"
+                aria-labelledby="tab-dom-213a2168-5f6d-4b99-b929-d02b5f16cda2"
+                id="dom-213a2168-5f6d-4b99-b929-d02b5f16cda2">
+                <form class="row g-3">
+                    <div class="col-12">
+                        <div class="card border h-100 border-danger bg-danger-subtle text-danger">
+                            <div class="card-body">
+                                <div class="row row-cols-lg-1  align-items-center">
+                                    <div class="col-12">
+                                        <h4 class="text-danger">REMITO NO ENCONTRADO !!</h4>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+        </div>
+    </div>
+</div>
+  
+
+
+<script>
+
+            $("#editremitobtn").click(function (ev) {
+                    console.log(ev );
+                var form = $("#FormRealizaCtrl");
+                var url = $("#FormRealizaCtrl").attr("action");
+
+                $.ajax({
+                    type: "POST",
+                    url: url,
+                    data: form.serialize(),
+                    datatype: "html",
+                    success: function (data) {
+                       // document.getElementById("FormRealizaCtrl").reset();
+                        console.log("aca");
+                        $.toast({
+                            heading: 'Information',
+                            position: 'bottom-center',
+                            text: 'Los datos fueron guardados con exito !!!!',
+                            icon: 'info',
+                            loader: true,        // Change it to false to disable loader
+                            loaderBg: '#9EC600'  // To change the background
+                        })
+                    },
+                    error: function (data) {
+
+                        // Some error in ajax call
+                        alert("some Error");
+                    }
+                });
+            });
+
+
+    
+     function recibosel() {
+
+        event.preventDefault()
+        $('#Table_detail').html("<div class='spinner-border text-primary' role='status'><span class='visually-hidden'>Loading...</span></div>")
+        $.getJSON("Methods/Remitos_status_ctrl.cshtml?num_remito="+$('#numremito').val(), function(data) {
+                var customers = data;
+               console.log(typeof(customers))
+              console.log(customers)
+                });
+
+
+        $.ajax({ url: "Methods/Remitos_status_ctrl.cshtml?num_remito="+$('#numremito').val()   })
+            .done(function (result) { 
+                const obj = JSON.parse(result);
+                
+                console.log(typeof(obj))
+              console.log(obj.ctrl)
+              //$('#Table_detail').html(result) 
+              })
+            .fail(function () {
+                $('#Table_detail').html("\
+                        <div class='alert alert-danger border-2 d-flex align-items-center' role='alert'>\
+                        <div class='bg-danger me-3 icon-item'><span class='fas fa-times-circle text-white fs-6'></span></div>\
+                        <h5 class='mb-0 flex-1'>Remito No Encontrado !!!</h5>\
+                        </div>") 
+            })
+        }
+</script>
+
+
+

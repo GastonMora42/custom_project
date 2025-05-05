@@ -1,0 +1,163 @@
+@{
+var Usuario = WebSecurity.CurrentUserName;
+
+Layout = "../Inicio/_ConfluenciaLayout.cshtml";
+var db = Database.Open("IntranetConnectionNew");
+var title = "Rendicion de Caja";
+var num_recibo = Request.QueryString["num_recibo"];
+
+}
+<!-- BEGIN: .main-content -->
+
+
+
+
+
+
+<div class="row">
+    <div class="col-12">
+              <div class="d-flex mb-2"><span class="fa-stack me-2 ms-n1"><i class="fas fa-circle fa-stack-2x text-300"></i><i class="fa-inverse fa-stack-1x text-primary fas fa-donate"></i></span>
+                <div class="col">
+                  <h5 class="mb-0 text-primary position-relative"><span class="bg-200 dark__bg-1100 pe-3">@title</span><span class="border position-absolute top-50 translate-middle-y w-100 start-0 z-n1"></span></h5>
+                  <p class="mb-0">Rendicion de Caja por Fecha</p>
+                </div>
+              </div>
+    </div>
+</div>
+<div id="rendicioncaja" class="row">
+    <div class="card mb-3">
+        <div class="bg-holder d-none d-lg-block bg-card ">
+        </div>
+        <!--/.bg-holder-->
+
+        <div class="card-body position-relative">
+
+            <form class="row gy-2 gx-3 align-items-center">
+                <div class="col-auto">
+                      <h5>Fecha</h5>
+                </div>
+                <div class="col-auto"><label class="visually-hidden"
+                        for="fechamov">Fecha</label>
+                    <div class="input-group">
+                        <input class="form-control" id="fechamov" type="date" />
+                    </div>
+                </div>
+                <div class="col-auto"><button type="button" class="btn btn-primary" id="btnconsultarecibo" >Consultar</button></div>
+                <div class="col-auto"><button type="button" class="btn btn-info" onclick="printtable()">Imprimir</button></div>
+                <div class="col-auto"><span class="badge rounded-pill badge-subtle-info">Para comprobantes de TANGO ver Condici&oacuten de Venta</span></div>
+            </form>
+        </div>
+    </div>
+
+
+    <div id="Error_detail" class="card mb-3" style="display:none;">
+        <div class="card-header">
+            <div class="row flex-between-end">
+                <div class="col-auto align-self-center">
+                    <h5 class="mb-0" data-anchor="data-anchor" id="form-grid-layout">Datos
+                        del Recibo<a
+                            class="anchorjs-link " aria-label="Anchor"
+                            data-anchorjs-icon="#" href="#form-grid-layout"
+                            style="padding-left: 0.375em;"></a></h5>
+                </div>
+
+            </div>
+        </div>
+        <div class="card-body bg-light">
+
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-body">
+            <div class="table-responsive fs--1">
+                <div id="Table_detail"></div>
+            </div>
+
+        </div>
+    </div>
+</div>
+<script src="printthis.js"></script>
+<script>
+    function rendicionsel() {
+
+        
+    var d = $("#fechamov").val();
+     $('#Table_detail').load("Methods/RendicionCajaFechaSel?fecharendicion="+ d );
+  };
+
+
+
+function printtable(){
+    const fecha = document.getElementById("fechamov").value;
+    
+    const myDate = new Date(fecha.replace(/-/g, '\/'))
+    $('#Table_detail').printThis({
+        printContainer: true, 
+        header: "<h5 style='margin-left: 30px;'> Rendicion de Caja de Fecha: " + myDate.toLocaleDateString("en-GB") +"</h5>"
+});
+}
+
+function PrintElem(elem)
+{
+    const fecha = document.getElementById("fechamov").value;
+    
+    const myDate = new Date(fecha.replace(/-/g, '\/'))
+
+    var mywindow = window.open('', 'PRINT', 'height=800,width=800');
+
+    mywindow.document.write('<html><head><title>' + document.title  + '</title>');
+    mywindow.document.write('</head><body >');
+    mywindow.document.write('<h4> Rendicion de Caja de Fecha: ' + myDate.toLocaleDateString("en-GB") +'</h4><div>'  );
+    mywindow.document.write(document.getElementById("Table_detail").innerHTML);
+    mywindow.document.write('</div></body></html>');
+
+    mywindow.document.close(); // necessary for IE >= 10
+    mywindow.focus(); // necessary for IE >= 10*/
+
+    mywindow.print();
+    mywindow.close();
+
+    return true;
+}
+
+     function recibosel() {
+            
+            $("Table_detail").html();
+            var x = document.getElementById("Table_detail");
+            x.style.display = "none";
+            var x1 = document.getElementById("Error_detail");
+            x1.style.display = "none";
+            
+            $('#Table_detail').load("Methods/consultareciboDetail.cshtml?num_recibo="+$('#numrecibo').val() , function(responseTxt, statusTxt, xhr){
+            if(statusTxt == "success")
+                x.style.display = "block";
+
+            if(statusTxt == "error")
+                x1.style.display = "block";
+        });
+
+
+
+    }
+
+
+$("#btnconsultarecibo").click(function (event) {
+        event.preventDefault()
+        $('#Table_detail').html("<div class='spinner-border text-primary' role='status'><span class='visually-hidden'>Loading...</span></div>")
+       
+        $.ajax({ url: "Methods/RendicionCajaFechaSel?fecharendicion="+ $("#fechamov").val()   })
+            .done(function (result) { 
+              $('#Table_detail').html(result) 
+              })
+            .fail(function () {
+                $('#Table_detail').html("\
+                        <div class='alert alert-danger border-0 d-flex align-items-center' role='alert'>\
+                        <div class='bg-danger me-3 icon-item'><span class='fas fa-times-circle text-white fs-6'></span></div>\
+                        <h6 class='mb-0 flex-1'>Error en la consulta de la Rendicion!</h6>\
+                        </div>")
+            })
+
+});
+
+</script>

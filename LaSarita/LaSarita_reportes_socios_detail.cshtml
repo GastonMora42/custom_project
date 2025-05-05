@@ -1,0 +1,179 @@
+﻿@{
+    if (WebSecurity.IsAuthenticated == false)
+    {
+        Response.Redirect("~/Account/Login.cshtml");
+    }
+    var Usuario = WebSecurity.CurrentUserName;
+    var db = Database.Open("IntranetConnection");
+    var userprofilesql = @"SELECT 
+                    UTABLE.EsAdmin
+                    FROM
+                    dbo.USERS_TABLE UTABLE
+                    WHERE
+                    UTABLE.Usuario= '" + Usuario + "'";
+    var userprofile = db.QueryValue(userprofilesql);    
+
+    var Fecha_desde = Request.QueryString["Fechadesde"].AsDateTime();
+
+
+    var sql = @"SELECT 
+                    SOCIOS.IDSOCIO,
+                    SOCIOS.APELLIDO + ' ' + SOCIOS.NOMBRES +  CASE WHEN SOCIOS.APODO = '' THEN  '' ELSE ISNULL(' ( ' + (SOCIOS.APODO) + ' )','') END  AS 'SOCIO_NAME',
+                    ISNULL(SOCIOS.TELEFONO,'Sin datos') as 'TELEFONO',
+                    ISNULL( (SELECT CONVERT(VARCHAR(10),MAX(MOV.FECHA),103) AS 'FECHA' FROM dbo.LA_SARITA_SOCIOS_MOVIMIENTOS MOV WHERE MOV.ID_SOCIO = SOCIOS.IDSOCIO GROUP BY MOV.ID_SOCIO),'') AS 'ULT_COBRO',
+                    (SELECT COUNT(dbo.LA_SARITA_SOCIOS_CABALLOS.IDCABALLO)  FROM dbo.LA_SARITA_SOCIOS_CABALLOS WHERE FECHA_BAJA IS NULL AND SOCIOS.IDSOCIO = dbo.LA_SARITA_SOCIOS_CABALLOS.IDSOCIO ) AS 'CANT_CABALLOS'
+                    
+                    FROM
+                    dbo.LA_SARITA_SOCIOS SOCIOS
+                    INNER JOIN dbo.LA_SARITA_SOCIOS_CATEGORIAS ON (SOCIOS.CATEGORIA = dbo.LA_SARITA_SOCIOS_CATEGORIAS.ID_CAT)
+                    WHERE
+                    SOCIOS.ACTIVO = 1  AND 
+                    (SOCIOS.GRUPO = 0  OR SOCIOS.GRUPO=SOCIOS.IDSOCIO) AND  
+                    dbo.LA_SARITA_SOCIOS_CATEGORIAS.COBRO = 1 AND 
+                    SOCIOS.IDSOCIO NOT IN ( SELECT MOV.ID_SOCIO  FROM dbo.LA_SARITA_SOCIOS_MOVIMIENTOS MOV WHERE  MOV.ID_SOCIO IS NOT NULL AND MOV.FECHA >= @1) 
+                    ORDER BY 
+                    ISNULL((SELECT MAX(MOV.FECHA) FROM dbo.LA_SARITA_SOCIOS_MOVIMIENTOS MOV WHERE MOV.ID_SOCIO = SOCIOS.IDSOCIO GROUP BY MOV.ID_SOCIO),NULL),
+                    SOCIOS.APELLIDO + ' ' + SOCIOS.NOMBRES";
+    var acobrar = db.Query(sql, userprofile, Fecha_desde);
+    var sqlcobrados = @"SELECT 
+                    SOCIOS.IDSOCIO,
+                    SOCIOS.APELLIDO + ' ' + SOCIOS.NOMBRES +  CASE WHEN SOCIOS.APODO = '' THEN  '' ELSE ISNULL(' ( ' + (SOCIOS.APODO) + ' )','') END  AS 'SOCIO_NAME',
+                    SOCIOS.TELEFONO,
+                    SUM(MOV.IMPORTE) AS  'IMPORTE',
+                    CONVERT(VARCHAR(10),MAX(MOV.FECHA),103) AS 'ULT_COBRO',
+                    (SELECT COUNT(dbo.LA_SARITA_SOCIOS_CABALLOS.IDCABALLO)  FROM dbo.LA_SARITA_SOCIOS_CABALLOS WHERE FECHA_BAJA IS NULL AND SOCIOS.IDSOCIO = dbo.LA_SARITA_SOCIOS_CABALLOS.IDSOCIO ) AS 'CANT_CABALLOS'
+                    FROM
+                    dbo.LA_SARITA_SOCIOS SOCIOS
+                    INNER JOIN dbo.LA_SARITA_SOCIOS_CATEGORIAS ON (SOCIOS.CATEGORIA = dbo.LA_SARITA_SOCIOS_CATEGORIAS.ID_CAT)
+					INNER JOIN dbo.LA_SARITA_SOCIOS_MOVIMIENTOS MOV ON (SOCIOS.IDSOCIO = MOV.ID_SOCIO)
+                    WHERE
+                    SOCIOS.ACTIVO = 1  AND  
+                    (SOCIOS.GRUPO = 0 OR SOCIOS.GRUPO=SOCIOS.IDSOCIO) AND  
+                    dbo.LA_SARITA_SOCIOS_CATEGORIAS.COBRO = 1 AND
+					MOV.FECHA >= @1 GROUP BY SOCIOS.IDSOCIO,SOCIOS.APELLIDO + ' ' + SOCIOS.NOMBRES +  CASE WHEN SOCIOS.APODO = '' THEN  '' ELSE ISNULL(' ( ' + (SOCIOS.APODO) + ' )','') END ,SOCIOS.TELEFONO";
+    var cobrados = db.Query(sqlcobrados, userprofile, Fecha_desde);
+
+
+
+}
+
+<ul class="nav nav-tabs" id="myTab" role="tablist">
+  <li class="nav-item" role="presentation">
+    <button class="nav-link active" id="home-tab" data-bs-toggle="tab" data-bs-target="#home" type="button" role="tab" aria-controls="home" aria-selected="true">A Cobrar</button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" id="profile-tab" data-bs-toggle="tab" data-bs-target="#profile" type="button" role="tab" aria-controls="profile" aria-selected="false">Cobrados</button>
+  </li>
+
+</ul>
+<div class="tab-content" id="myTabContent">
+  <div class="tab-pane fade show active" id="home" role="tabpanel" aria-labelledby="home-tab">
+        <table class="table table-striped table-hover table-sm" style="font-size:14px;width: fill-available" id="tableId">
+        <thead>
+            <tr style="background-color:rgb(160,31,111);color:white;font-size:15px;" >
+                <th class="text-center">Detalle Cuotas</th>
+                <th class="text-center">Socio</th>
+                <th class="text-center">Caballos</th>
+               <th class="text-center">Telefono</th>
+                <th class="text-center">Ultimo Cobro</th>
+                
+            </tr>
+        </thead>
+            <tbody>
+            @foreach(var row in acobrar)
+            {      
+                <tr style="font-size:12px; vertical-align: middle;" >
+                <td class="text-primary" style="text-align:center;font-weight:500 "id="@row.IDSOCIO"><a href="LaSarita_Socio_detalle.cshtml?idsocio=@row.IDSOCIO" style="text-decoration: none;"><span class="icon-plus" style="color:rgb(160,31,111);text-align:center;font-size: 16px;"></span></a></td>
+                <td class="text-primary" style="text-align:center;font-weight:500 "> @row.SOCIO_NAME</td> 
+                <td class="text-primary" style="text-align:center;font-weight:500 ">
+                 @if (@row.CANT_CABALLOS == 0)
+                {
+                    <button class="btn btn-outline-secondary btn-sm" type="button"  data-bs-toggle="modal" data-bs-target="#socioscaballos" onclick="load_Caballos(@row.IDSOCIO)" >@row.CANT_CABALLOS </button>
+                }
+                else{
+                    <button class="btn btn-outline-primary btn-sm" type="button"  data-bs-toggle="modal" data-bs-target="#socioscaballos" onclick="load_Caballos(@row.IDSOCIO)">@row.CANT_CABALLOS </button>
+                }
+                    
+                </td>  
+                <td class="text-primary" style="text-align:center;font-weight:500 "> @row.TELEFONO</td>    
+                <td class="text-primary" style="text-align:center;font-weight:500 "> @row.ULT_COBRO</td>   
+            </tr>   
+                }    
+        </tbody>
+
+        </table>
+  </div>
+  <div class="tab-pane fade" id="profile" role="tabpanel" aria-labelledby="profile-tab">
+        <table class="table table-striped table-hover table-sm" style="font-size:14px;" id="tableId">
+        <thead>
+            <tr style="background-color:rgb(160,31,111);color:white;font-size:15px;" >
+                <th class="text-center">Detalle Cuotas</th>
+                <th class="text-center">Socio</th>
+                <th class="text-center">Caballos</th>
+                <th class="text-center">Ult. Cobro</th>
+                <th class="text-center">Importe</th>
+                
+            </tr>
+        </thead>
+            <tbody>
+            @foreach(var row in cobrados)
+            {      
+            <tr style="font-size:12px; vertical-align: middle;" >
+                <td class="text-primary" style="text-align:center;font-weight:500 " id="@row.IDSOCIO"><a href="LaSarita_Socio_detalle.cshtml?idsocio=@row.IDSOCIO" style="text-decoration: none;"><span class="icon-plus" style="color:rgb(160,31,111);text-align:center;font-size: 16px;"></span></a></td>
+                <td class="text-primary" style="text-align:center;font-weight:500 "> @row.SOCIO_NAME</td>    
+                <td class="text-primary" style="text-align:center;font-weight:500 ">
+                 @if (@row.CANT_CABALLOS == 0)
+                {
+                    <button class="btn btn-outline-secondary btn-sm" type="button"  data-bs-toggle="modal" data-bs-target="#socioscaballos" onclick="load_Caballos(@row.IDSOCIO)" >@row.CANT_CABALLOS </button>
+                }
+                else{
+                    <button class="btn btn-outline-primary btn-sm" type="button"  data-bs-toggle="modal" data-bs-target="#socioscaballos" onclick="load_Caballos(@row.IDSOCIO)">@row.CANT_CABALLOS </button>
+                }
+                    
+                </td>  
+                <td class="text-primary" style="text-align:center;font-weight:500 "> @row.ULT_COBRO</td>   
+                <td style="color:navy; text-align:right;font-weight:700 "> @string.Format("{0:n}", @row.IMPORTE)</td>   
+            </tr>     
+                }    
+        </tbody>
+
+        </table>
+
+  </div>
+
+</div>
+<div class="modal fade" id="socioscaballos" tabindex="-1" >
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header text-white" style="background-color:rgb(160,31,111)"> 
+          <h2 class="modal-title fs-5" id="caballosModalLabel">SOCIOS - CABALLOS</h2>
+          
+          <button  type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+
+        <div class="modal-body">
+            <div id="listado_caballos"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+        </div>
+       
+      </div>
+    </div>
+  </div>
+<script>
+    function load_Caballos(id) {
+        console.log($('#' + id).parent('tr').find("td:eq(1)").html());
+        $('#caballosModalLabel').html( $('#' + id).parent('tr').find("td:eq(1)").html() + ' - CABALLOS')
+        $.ajax({
+            url: "Caballos/LaSarita_Caballos_list_full?q=" + id,
+            success: function (data) {
+                $("#listado_caballos").html(data);
+            }
+        });
+
+    };
+</script>
+
+
+

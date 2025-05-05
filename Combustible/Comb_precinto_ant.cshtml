@@ -1,0 +1,16 @@
+﻿@{
+    var db = Database.Open("IntranetConnection");
+    string proveedorelegido = Request.QueryString["q"];
+    var stringquery = @" SELECT TOP 1 
+                         COMBDET.PRECINTO
+                        FROM
+                          dbo.COMBUSTIBLE_DETAIL COMBDET
+                        WHERE
+                          COMBDET.BIEN_DE_USO = '" + proveedorelegido + "' ORDER BY COMBDET.IDCOMBDETAIL DESC";
+
+    var movimientos = db.Query(stringquery);
+}
+        @foreach(var row in movimientos)
+        {    
+            @row.PRECINTO
+        }

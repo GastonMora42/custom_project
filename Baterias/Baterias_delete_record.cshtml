@@ -1,0 +1,82 @@
+﻿@{
+    if (WebSecurity.IsAuthenticated == false)
+    {
+        Response.Redirect("~/Account/Login.cshtml");
+    }
+
+    var Usuario = WebSecurity.CurrentUserName;
+    Page.Title = "";
+    Layout = "Layout/_BateriasSiteLayout.cshtml";
+    var db = Database.Open("IntranetConnection");
+    string proveedorelegido = Request.QueryString["q"];
+    var result = "";
+    
+    var stringquery = @"SELECT 
+      dbo.Baterias_ARTICULOS.DESCRIPCION,
+      dbo.Baterias_ESTADOS.CATEGORIA_DESC,
+      dbo.Baterias_DEPOSITOS.ID_DEPOSITO,
+      dbo.Baterias_DEPOSITOS.NOMBRE_DEP,
+      (dbo.Baterias_MOVIMIENTOS.CANTIDAD *   dbo.Baterias_TIPOS_MOVIMIENTOS.MOV_STOCK) AS 'CANTIDAD',
+      dbo.Baterias_ARTICULOS.ID_PRODUCTO AS 'ARTICULO',
+      dbo.Baterias_MOVIMIENTOS.FECHA,
+      dbo.Baterias_TIPOS_MOVIMIENTOS.DESCR_MOVIMIENTO,
+      dbo.Baterias_MOVIMIENTOS.ID_REGISTRO
+      FROM
+      dbo.Baterias_ARTICULOS 
+      INNER JOIN dbo.Baterias_MOVIMIENTOS ON (dbo.Baterias_MOVIMIENTOS.ARTICULO = dbo.Baterias_ARTICULOS.ID_PRODUCTO)
+      INNER JOIN dbo.Baterias_DEPOSITOS ON (dbo.Baterias_MOVIMIENTOS.DEPOSITO = dbo.Baterias_DEPOSITOS.ID_DEPOSITO)
+      INNER JOIN dbo.Baterias_ESTADOS ON (dbo.Baterias_ARTICULOS.CATEGORIAS = dbo.Baterias_ESTADOS.ID_CATEGORIA)
+      INNER JOIN dbo.Baterias_TIPOS_MOVIMIENTOS ON (dbo.Baterias_MOVIMIENTOS.ID_TIPO_MOV = dbo.Baterias_TIPOS_MOVIMIENTOS.ID_TIPOMOV)
+      WHERE
+      dbo.Baterias_MOVIMIENTOS.ID_REGISTRO = @0";
+
+    var movimientos = db.QuerySingle(stringquery,proveedorelegido);
+
+    if (IsPost)  {
+            var deleteQueryString = "DELETE FROM dbo.Baterias_MOVIMIENTOS WHERE dbo.Baterias_MOVIMIENTOS.ID_REGISTRO=@0";
+            db.Execute(deleteQueryString, proveedorelegido);
+
+            result += @"<button class='command-button success'><i class='icon-checkmark on-left'></i><h4>El movimiento se borro correctamente !!</h4></button>";
+            
+            Response.Redirect("Baterias_Dashboard.cshtml");
+            }
+
+    
+}
+
+<legend><a href="javascript:history.back()"><i class="icon-arrow-left-3 fg-darker smaller"></i></a>
+           <small class="on-right"></small>  Borrar Registro  </legend>  
+<div class="container pt-3 pb-4 border">
+
+
+<div class="row g-3 align-items-center">
+        <form method="post" action="">
+  <div class="mb-3 col-3">
+    <label for="exampleInputEmail1" class="form-label">Fecha</label>
+      <input type="text" class="form-control" value="@string.Format("{0:dd/MM/yy}", @movimientos["FECHA"])" disabled style="font-weight: 500">
+  </div>
+  <div class="mb-3 col-3">
+    <label for="exampleInputPassword1" class="form-label">Cantidad</label>
+    <input type="text" class="form-control" value="@string.Format("{0:n}", @movimientos["CANTIDAD"])" disabled style="font-weight: 500">
+  </div>
+              <div class="mb-3 col-3">
+    <label for="exampleInputPassword1" class="form-label">Depósito</label>
+    <input type="text" class="form-control" id="precinto" name="precinto"  value="@movimientos["NOMBRE_DEP"]" disabled style="font-weight: 500"> 
+  </div>
+              <div class="mb-3 col-3">
+    <label for="exampleInputPassword1" class="form-label">Producto</label>
+    <input type="text" class="form-control" id="precinto" name="precinto"  value="@movimientos["DESCRIPCION"]" disabled style="font-weight: 500"> 
+  </div>
+                          <div class="mb-3 col-3">
+    <label for="exampleInputPassword1" class="form-label">Producto</label>
+    <input type="text" class="form-control" id="precinto" name="precinto"  value="@movimientos["DESCR_MOVIMIENTO"]" disabled style="font-weight: 500"> 
+  </div>
+
+  <button type="submit" class="btn btn-danger">Borrar Registro</button>
+                <div id="Message" class="row">
+    @Html.Raw(result)
+    </div>
+</form>
+
+</div>
+</div>

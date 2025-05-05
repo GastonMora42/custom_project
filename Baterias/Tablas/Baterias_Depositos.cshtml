@@ -1,0 +1,56 @@
+﻿@{
+     if (WebSecurity.IsAuthenticated == false)
+    {
+        Response.Redirect("~/Account/Login.cshtml");
+    }
+
+    var Usuario = WebSecurity.CurrentUserName;
+    Layout = "~/Baterias/Layout/_BateriasSiteLayout.cshtml";
+
+    var db = Database.Open("IntranetConnection");
+
+
+}
+<div class="container mt-4 border">
+   <h4>Listado de Depósitos</h4>
+    <div class="row">
+    <div class="span2">
+             <a  href="Baterias_Depositos_Alta.cshtml" type="button" class="btn btn-primary"  id="createFlatWindow">Nuevo Depósito</a>
+    </div>
+    <div class="span5">
+        <div id="tablaDepositos">
+            @RenderPage("Baterias_Depositos_list.cshtml")
+        </div>
+    </div>
+
+</div> <!-- End of row -->
+</div> <!-- End of container -->
+<script>
+                    $(function(){
+                        $("#createFlatWindow").on('click', function(){
+                            $.Dialog({
+                                overlay: true,
+                                shadow: true,
+                                flat: true,
+                                draggable: true,
+                                icon: '<img src="images/excel2013icon.png">',
+                                title: 'Alta de Deposito',
+                                content: '',
+                                padding: 10,
+                                onShow: function(_dialog){
+                                    var content = '<form role="form" method="post" enctype="multipart/form-data" id="add-book-form" action="@Href("Methods/Rep_Depositos_add.cshtml")">' +                                             '<legend>Nombre de la Deposito</legend>' +                                             '<div class="input-control text"><input type="text" name="Deposito" id="Deposito">' + 
+    '   <button class="btn-clear"></button></div>' +                                             '<div class="form-actions">' +                                            '<button class="button primary" id="guarda_Deposito">Alta</button>'+ 
+                                               '<button class="button" type="button" onclick="$.Dialog.close()">Cancelar</button> '+
+                                            '</div>'+
+                                            '</form><button class="button primary" id="guarda_Deposito2" 
+        ">Prueba</button>   ';
+
+                                    $.Dialog.title("Alta de Deposito");
+                                    $.Dialog.content(content);
+                                }
+                            });
+                        });
+
+                        });
+                </script>
+

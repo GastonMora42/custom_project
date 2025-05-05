@@ -1,0 +1,27 @@
+﻿@{
+    if (WebSecurity.IsAuthenticated == false)
+    {
+        Response.Redirect("~/Account/Login.cshtml");
+    }
+    
+    var Usuario = WebSecurity.CurrentUserName;
+    var db = Database.Open("IntranetConnection");
+    var idcaballo = Request.Form["idcaballo_selected"]; 
+    var nombre = Request.Form["editnombre"].ToUpper();
+    var observaciones = Request.Form["editobservaciones"].ToUpper();  
+    if (observaciones == ""){
+        observaciones = null;
+    };
+   
+    // Process information here
+            var insertQuery =
+                      @"UPDATE 
+                      dbo.LA_SARITA_SOCIOS_CABALLOS
+                    SET
+                      dbo.LA_SARITA_SOCIOS_CABALLOS.NOMBRE = @1,
+                      dbo.LA_SARITA_SOCIOS_CABALLOS.OBSERVACIONES = @2
+                    WHERE
+                      dbo.LA_SARITA_SOCIOS_CABALLOS.IDCABALLO = @0";
+            db.Execute(insertQuery,idcaballo, nombre, observaciones);
+
+}

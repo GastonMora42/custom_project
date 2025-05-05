@@ -1,0 +1,19 @@
+@{  
+    var db = Database.Open("IntranetConnection");
+    var depos_sel = Request.QueryString["TipoMov"];
+    var articulo_sel= Request.QueryString["Fechadesde"].AsDateTime();
+    var sql = @"
+                SELECT 
+            dbo.Baterias_MOVIMIENTOS.CANTIDAD,
+            dbo.Baterias_MOVIMIENTOS.ID_TIPO_MOV,
+            dbo.Baterias_TIPOS_MOVIMIENTOS.MOV_STOCK
+            FROM
+            dbo.Baterias_MOVIMIENTOS
+            INNER JOIN dbo.Baterias_TIPOS_MOVIMIENTOS ON (dbo.Baterias_MOVIMIENTOS.ID_TIPO_MOV = dbo.Baterias_TIPOS_MOVIMIENTOS.ID_TIPOMOV)
+            WHERE
+            dbo.Baterias_MOVIMIENTOS.DEPOSITO = ''AND 
+            dbo.Baterias_MOVIMIENTOS.ARTICULO = ' ' ";
+    
+
+    var movimientos = db.Query(sql);
+}

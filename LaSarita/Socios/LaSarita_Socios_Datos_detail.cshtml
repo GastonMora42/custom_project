@@ -1,0 +1,356 @@
+﻿@{
+    if (WebSecurity.IsAuthenticated == false)
+    {
+        Response.Redirect("~/Account/Login.cshtml");
+    }
+    var Usuario = WebSecurity.CurrentUserName;
+    var db = Database.Open("IntranetConnection");
+    var sqlclub = @"SELECT 
+                    LSSC.ID_CLUB,
+                    LSSC.NOMBRE_CLUB
+                    FROM
+                    dbo.LA_SARITA_SOCIOS_CLUBES LSSC
+                    ORDER BY 
+                    LSSC.ID_CLUB";
+    var club = db.Query(sqlclub);
+    var sqlcategoria = @"SELECT 
+                    LSSCAT.ID_CAT,
+                    LSSCAT.CATEGORIA
+                    FROM
+                    dbo.LA_SARITA_SOCIOS_CATEGORIAS LSSCAT
+                    ORDER BY 
+                    LSSCAT.CATEGORIA";
+    var categoria = db.Query(sqlcategoria);
+
+    var userprofilesql = @"SELECT 
+                    UTABLE.EsAdmin
+                    FROM
+                    dbo.USERS_TABLE UTABLE
+                    WHERE
+                    UTABLE.Usuario= '" + Usuario + "'";
+    var userprofile = db.QueryValue(userprofilesql);    
+
+   var sql = @"    SELECT 
+                    LSSOCIOS.IDSOCIO,
+                    LSSOCIOS.APELLIDO + ' ' + LSSOCIOS.NOMBRES + ISNULL(' ( ' + LSSOCIOS.APODO + ' )','')  AS 'SOCIO_NAME',
+                    CONVERT(VARCHAR(10),LSSOCIOS.FECHA_NACIMIENTO,103) AS 'FECHA_NACIMIENTO',
+                    LSSOCIOS.MAIL,
+                    LSSOCIOS.DNI,
+                    LSSOCIOS.TELEFONO,
+                    LSSOCIOS.GRUPO,
+                    LSSOCIOS.USUARIO_ALTA,
+                    LSSOCIOS.FECHA_ALTA,
+                    LSCLUBES.NOMBRE_CLUB,
+                    LS_CAT.CATEGORIA,
+                    LSSOCIOS.ACTIVO,
+                    (SELECT COUNT(dbo.LA_SARITA_SOCIOS_CABALLOS.IDCABALLO)  FROM dbo.LA_SARITA_SOCIOS_CABALLOS WHERE FECHA_BAJA IS NULL AND LSSOCIOS.IDSOCIO = dbo.LA_SARITA_SOCIOS_CABALLOS.IDSOCIO ) AS 'CANT_CABALLOS'
+                    FROM
+                    dbo.LA_SARITA_SOCIOS LSSOCIOS
+                    INNER JOIN dbo.LA_SARITA_SOCIOS_CLUBES LSCLUBES ON (LSSOCIOS.CLUB = LSCLUBES.ID_CLUB)
+                    INNER JOIN dbo.LA_SARITA_SOCIOS_CATEGORIAS LS_CAT ON (LSSOCIOS.CATEGORIA = LS_CAT.ID_CAT)
+                    ORDER BY 
+                    LSSOCIOS.APELLIDO + ' ' + LSSOCIOS.NOMBRES";
+    var acobrar = db.Query(sql);
+
+}
+
+  <div class="tab-pane fade show active" id="home" role="tabpanel" aria-labelledby="home-tab">
+        <table class="table table-striped table-hover table-sm" style="font-size:14px;" id="tableId">
+        <thead>
+            <tr style="background-color:rgb(160,31,111);color:white;font-size:15px;" >
+                <th class="text-center">Editar</th>
+                <th class="text-center">Socio</th>
+                <th class="text-center">Fecha_Nacimiento</th>
+                <th class="text-center">Club</th>
+                <th class="text-center">Categoria Socio</th>
+                <th class="text-center"># Documento</th>
+                <th class="text-center">Telefono</th>
+                <th class="text-center">E-Mail</th>
+                <th class="text-center">Caballos</th>
+                <th class="text-center">Status</th>
+            </tr>
+        </thead>
+            <tbody>
+            @foreach(var row in acobrar)
+            {      
+               if (@row.ACTIVO){
+            <tr style="font-size:12px; vertical-align: middle;text-align:center;font-weight:500" >
+                <td class="text-primary" style="text-align:center " id="@row.IDSOCIO">
+                    <button class="btn btn-outline-light btn-sm" style="border-color: rgb(160,31,111)" type="button" data-bs-toggle="modal" data-bs-target="#editausuarioModal" onclick="editasocio(@row.IDSOCIO)">
+                        <span class="icon-user" style="color:rgb(160,31,111);text-align:center;font-size: 14px;"></span> 
+                    </button>
+                </td>
+                <td class="text-primary" style="text-align:center;font-weight:500 "> @row.SOCIO_NAME</td>   
+                <td class="text-primary" style="text-align:center;font-weight:500 "> @row.FECHA_NACIMIENTO</td>   
+                <td class="text-primary" style="text-align:center;font-weight:500 "> @row.NOMBRE_CLUB</td>  
+                <td class="text-primary" style="text-align:center;font-weight:500 "> @row.CATEGORIA</td> 
+                 @if (@row.DNI== null)
+                {
+                <td class="text-dprimary" style="text-align:center;font-weight:500 ">-</td> 
+                }
+                else{
+                    <td class="text-primary" style="text-align:center;font-weight:500 "> @string.Format("{0:###,###,###}", @row.DNI)</td>  
+                }
+                <td class="text-primary" style="text-align:center;font-weight:500 "> @row.TELEFONO</td>  
+                <td class="text-primary" style="text-align:center;font-weight:500 "> @row.MAIL</td>  
+                <td class="text-primary" style="text-align:center;font-weight:500 ">
+                 @if (@row.CANT_CABALLOS == 0)
+                {
+                    <button class="btn btn-outline-secondary btn-sm" type="button"  data-bs-toggle="modal" data-bs-target="#socioscaballos" onclick="load_Caballos(@row.IDSOCIO)" >@row.CANT_CABALLOS </button>
+                }
+                else{
+                    <button class="btn btn-outline-primary btn-sm" type="button"  data-bs-toggle="modal" data-bs-target="#socioscaballos" onclick="load_Caballos(@row.IDSOCIO)">@row.CANT_CABALLOS </button>
+                }
+                    
+                </td>  
+                <td class="text-primary" style="text-align:center;font-weight:500 ">
+                    <button class="btn btn-success btn-sm" type="button" >A</button>
+                </td>  
+            </tr>   
+                }
+                else{
+                <tr style="font-size:12px; vertical-align: middle;text-align:center;font-weight:200" >
+                        <td class="text-secondary" style="text-align:center " id="@row.IDSOCIO">
+                        <button class="btn btn-outline-light btn-sm" style="border-color: #bfbfbf" type="button" data-bs-toggle="modal" data-bs-target="#editausuarioModal" onclick="editasocio(@row.IDSOCIO)">
+                        <span class="icon-user" style="color:#bfbfbf;text-align:center;font-size: 14px;"></span> 
+                        </button>
+                        </td>
+                        <td class="text-secondary" style="text-align:center;font-weight:200 "> @row.SOCIO_NAME</td> 
+                         @if (@row.FECHA_NACIMIENTO== "")
+                        {  
+                            <td class="text-secondary" style="text-align:center;font-weight:200 "> @row.FECHA_NACIMIENTO</td>  
+                                                                                                                               }
+                        else
+                        {
+                           <td class="text-secondary" style="text-align:center;font-weight:200 "> @row.FECHA_NACIMIENTO</td>    
+                        }
+
+                        
+                        <td class="text-secondary" style="text-align:center;font-weight:200 "> @row.NOMBRE_CLUB</td>  
+                        <td class="text-secondary" style="text-align:center;font-weight:200 "> @row.CATEGORIA</td> 
+                        @if (@row.DNI== null)
+                        {
+                        <td class="text-secondary" style="text-align:center;font-weight:200 ">-</td> 
+                        }
+                        else{
+                        <td class="text-secondary" style="text-align:center;font-weight:200 "> @string.Format("{0:###,###,###}", @row.DNI)</td>  
+                        }
+                        <td class="text-secondary" style="text-align:center;font-weight:200 "> @row.TELEFONO</td>  
+                        <td class="text-secondary" style="text-align:center;font-weight:200 "> @row.MAIL</td>  
+                        <td class="text-secondary" style="text-align:center;font-weight:200 ">
+                        @if (@row.CANT_CABALLOS == 0)
+                    {
+                        <button class="btn btn-outline-secondary btn-sm" type="button" >@row.CANT_CABALLOS </button>
+                    }
+                    else{
+                        <button class="btn btn-outline-secondary btn-sm" type="button" >@row.CANT_CABALLOS </button>
+                    }
+                    
+                        </td>  
+                        <td class="text-primary" style="text-align:center;font-weight:500 ">
+                        <button class="btn btn-warning btn-sm" type="button">I</button>
+                        </td>  
+                </tr>   
+                    
+                }
+                }    
+        </tbody>
+
+        </table>
+  </div>
+<!-- Edicion Socio -->
+
+<div class="modal fade" id="editausuarioModal" tabindex="-1" >
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header text-white" style="background-color:rgb(160,31,111)"> 
+          <h1 class="modal-title fs-5" id="altausuarioModalLabel">EDITAR DATOS DEL SOCIO</h1>
+          
+          <button  type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <form class="was-validated" role="form" enctype = "multipart/form-data" action="LaSarita_edit_socio.cshtml" method="POST" id="MyFormEditSocio" name="MyFormEditSocio">
+        <div class="modal-body">
+            <input type="hidden" class="form-control form-control-sm" id="idsocio_selected" name="idsocio_selected" >
+            <div class="input-group mb-3">
+                <span class="input-group-text etiq" id="inputGroup-sizing-sm">Apellido:</span>
+                <input type="text" class="form-control form-control-sm" id="editapellido" name="editapellido" required>
+            </div>    
+            <div class="input-group mb-3">
+                <span class="input-group-text etiq" id="inputGroup-sizing-sm">Nombre/s:</span>
+                <input type="text" class="form-control form-control-sm" id="editnombre" name="editnombre" required>
+            </div>   
+            <div class="input-group mb-3">
+                <span class="input-group-text etiq" id="inputGroup-sizing-sm">Apodo:</span>
+                <input type="text" class="form-control form-control-sm" id="editapodo" name="editapodo" placeholder="apodo">
+            </div>  
+            <div class="input-group mb-3">
+                <span class="input-group-text etiq" id="inputGroup-sizing-sm">DNI:</span>
+                <input type="text" class="form-control form-control-sm" id="editdni" name="editdni" placeholder="# doc sin puntos">
+            </div> 
+            <div class="input-group mb-3">
+                <span class="input-group-text etiq" id="inputGroup-sizing-sm">Teléfono:</span>
+                <input type="text" class="form-control form-control-sm" id="edittelefono" name="edittelefono" placeholder="# teléfono">
+            </div> 
+            <div class="input-group mb-3">
+                <span class="input-group-text etiq" id="inputGroup-sizing-sm">Mail:</span>
+                <input type="text" class="form-control form-control-sm" id="editemail" name="editemail" placeholder="name@example.com">
+            </div>   
+            <div class="input-group mb-3">
+                <span class="input-group-text etiq" id="inputGroup-sizing-sm">Fecha Nac.:</span>
+                <input class="form-control form-control-sm" type="date" id="editfecha_nacimiento" name="editfecha_nacimiento" required>
+            </div>
+            <div class="input-group mb-3">
+            <label class="input-group-text etiq" for="inputGroupSelect01">Club:</label>
+              <select class="form-select" id="editselect_club" name="editselect_club" aria-label="Default select example" >
+                <option selected>Seleccionar</option>
+                @foreach(var row in club)
+                    {
+                    <option value=@row.ID_CLUB>@row.NOMBRE_CLUB</option>  
+                    } 
+
+              </select>
+            </div>
+            <div class="input-group mb-3">
+            <label class="input-group-text etiq" for="inputGroupSelect01">Categoría:</label>
+              <select class="form-select" id="editselect_categoria" name="editselect_categoria" aria-label="Default select example" >
+                <option selected>Seleccionar</option>
+                @foreach(var row in categoria)
+                    {
+                    <option value=@row.ID_CAT>@row.CATEGORIA</option>  
+                    } 
+
+              </select>
+            </div>
+            <div class="input-group mb-3">
+                <span class="input-group-text etiq" id="inputGroup-sizing-sm">Grupo / Flia:</span>
+                <div class="input-group-text">
+                <input class="form-check-input mt-0" type="checkbox" value="" >
+                </div>
+                              <select class="form-select" id="editselect_motivo" name="editselect_motivo"  disabled>
+                <option selected>Seleccionar</option>
+                @foreach(var row in categoria)
+                    {
+                    <option value=@row.ID_CAT>@row.CATEGORIA</option>  
+                    } 
+
+              </select>
+            </div>
+            <div class="input-group mb-3">
+                <span class="input-group-text etiq" id="inputGroup-sizing-sm">Activo:</span>
+                <div class="input-group-text">
+                <input class="form-check-input mt-0" type="checkbox"  id="editactivo" name="editactivo">
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+          <button type="button" class="btn btn-primary" id="editsubmitButtonSocio" name="editsubmitButtonSocio" data-bs-dismiss="modal">Editar</button>
+        </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+
+
+<div class="modal fade" id="socioscaballos" tabindex="-1" >
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header text-white" style="background-color:rgb(160,31,111)"> 
+          <h2 class="modal-title fs-5" id="caballosModalLabel">SOCIOS - CABALLOS</h2>
+          
+          <button  type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+
+        <div class="modal-body">
+            <div id="listado_caballos"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+        </div>
+       
+      </div>
+    </div>
+  </div>
+
+
+<script>
+    $(document).ready(function () {
+
+
+
+        $("#editsubmitButtonSocio").click(function () {
+            var id = $('#idsocio_selected').val();
+            var values = $("#MyFormEditSocio").serialize();
+            /* Because serializeArray() ignores unset checkboxes and radio buttons: */
+            if ($('#editactivo').is(":checked")) {
+                // it is checked
+                values = values
+            }
+            else {
+                values = values.concat("&editactivo=0")
+            };
+
+            console.log(values);
+            $.ajax({
+                type: "POST",
+                url: $("#MyFormEditSocio").attr('action'),
+                data: values,
+                dataType: "html",
+                success: function (response) {
+
+                    $("#divTableDetail").load("LaSarita_Socios_Datos_detail.cshtml", function () {
+                        $('#' + id).parent('tr').effect("highlight", {}, 3300)
+                    });
+                },
+                error: function (response) {
+                    console.log($("#MyFormEditSocio").serialize())
+                    alert(response);
+
+                }
+            });
+
+
+        });
+    });
+
+    function editasocio(socioid) {
+
+
+        $.getJSON('LS_Datos_socio_selected/' + socioid, function (data) {
+            var book = data[0];
+
+            console.log(typeof (book));
+            console.log(book);
+            console.log(book.NOMBRES);
+            $('#idsocio_selected').val(socioid);
+            $('#editapellido').val(book.APELLIDO);
+            $('#editnombre').val(book.NOMBRES);
+            $('#editapodo').val(book.APODO);
+            $('#editapodo').val(book.APODO);
+            $('#editdni').val(book.DNI);
+            $('#edittelefono').val(book.TELEFONO);
+            $('#editemail').val(book.MAIL);
+            $('#editfecha_nacimiento').val(book.FECHA_NACIMIENTO);
+            $('#editselect_club').val(book.ID_CLUB);
+            $('#editselect_categoria').val(book.ID_CAT);
+            $('#editactivo').prop('checked', book.ACTIVO);
+            $('#editactivo').prop('checked', book.ACTIVO);
+
+
+        });
+
+    };
+
+    function load_Caballos(id) {
+        console.log($('#' + id).parent('tr').find("td:eq(1)").html());
+        $('#caballosModalLabel').html( $('#' + id).parent('tr').find("td:eq(1)").html() + ' - CABALLOS')
+        $.ajax({
+            url: "../Caballos/LaSarita_Caballos_list?q=" + id,
+            success: function (data) {
+                $("#listado_caballos").html(data);
+            }
+        });
+
+    };
+</script>

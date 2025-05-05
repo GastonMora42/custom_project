@@ -1,0 +1,18 @@
+﻿@{
+    Layout = null;
+    Response.Cache.SetCacheability(HttpCacheability.NoCache);
+    var categoryId = UrlData[0]; 
+    var db = Database.Open("IntranetConnection");
+    var sql = @"    SELECT 
+                      LSCAB.IDCABALLO,
+                      LSCAB.NOMBRE,
+                      LSCAB.OBSERVACIONES
+                    FROM
+                      dbo.LA_SARITA_SOCIOS_CABALLOS LSCAB
+                    WHERE
+                      LSCAB.IDCABALLO = @0";
+    var products = db.Query(sql, categoryId);
+    var json = Json.Encode(products);
+    Response.Write(json);
+    
+}

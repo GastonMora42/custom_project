@@ -1,0 +1,60 @@
+﻿@{
+    var Usuario = WebSecurity.CurrentUserName;
+    var db = Database.Open("IntranetConnection");
+    var products = db.QueryValue("SELECT dbo.USERS_TABLE.EsAdmin FROM dbo.USERS_TABLE WHERE dbo.USERS_TABLE.Usuario ='" + Usuario + "'");
+
+}
+
+@if (WebSecurity.IsAuthenticated)
+{
+    <div class="container">
+        <div class="navigation-bar dark">
+            <div class="navigation-bar-content container">
+                
+                <a href="~/Baterias/Baterias_Dashboard.cshtml" class="element">Baterias Confluencia </a>
+                <span class="element-divider"></span>
+                <a class="element1 pull-menu" href="#"></a>
+                <ul class="element-menu">
+                    <li>
+                        <a class="dropdown-toggle" href="#">Articulos</a>
+                        <ul class="dropdown-menu dark" data-role="dropdown">
+                            <li><a href="~/Baterias/Baterias_ingresos.cshtml">Ingresos</a></li>
+                            <li><a href="~/Baterias/Baterias_egresos.cshtml">Egresos</a></li>
+                            <li><a href="~/Baterias/Baterias_transferencias.cshtml">Transferencias</a></li>
+                        </ul>
+                    </li>
+                    <li>
+                        <a href="#" class="dropdown-toggle">Tablas</a>
+                        <ul class="dropdown-menu dark" data-role="dropdown">
+                            <li><a href="~/Baterias/Baterias_alta_articulo.cshtml">Articulos </a></li>
+                            <li><a class="dropdown-item" href="~/Baterias/Tablas/Baterias_categorias.cshtml">Categorias</a></li>
+                            <li><a href="~/Baterias/Baterias_Depositos.cshtml">Depositos</a></li>
+                            <li><a href="~/Baterias/Baterias_unidadesMedida.cshtml">Unidad de Medida</a></li>
+
+                        </ul>
+                    </li>
+                    <li>
+                        <a href="#" class="dropdown-toggle">Reportes</a>
+                        <ul class="dropdown-menu dark" data-role="dropdown">
+                            <li><a href="~/Baterias/Baterias_Reportes_movimientos.cshtml">Movimientos</a></li>
+                            <li><a href="~/Baterias/Baterias_stock_actual.cshtml">Stock Actual</a></li>
+                        </ul>
+                    </li>
+                    <li>
+                        <a href="#" class="dropdown-toggle">Usuarios</a>
+                        <ul class="dropdown-menu dark" data-role="dropdown">
+                            <li><a href="~/Account/Login.cshtml">Salir</a></li>
+                        </ul>
+                    </li>
+                        <li>
+                            <a href="#" class="dropdown-toggle">Intranet</a>
+                            <ul class="dropdown-menu dark" data-role="dropdown">
+                                <li><a href="~/index.cshtml">Regresar</a></li>
+                            </ul>
+                        </li>
+
+                </ul>
+            </div>
+        </div>
+    </div>
+}

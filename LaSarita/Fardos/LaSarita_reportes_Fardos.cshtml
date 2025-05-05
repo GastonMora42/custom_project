@@ -1,0 +1,70 @@
+﻿@{
+    if (WebSecurity.IsAuthenticated == false)
+    {
+        Response.Redirect("~/Account/Login.cshtml");
+    }
+    var Usuario = WebSecurity.CurrentUserName;
+    Layout = "~/LaSarita/_LaSaritaSiteLayout.cshtml";
+
+
+}
+
+<form class="row g-2">    
+  <div class="col col-sm-2">
+    <label for="staticEmail2" class="visually-hidden">Email</label>
+    <input type="text" readonly class="form-control-plaintext" id="staticEmail2" value="Desde Fecha">
+  </div>
+  <div class="col-auto">
+    <label for="inputPassword2" class="visually-hidden">Password</label>
+    <input class="form-control" type="date" id="fecha_consulta" name="fecha_consulta" >
+  </div>
+  <div class="col col-sm-2">
+    <button type='button' class="btn btn-primary mb-1" onclick="consultadesde()">Buscar</button>
+  </div>
+</form>
+
+<div id="divTableDetail"></div>
+
+
+
+
+
+
+<script>
+  function formatDate(date) {
+    var d = new Date(date),
+        month = '' + (d.getMonth() + 1),
+        day = '' + d.getDate(),
+        year = d.getFullYear();
+
+    if (month.length < 2) 
+        month = '0' + month;
+    if (day.length < 2) 
+        day = '0' + day;
+
+    return [year, month, day].join('-');
+}
+
+    function consultadesde (){
+      loaddetalle($("#fecha_consulta").val());
+    }
+
+    function loaddetalle(consultadate){
+        $("#divTableDetail").load("LaSarita_reportes_Fardos_detail.cshtml?Fechadesde="+ consultadate);
+    }
+
+    // When DOM is loaded this 
+    // function will get executed
+
+    $(window).on('load', function() {
+ // code here
+         var date = new Date();
+        var firstDay = new Date(date.getFullYear(), date.getMonth() - 12, 1);  
+        $("#fecha_consulta").val(formatDate(firstDay));
+        loaddetalle(formatDate(firstDay));
+  });
+
+
+
+</script>
+

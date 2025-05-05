@@ -1,0 +1,32 @@
+﻿@{
+    var db = Database.Open("IntranetConnection");
+    var categorias = db.Query(@"SELECT 
+                          ropcat.ID_CATEGORIA,
+                          ropcat.CATEGORIA_DESC
+                        FROM
+                          dbo.CUBIERTAS_ESTADOS ropcat
+                        ORDER BY
+                          ropcat.CATEGORIA_DESC");
+                        }
+
+<table id="example" class="table table-striped" style="width:70%;margin-right:auto;margin-left:auto;">
+            <thead>
+            <tr>
+
+                <th class="text-center">EDITAR</th>
+               
+                <th class="text-center">CATEGORIA</th>
+
+            </tr>
+                </thead>
+            <tbody>
+                @foreach(var row in categorias)
+                {
+                
+                <tr>
+                    <td style="text-align:center"><a href="Rep_detalle_movimientos.cshtml?Bienselected=@row.ID_CATEGORIA"><span class="mif-pencil fg-blue "></span></a></td>
+                    <td>@row.CATEGORIA_DESC</td>
+                </tr>
+            }
+                </tbody>
+        </table>

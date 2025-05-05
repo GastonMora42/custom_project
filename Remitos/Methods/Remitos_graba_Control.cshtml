@@ -1,0 +1,79 @@
+@{
+//    if (WebSecurity.IsAuthenticated == false)
+  //  {
+    //    Response.Redirect("~/Account/Login.cshtml");
+   // }
+    
+    if(IsPost){
+   // var Usuario = WebSecurity.CurrentUserName;
+    
+    var db = Database.Open("IntranetConnectionNew");
+    var title = "Control de Remitos";
+
+                                    //RemDet.CTRL_REMITO,
+                                    //RemDet.ID,
+                                    //RemDet.PLANILLA,
+                                    //RemDet.PLANTA,
+                                    //CONVERT (varchar(10), //RemDet.FECHA, 126) AS 'FECHA',
+                                    //RemDet.REMITO,
+                                    //RemDet.CLIENTE,
+                                    //RemDet.NOMBRE_PARTICULAR, 
+                                    //RemDet.OBRA,
+                                    //RemDet.COND_CLIENTE,
+                                    //RemDet.LUGAR,
+                                    //RemDet.CANTIDAD,
+                                    //RemDet.PRODUCTO,
+                                    //RemDet.ANULADO,
+                                    //CASE WHEN //RemDet.BOMBA IS NULL THEN 'NO' ELSE 'SI' END AS 'BOMBA',
+                                    //ISNULL(//RemDet.ADITIVO,0) AS 'ADITIVO',
+                                    //RemDet.OBSERVACIONES,
+                                    //CASE WHEN //RemDet.ttpp IS NULL THEN 'NO' ELSE 'SI' END AS 'TTPP',
+                                    //RemDet.CTRL_REMITO_POR,
+                                    //RemDet.OBSERVCIONES_CTRL,
+                                    //RemDet.EXCESO_HS, 
+                                    //RemDet.FECHA_CTRL_REMITO,
+                                    //RemDet.INTERNO, 
+                                    //RemDet.CHOFER 
+
+
+    
+    var idremito = Request.Form["idremito"];
+    var interno = Request.Form["interno"].ToUpper();
+    var chofer = Request.Form["chofer"];
+    var planta = Request.Form["planta"];
+    var fecha = Request.Form["fechamov"].AsDateTime();      
+    var cliente = Request.Form["cliente"];   
+    var NombreParticular = Request.Form["NombreParticular"];   
+    var obra = Request.Form["obra"];   
+    var lugar = Request.Form["lugar"];   
+    var aditivo = Request.Form["aditivo"].AsFloat();  
+    var producto = Request.Form["producto"]; 
+    var TransportePropio = Request.Form["TransportePropio"].AsBool(); 
+    var observaciones = Request.Form["observaciones"]; 
+    var CondCliente = Request.Form["CondCliente"]; 
+    var bomba = Request.Form["bomba"].AsBool(); 
+    var cantidad = Request.Form["cantidad"].AsFloat();  
+     
+    var sql = @"UPDATE dbo.REMITOS_DETALLE_NEW
+                SET 
+                INTERNO = @1, 
+                CHOFER = @2,
+                PLANTA = @3,
+                FECHA = @4,
+                CLIENTE = @5,
+                NOMBRE_PARTICULAR = @6,
+                OBRA = @7,
+                LUGAR = @8,
+                PRODUCTO = @9,
+                CANTIDAD = @10,
+                ADITIVO = @11,
+                BOMBA = @12,
+                TTPP = @13,
+                OBSERVACIONES = @14,
+                COND_CLIENTE = @15
+                WHERE 
+                ID = @0";
+
+    db.Execute(sql, idremito, interno, chofer, planta, fecha, cliente, NombreParticular, obra, lugar, producto, cantidad,aditivo, bomba, TransportePropio, observaciones, CondCliente);
+   }
+}

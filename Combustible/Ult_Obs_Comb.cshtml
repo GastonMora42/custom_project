@@ -1,0 +1,18 @@
+﻿@{
+    var db = Database.Open("IntranetConnection");
+    string proveedorelegido = Request.QueryString["q"];
+    var stringquery = @" SELECT TOP 1 
+                         CASE
+                         WHEN LEFT(COMBDET.BIEN_DE_USO,1)='T' THEN COMBDET.OBSERVACIONES
+                         ELSE 'Observaciones del Egreso' END AS 'OBSERVACIONES'
+                        FROM
+                          dbo.COMBUSTIBLE_DETAIL COMBDET
+                        WHERE
+                          COMBDET.BIEN_DE_USO = '" + proveedorelegido + "' ORDER BY COMBDET.IDCOMBDETAIL DESC";
+
+    var movimientos = db.Query(stringquery);
+}
+        @foreach(var row in movimientos)
+        {    
+            @row.OBSERVACIONES
+        }

@@ -1,0 +1,128 @@
+@{
+    var Usuario = WebSecurity.CurrentUserName;
+    
+        Layout = "../Inicio/_ConfluenciaLayout.cshtml";
+        var db = Database.Open("IntranetConnectionNew");
+        var title = "Anticipados Controlados";
+                var statusquery = "SELECT sta.IDSTATUS, sta.STATUS FROM dbo.COMP_ANTICIPADOS_CAB_STATUS sta WHERE STA.QUEDA_SALDO=0 ORDER BY sta.STATUS";
+        var statuslist = db.Query(statusquery);
+     
+    
+    }
+<!-- BEGIN: .main-content -->
+
+<div class="row">
+    <div class="col-12">
+        <div class="page-title-box page-title-box-alt">
+            <h4 class="page-title">@title</h4>
+            <div class="page-title-right">
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-3">
+    <div class="bg-holder d-none d-lg-block bg-card " style="background-color:#f2f3f4">
+    </div>
+    <!--/.bg-holder-->
+
+    <div class="card-body position-relative">
+        <div class="row row-cols-lg-4 g-3 align-items-center">
+            <div class="col-4">
+                <label class="sr-only" for="inlineFormInputGroupUsername"></label>
+                <div class="input-group">
+                    <div class="input-group-text">Desde</div>
+                    <input class="form-control" id="desdedate" type="date">
+                </div>
+            </div>
+            <div class="col-4">
+                <label class="sr-only" for="inlineFormInputGroupUsername"></label>
+                <div class="input-group">
+                    <div class="input-group-text">Hasta</div>
+                    <input class="form-control" id="hastadate" type="date">
+                </div>
+            </div>
+            <div class="col-12">
+                <button id="btnconsultar" class="btn btn-primary" type="text" onclick="recibosel()">Consultar</button>
+
+                <button id="btnloading" class="btn btn-primary" type="button" disabled style="display: none">
+                <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                <span role="status">Loading...</span>
+                </button>
+            </div>
+
+        </div>
+
+
+
+
+    </div>
+</div>
+
+<div id="Table_detail"></div>
+
+  <div class="modal fade" id="error-modal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content position-relative">
+      <div class="position-absolute top-0 end-0 mt-2 me-2 z-1">
+
+        <button class="btn-close btn btn-sm btn-circle d-flex flex-center transition-base" data-bs-dismiss="modal"
+          aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-0">
+        <div class="rounded-top-3 py-3 ps-4 pe-6 bg-light">
+          <h4 class="mb-1" id="modalExampleDemoLabel">Detalle de Remitos </h4>
+        </div>
+        <div class="p-4 pb-0" id="listadorem">
+
+        </div>
+      </div>
+      <div class="modal-footer">
+
+        <button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<script>
+
+            $(document).ready(function() {
+            // Default Datatable
+            $("#btnloading").hide();
+
+    } );
+    
+            function recibosel() { 
+            console.log($('#desdedate').val());
+            if ($('#desdedate').val()==""){
+                alert("Debe seleccionar una fecha !!!")
+            }
+            else{
+                            $.ajax({
+            type: "POST",
+            url: "Methods/controlados_list_selected.cshtml?fecha_desde=" + $('#desdedate').val() + "&fecha_hasta=" + $('#hastadate').val(),
+            beforeSend: function() {
+                $("#btnconsultar").hide();
+                $("#btnloading").show();
+
+                },
+            success: function(data) {
+                //Cargamos finalmente el contenido deseado
+                $("#btnloading").hide();
+                $("#btnconsultar").show();
+                $('#Table_detail').fadeIn(1000).html(data);
+            }
+        });
+
+            }
+
+
+    }
+
+</script>
+
+
+
