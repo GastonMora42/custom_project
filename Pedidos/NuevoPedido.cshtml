@@ -11,6 +11,91 @@
     var tipoMensaje = "";
     var idPedido = 0;
     
+    // Añadir a los scripts existentes
+// Validación en tiempo real
+function setupRealTimeValidation() {
+    $('.form-control, .form-select').on('blur change', function() {
+        const $this = $(this);
+        if ($this.prop('required') && !$this.val()) {
+            $this.addClass('is-invalid');
+        } else {
+            $this.removeClass('is-invalid');
+        }
+    });
+}
+
+// Autocompletar cliente desde API
+function setupClienteAutocomplete() {
+    $('#apellidoNombre').autocomplete({
+        source: function(request, response) {
+            $.ajax({
+                url: "/Pedidos/Methods/ClientesAutocomplete.cshtml",
+                dataType: "json",
+                data: { term: request.term },
+                success: function(data) {
+                    response(data);
+                }
+            });
+        },
+        minLength: 2,
+        select: function(event, ui) {
+            $('#celular').val(ui.item.telefono);
+            $('#localidad').val(ui.item.localidad);
+        }
+    });
+}
+
+// Mejorar visual feedback
+function setupVisualFeedback() {
+    $('#formPedido').on('change', 'input, select, textarea', function() {
+        $(this).closest('.form-group').addClass('was-changed');
+    });
+}
+
+// Inicializar cuando el documento esté listo
+$(document).ready(function() {
+    setupRealTimeValidation();
+    setupClienteAutocomplete();
+    setupVisualFeedback();
+    
+    // Guardar borrador automáticamente
+    let formTimer;
+    $('#formPedido').on('change', 'input, select, textarea', function() {
+        clearTimeout(formTimer);
+        formTimer = setTimeout(function() {
+            // Guardar en localStorage
+            saveFormDraft();
+            
+            // Mostrar indicador
+            showSavedIndicator();
+        }, 2000);
+    });
+});
+
+// Guardar borrador
+function saveFormDraft() {
+    const formData = $('#formPedido').serializeArray();
+    const draftData = {};
+    
+    // Convert to object
+    $.each(formData, function(index, field) {
+        draftData[field.name] = field.value;
+    });
+    
+    // Save to localStorage
+    localStorage.setItem('pedidoDraft', JSON.stringify(draftData));
+}
+
+// Mostrar indicador de guardado
+function showSavedIndicator() {
+    const $indicator = $('<div class="saved-indicator">Borrador guardado</div>');
+    $('body').append($indicator);
+    
+    $indicator.fadeIn(300).delay(2000).fadeOut(300, function() {
+        $(this).remove();
+    });
+}
+
     if(IsPost) {
         AntiForgery.Validate();
         

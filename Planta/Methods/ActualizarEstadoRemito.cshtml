@@ -1,80 +1,67 @@
 @{
-    var Usuario = WebSecurity.CurrentUserName;
+    Response.ContentType = "application/json";
+    var db = Database.Open("IntranetConnectionNew");
     
-    if (IsPost) {
-        var db = Database.Open("IntranetConnectionNew");
-        var idRemito = Request.Form["idRemito"].AsInt();
-        var nuevoEstado = Request.Form["nuevoEstado"];
-        var observaciones = Request.Form["observaciones"];
-        var transportista = Request.Form["transportista"];
-        var dominioCamion = Request.Form["dominioCamion"];
-        var idUsuario = db.QueryValue("SELECT ID FROM USERS_TABLE WHERE LOWER(Usuario) = LOWER(@0)", Usuario);
-        var respuesta = new { exito = false, mensaje = "", error = "" };
+    var idRemito = Request.Form["idRemito"].AsInt();
+    var nuevoEstado = Request.Form["nuevoEstado"];
+    var observaciones = Request.Form["observaciones"];
+    
+    var exito = false;
+    var mensaje = "";
+    var error = "";
+    
+    try {
+        // Verificar que el remito existe
+        var remito = db.QuerySingle("SELECT ID, ESTADO, IDPEDIDO FROM REMITOS WHERE ID = @0", idRemito);
         
-        try {
-            // Verificar que el remito existe
-            var remitoActual = db.QuerySingle("SELECT ID, ESTADO FROM REMITOS WHERE ID = @0", idRemito);
+        if (remito == null) {
+            error = "El remito no existe";
+        }
+        else {
+            // Obtener ID del usuario
+            var Usuario = WebSecurity.CurrentUserName;
+            int idUsuario = 0;
+            if (!string.IsNullOrEmpty(Usuario)) {
+                idUsuario = db.QueryValue("SELECT ID FROM USERS_TABLE WHERE LOWER(Usuario) = LOWER(@0)", Usuario) ?? 0;
+            }
             
-            if (remitoActual == null) {
-                respuesta = new { exito = false, mensaje = "", error = "El remito no existe" };
-            }
-            else {
-                string consulta;
+            // Actualizar estado del remito
+            db.Execute("UPDATE REMITOS SET ESTADO = @0, OBSERVACIONES = @1 WHERE ID = @2", 
+                      nuevoEstado, observaciones, idRemito);
+            
+            // Si el estado es ENTREGADO, actualizar el pedido también
+            if (nuevoEstado == "ENTREGADO") {
+                // Verificar si todos los remitos del pedido están entregados
+                var todosEntregados = db.QueryValue(@"
+                    SELECT CASE WHEN COUNT(*) = COUNT(CASE WHEN ESTADO = 'ENTREGADO' THEN 1 END) 
+                           THEN 1 ELSE 0 END
+                    FROM REMITOS
+                    WHERE IDPEDIDO = @0", remito.IDPEDIDO);
                 
-                // Si el estado es ENVIADO, necesitamos actualizar más campos
-                if (nuevoEstado == "ENVIADO") {
-                    consulta = @"UPDATE REMITOS SET 
-                                ESTADO = @0, 
-                                OBSERVACIONES = @1,
-                                TRANSPORTISTA = @2,
-                                DOMINIO_CAMION = @3,
-                                FECHA_DESPACHO = GETDATE(),
-                                ID_USUARIO_DESPACHO = @4
-                                WHERE ID = @5";
+                // Si todos los remitos están entregados, actualizar el estado del pedido
+                if (todosEntregados == 1) {
+                    db.Execute("UPDATE PEDIDOS SET ESTADO = 'ENTREGADO' WHERE IDPEDIDO = @0", remito.IDPEDIDO);
                     
-                    db.Execute(consulta, nuevoEstado, observaciones, transportista, dominioCamion, idUsuario, idRemito);
+                    // Registrar el cambio de estado en el historial
+                    db.Execute(@"INSERT INTO PEDIDOS_ESTADOS (IDPEDIDO, ESTADO, FECHA_CAMBIO, USUARIO_CAMBIO, OBSERVACIONES) 
+                               VALUES (@0, @1, @2, @3, @4)", 
+                               remito.IDPEDIDO, "ENTREGADO", DateTime.Now, idUsuario, "Todos los remitos entregados");
                 }
-                // Si el estado es ENTREGADO, solo actualizamos el estado
-                else if (nuevoEstado == "ENTREGADO") {
-                    consulta = @"UPDATE REMITOS SET 
-                                ESTADO = @0, 
-                                OBSERVACIONES = @1
-                                WHERE ID = @2";
-                    
-                    db.Execute(consulta, nuevoEstado, observaciones, idRemito);
-                    
-                    // Verificar si todos los remitos del pedido están entregados
-                    var idPedido = db.QueryValue("SELECT ID_PEDIDO FROM REMITOS WHERE ID = @0", idRemito);
-                    var todosEntregados = db.QueryValue(@"
-                        SELECT CASE WHEN COUNT(*) = COUNT(CASE WHEN ESTADO = 'ENTREGADO' THEN 1 END) 
-                               THEN 1 ELSE 0 END
-                        FROM REMITOS
-                        WHERE ID_PEDIDO = @0", idPedido);
-                    
-                    // Si todos los remitos están entregados, actualizar el estado del pedido
-                    if (todosEntregados == 1) {
-                        db.Execute("UPDATE PEDIDOS SET ESTADO = 'ENTREGADO' WHERE ID = @0", idPedido);
-                    }
-                }
-                // Para otros estados, solo actualizamos el estado y observaciones
-                else {
-                    consulta = @"UPDATE REMITOS SET 
-                                ESTADO = @0, 
-                                OBSERVACIONES = @1
-                                WHERE ID = @2";
-                    
-                    db.Execute(consulta, nuevoEstado, observaciones, idRemito);
-                }
-                
-                respuesta = new { exito = true, mensaje = "Estado actualizado correctamente", error = "" };
             }
+            
+            exito = true;
+            mensaje = "Estado actualizado correctamente";
         }
-        catch (Exception ex) {
-            respuesta = new { exito = false, mensaje = "", error = ex.Message };
-        }
-        
-        Response.ContentType = "application/json";
-        Json.Write(respuesta, Response.Output);
-        Response.End();
     }
+    catch (Exception ex) {
+        error = ex.Message;
+    }
+    
+    var respuesta = new {
+        exito = exito,
+        mensaje = mensaje,
+        error = error
+    };
+    
+    Json.Write(respuesta, Response.Output);
 }

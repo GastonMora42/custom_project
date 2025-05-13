@@ -1,0 +1,318 @@
+@{
+    var Usuario = WebSecurity.CurrentUserName;
+    
+    Layout = "~/Inicio/_ConfluenciaLayout.cshtml";
+    var db = Database.Open("IntranetConnectionNew");
+    
+    var idPedido = Request.QueryString["id"].AsInt();
+    
+    // Obtener datos del pedido
+    var pedido = db.QuerySingle("SELECT * FROM PEDIDOS WHERE IDPEDIDO = @0", idPedido);
+    
+    if (pedido == null) {
+        Response.Redirect("~/Pedidos/Index.cshtml");
+    }
+    
+    // Obteniendo lista de artículos
+    var articulos = db.Query("SELECT DISTINCT ARTICULO FROM PEDIDOS WHERE ARTICULO IS NOT NULL ORDER BY ARTICULO");
+    
+    var mensaje = "";
+    var tipoMensaje = "";
+    
+    if(IsPost) {
+        AntiForgery.Validate();
+        
+        try {
+            // Obtener datos del formulario
+            var apellidoNombre = Request.Form["apellidoNombre"];
+            var celular = Request.Form["celular"];
+            var articulo = Request.Form["articulo"];
+            var cantidad = Request.Form["cantidad"].AsFloat();
+            var destino = Request.Form["destino"];
+            var localidad = Request.Form["localidad"];
+            var corte = Request.Form["corte"];
+            var usoHormigon = Request.Form["usoHormigon"];
+            var bombaCinta = Request.Form["bombaCinta"];
+            var condVenta = Request.Form["condVenta"];
+            var observPlanta = Request.Form["observPlanta"];
+            var observAdmin = Request.Form["observAdmin"];
+            var codigo = Request.Form["codigo"].AsInt();
+            var planta = Request.Form["planta"].AsInt();
+            var estado = Request.Form["estado"];
+            var observacionCambio = Request.Form["observacionCambio"];
+            
+            // Obtener estado actual
+            var estadoActual = pedido.ESTADO;
+            
+            // Determinar el estado según los campos completados si el usuario no lo ha cambiado manualmente
+            if (estado == estadoActual) {
+                if (!string.IsNullOrEmpty(apellidoNombre) && !string.IsNullOrEmpty(celular) && 
+                    !string.IsNullOrEmpty(articulo) && !string.IsNullOrEmpty(destino) && 
+                    cantidad > 0) {
+                    estado = "LISTO PARA PLANTA";
+                } else {
+                    estado = "CAMPOS FALTANTES";
+                }
+            }
+            
+            // Actualizar pedido
+            string sqlPedido = @"UPDATE PEDIDOS SET 
+                                APELLIDO_NOMBRE = @0, 
+                                CELULAR = @1, 
+                                CANTIDAD = @2, 
+                                CORTE = @3, 
+                                ARTICULO = @4, 
+                                COND_VENTA = @5, 
+                                USO_HORMIGON = @6, 
+                                BOMBA_CINTA = @7, 
+                                LOCALIDAD = @8, 
+                                DESTINO = @9, 
+                                OBSERV_PLANTA = @10, 
+                                OBSERV_ADMIN = @11, 
+                                CODIGO = @12, 
+                                PLANTA = @13, 
+                                ESTADO = @14
+                                WHERE IDPEDIDO = @15";
+            
+            db.Execute(sqlPedido, 
+                apellidoNombre, celular, cantidad, corte, articulo,
+                condVenta, usoHormigon, bombaCinta, localidad, destino, 
+                observPlanta, observAdmin, codigo, planta, estado, idPedido);
+            
+            // Si el estado cambió, registrar en historial
+            if (estado != estadoActual) {
+                int idUsuario = 0;
+                if (!string.IsNullOrEmpty(Usuario)) {
+                    idUsuario = db.QueryValue("SELECT ID FROM USERS_TABLE WHERE LOWER(Usuario) = LOWER(@0)", Usuario) ?? 0;
+                }
+                
+                db.Execute(@"INSERT INTO PEDIDOS_ESTADOS (IDPEDIDO, ESTADO, FECHA_CAMBIO, USUARIO_CAMBIO, OBSERVACIONES) 
+                           VALUES (@0, @1, @2, @3, @4)", 
+                           idPedido, estado, DateTime.Now, idUsuario, observacionCambio);
+            }
+            
+            mensaje = "Pedido actualizado correctamente";
+            tipoMensaje = "success";
+        }
+        catch (Exception ex) {
+            mensaje = "Error al actualizar el pedido: " + ex.Message;
+            tipoMensaje = "danger";
+        }
+    }
+}
+
+<div class="d-flex mb-2">
+    <span class="fa-stack me-2 ms-n1">
+        <i class="fas fa-circle fa-stack-2x text-300"></i>
+        <i class="fa-inverse fa-stack-1x text-primary fas fa-edit"></i>
+    </span>
+    <div class="col">
+        <h5 class="mb-0 text-primary position-relative">
+            <span class="bg-200 dark__bg-1100 pe-3">Editar Pedido #@idPedido</span>
+            <span class="border position-absolute top-50 translate-middle-y w-100 start-0 z-n1"></span>
+        </h5>
+        <p class="mb-0">Modifique la información del pedido</p>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(mensaje)) {
+    <div class="alert alert-@tipoMensaje alert-dismissible fade show" role="alert">
+        <strong>@(tipoMensaje == "success" ? "¡Éxito!" : "¡Error!")</strong> @mensaje
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<form method="post" id="formPedido" class="needs-validation" novalidate>
+    @AntiForgery.GetHtml()
+    
+    <div class="row g-3">
+        <div class="col-lg-8">
+            <div class="card mb-3">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0">Información General</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label" for="apellidoNombre">Cliente *</label>
+                            <input type="text" class="form-control" id="apellidoNombre" name="apellidoNombre" value="@pedido.APELLIDO_NOMBRE" required>
+                            <div class="invalid-feedback">Este campo es obligatorio</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="celular">Teléfono de Contacto *</label>
+                            <input type="text" class="form-control" id="celular" name="celular" value="@pedido.CELULAR" required>
+                            <div class="invalid-feedback">Este campo es obligatorio</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="localidad">Localidad</label>
+                            <input type="text" class="form-control" id="localidad" name="localidad" value="@pedido.LOCALIDAD">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="destino">Destino *</label>
+                            <input type="text" class="form-control" id="destino" name="destino" value="@pedido.DESTINO" required>
+                            <div class="invalid-feedback">Este campo es obligatorio</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="condVenta">Condición de Venta</label>
+                            <input type="text" class="form-control" id="condVenta" name="condVenta" value="@pedido.COND_VENTA">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="codigo">Código</label>
+                            <input type="number" class="form-control" id="codigo" name="codigo" value="@pedido.CODIGO">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-3">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0">Detalles del Pedido</h6>
+                </div> 
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label" for="articulo">Artículo *</label>
+                            <select class="form-select" id="articulo" name="articulo" required>
+                                <option value="">Seleccione un artículo</option>
+                                @foreach (var art in articulos) {
+                                    <option value="@art.ARTICULO" @(art.ARTICULO == pedido.ARTICULO ? "selected" : "")>@art.ARTICULO</option>
+                                }
+                            </select>
+                            <div class="invalid-feedback">Este campo es obligatorio</div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label" for="cantidad">Cantidad *</label>
+                            <input type="number" class="form-control" id="cantidad" name="cantidad" min="0.01" step="0.01" value="@pedido.CANTIDAD" required>
+                            <div class="invalid-feedback">Este campo es obligatorio</div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label" for="corte">Corte</label>
+                            <input type="text" class="form-control" id="corte" name="corte" value="@pedido.CORTE">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label" for="usoHormigon">Uso Hormigón</label>
+                            <input type="text" class="form-control" id="usoHormigon" name="usoHormigon" value="@pedido.USO_HORMIGON">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label" for="bombaCinta">Bomba/Cinta</label>
+                            <input type="text" class="form-control" id="bombaCinta" name="bombaCinta" value="@pedido.BOMBA_CINTA">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label" for="planta">Planta</label>
+                            <input type="number" class="form-control" id="planta" name="planta" value="@pedido.PLANTA">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-3">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0">Observaciones</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label" for="observPlanta">Observaciones para Planta</label>
+                            <textarea class="form-control" id="observPlanta" name="observPlanta" rows="3">@pedido.OBSERV_PLANTA</textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="observAdmin">Observaciones Administrativas</label>
+                            <textarea class="form-control" id="observAdmin" name="observAdmin" rows="3">@pedido.OBSERV_ADMIN</textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card mb-3">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0">Estado del Pedido</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Estado Actual</label>
+                        <div class="d-flex align-items-center">
+                            <div class="badge bg-@(pedido.ESTADO == "CAMPOS FALTANTES" ? "warning" : 
+                                              pedido.ESTADO == "LISTO PARA PLANTA" ? "info" : 
+                                              pedido.ESTADO == "ENVIADO A PLANTA" ? "primary" : 
+                                              pedido.ESTADO == "ENTREGADO" ? "success" : "secondary")
+                                           px-3 py-2">
+                                @pedido.ESTADO
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label" for="estado">Cambiar Estado</label>
+                        <select class="form-select" id="estado" name="estado">
+                            <option value="@pedido.ESTADO">Mantener estado actual</option>
+                            <option value="CAMPOS FALTANTES" @(pedido.ESTADO == "CAMPOS FALTANTES" ? "disabled" : "")>CAMPOS FALTANTES</option>
+                            <option value="LISTO PARA PLANTA" @(pedido.ESTADO == "LISTO PARA PLANTA" ? "disabled" : "")>LISTO PARA PLANTA</option>
+                            <option value="ENVIADO A PLANTA" @(pedido.ESTADO == "ENVIADO A PLANTA" ? "disabled" : "")>ENVIADO A PLANTA</option>
+                            <option value="ENTREGADO" @(pedido.ESTADO == "ENTREGADO" ? "disabled" : "")>ENTREGADO</option>
+                            <option value="ANULADO" @(pedido.ESTADO == "ANULADO" ? "disabled" : "")>ANULADO</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3" id="observacionCambioDiv" style="display: none;">
+                        <label class="form-label" for="observacionCambio">Observación del Cambio</label>
+                        <textarea class="form-control" id="observacionCambio" name="observacionCambio" rows="3"></textarea>
+                        <div class="form-text">Agregue un comentario explicando el motivo del cambio de estado</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mb-3">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0">Información Adicional</h6>
+                </div>
+                <div class="card-body">
+                    <p class="fs--1"><strong>Creado:</strong> @string.Format("{0:dd/MM/yyyy}", pedido.FECHA) @pedido.HORA</p>
+                    <p class="fs--1"><strong>Última Modificación:</strong> @(pedido.FECHA_ULT_MOD != null ? string.Format("{0:dd/MM/yyyy HH:mm}", pedido.FECHA_ULT_MOD) : "No registrada")</p>
+                    <p class="fs--1"><strong>Usuario:</strong> @(pedido.USUARIO_CREACION != null ? db.QueryValue("SELECT Usuario FROM USERS_TABLE WHERE ID = @0", pedido.USUARIO_CREACION) : "No registrado")</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-between mb-3">
+        <a href="~/Pedidos/DetallePedido.cshtml?id=@idPedido" class="btn btn-falcon-default">
+            <i class="fas fa-arrow-left me-1"></i>Cancelar
+        </a>
+        <button type="submit" class="btn btn-falcon-success">
+            <i class="fas fa-save me-1"></i>Guardar Cambios
+        </button>
+    </div>
+</form>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Inicializar Select2
+            $('#articulo').select2({
+                theme: 'bootstrap-5',
+                placeholder: "Seleccione un artículo",
+                allowClear: true
+            });
+            
+            // Mostrar/ocultar campo de observación al cambiar estado
+            $('#estado').change(function() {
+                if ($(this).val() !== '@pedido.ESTADO') {
+                    $('#observacionCambioDiv').slideDown();
+                } else {
+                    $('#observacionCambioDiv').slideUp();
+                }
+            });
+            
+            // Validación del formulario
+            $('#formPedido').submit(function(event) {
+                if (!this.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                $(this).addClass('was-validated');
+            });
+        });
+    </script>
+}

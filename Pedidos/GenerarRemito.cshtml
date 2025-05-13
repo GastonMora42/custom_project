@@ -1,0 +1,333 @@
+@{
+    var Usuario = WebSecurity.CurrentUserName;
+    
+    Layout = "~/Inicio/_ConfluenciaLayout.cshtml";
+    var db = Database.Open("IntranetConnectionNew");
+    
+    var idPedido = Request.QueryString["id"].AsInt();
+    
+    // Obtener datos del pedido
+    var pedido = db.QuerySingle("SELECT * FROM PEDIDOS WHERE IDPEDIDO = @0", idPedido);
+    
+    if (pedido == null || pedido.ESTADO != "LISTO PARA PLANTA") {
+        Response.Redirect("~/Pedidos/Index.cshtml");
+    }
+    
+    // Obtener plantas disponibles
+    var plantas = db.Query("SELECT ID, NOMBRE FROM PLANTAS WHERE ESTADO = 1 ORDER BY NOMBRE");
+    
+    // Verificar si tiene remitos asociados
+    var remitosExistentes = db.Query("SELECT ID, NUMERO, FECHA_CREACION, ESTADO FROM REMITOS WHERE IDPEDIDO = @0", idPedido);
+    
+    var mensaje = "";
+    var tipoMensaje = "";
+    var idRemito = 0;
+    
+    if(IsPost) {
+        AntiForgery.Validate();
+        
+        try {
+            // Obtener datos del formulario
+            var idPlanta = Request.Form["idPlanta"].AsInt();
+            var transportista = Request.Form["transportista"];
+            var dominioCamion = Request.Form["dominioCamion"];
+            var observaciones = Request.Form["observaciones"];
+            var cantidad = Request.Form["cantidad"].AsFloat();
+            
+            // Validar datos
+            if (idPlanta <= 0) {
+                throw new Exception("Debe seleccionar una planta");
+            }
+            
+            // Generar número de remito (formato configurable en SISTEMA_CONFIG)
+            var formatoNumeroRemito = db.QueryValue("SELECT VALOR FROM SISTEMA_CONFIG WHERE CLAVE = 'FORMATO_NUMERO_REMITO'") ?? "R-{0:00000000}";
+            var ultimoNumero = db.QueryValue("SELECT MAX(CAST(REPLACE(REPLACE(NUMERO, 'R-', ''), ' ', '') AS INT)) FROM REMITOS") ?? 0;
+            var nuevoNumero = string.Format(formatoNumeroRemito, ultimoNumero + 1);
+            
+            // Obtener ID del usuario
+            int idUsuario = 0;
+            if (!string.IsNullOrEmpty(Usuario)) {
+                idUsuario = db.QueryValue("SELECT ID FROM USERS_TABLE WHERE LOWER(Usuario) = LOWER(@0)", Usuario) ?? 0;
+            }
+            
+            // Comenzar transacción
+            db.BeginTransaction();
+            
+            // Insertar remito
+            string sqlRemito = @"INSERT INTO REMITOS (
+                               NUMERO, FECHA_CREACION, IDPEDIDO, ID_PLANTA, 
+                               ID_USUARIO_CREACION, ESTADO, TRANSPORTISTA, 
+                               DOMINIO_CAMION, OBSERVACIONES) 
+                               VALUES (
+                               @0, @1, @2, @3, @4, @5, @6, @7, @8);
+                               SELECT SCOPE_IDENTITY();";
+            
+            idRemito = db.QueryValue(sqlRemito, 
+                nuevoNumero, DateTime.Now, idPedido, idPlanta,
+                idUsuario, "PENDIENTE", transportista,
+                dominioCamion, observaciones);
+            
+            // Insertar detalle del remito
+            string sqlDetalle = @"INSERT INTO REMITOS_DETALLE (
+                                ID_REMITO, ARTICULO, CANTIDAD, USO_HORMIGON)
+                                VALUES (@0, @1, @2, @3)";
+            
+            db.Execute(sqlDetalle, idRemito, pedido.ARTICULO, cantidad, pedido.USO_HORMIGON);
+            
+            // Actualizar estado del pedido
+            db.Execute("UPDATE PEDIDOS SET ESTADO = 'ENVIADO A PLANTA' WHERE IDPEDIDO = @0", idPedido);
+            
+            // Registrar el cambio de estado en el historial
+            db.Execute(@"INSERT INTO PEDIDOS_ESTADOS (IDPEDIDO, ESTADO, FECHA_CAMBIO, USUARIO_CAMBIO, OBSERVACIONES) 
+                       VALUES (@0, @1, @2, @3, @4)", 
+                       idPedido, "ENVIADO A PLANTA", DateTime.Now, idUsuario, "Remito generado: " + nuevoNumero);
+            
+            // Commit transacción
+            db.CommitTransaction();
+            
+            mensaje = "Remito generado correctamente con número: " + nuevoNumero;
+            tipoMensaje = "success";
+        }
+        catch (Exception ex) {
+            db.RollbackTransaction();
+            mensaje = "Error al generar el remito: " + ex.Message;
+            tipoMensaje = "danger";
+        }
+    }
+}
+
+<div class="d-flex mb-2">
+    <span class="fa-stack me-2 ms-n1">
+        <i class="fas fa-circle fa-stack-2x text-300"></i>
+        <i class="fa-inverse fa-stack-1x text-primary fas fa-truck"></i>
+    </span>
+    <div class="col">
+        <h5 class="mb-0 text-primary position-relative">
+            <span class="bg-200 dark__bg-1100 pe-3">Generar Remito para Pedido #@idPedido</span>
+            <span class="border position-absolute top-50 translate-middle-y w-100 start-0 z-n1"></span>
+        </h5>
+        <p class="mb-0">Complete la información para enviar el pedido a planta</p>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(mensaje)) {
+    <div class="alert alert-@tipoMensaje alert-dismissible fade show" role="alert">
+        <strong>@(tipoMensaje == "success" ? "¡Éxito!" : "¡Error!")</strong> @mensaje
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    
+    if (tipoMensaje == "success") {
+        <div class="mb-3">
+            <a href="~/Pedidos/DetallePedido.cshtml?id=@idPedido" class="btn btn-falcon-primary me-2">
+                <i class="fas fa-eye me-1"></i>Ver Pedido
+            </a>
+            <a href="~/Planta/VerRemito.cshtml?id=@idRemito" class="btn btn-falcon-success me-2">
+                <i class="fas fa-file-invoice me-1"></i>Ver Remito
+            </a>
+        </div>
+    }
+}
+
+<div class="row g-3">
+    <div class="col-lg-8">
+        <div class="card mb-3">
+            <div class="card-header bg-light">
+                <h6 class="mb-0">Información del Pedido</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="mb-1"><strong>Cliente:</strong> @pedido.APELLIDO_NOMBRE</p>
+                        <p class="mb-1"><strong>Teléfono:</strong> @pedido.CELULAR</p>
+                        <p class="mb-3"><strong>Destino:</strong> @pedido.DESTINO</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-1"><strong>Artículo:</strong> @pedido.ARTICULO</p>
+                        <p class="mb-1"><strong>Cantidad:</strong> @pedido.CANTIDAD</p>
+                        <p class="mb-3"><strong>Uso Hormigón:</strong> @(string.IsNullOrEmpty(pedido.USO_HORMIGON) ? "No especificado" : pedido.USO_HORMIGON)</p>
+                    </div>
+                    <div class="col-12">
+                        <p class="mb-1"><strong>Observaciones:</strong> @(string.IsNullOrEmpty(pedido.OBSERV_PLANTA) ? "Sin observaciones" : pedido.OBSERV_PLANTA)</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        @if (remitosExistentes.Count() > 0) {
+            <div class="card mb-3">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0">Remitos Existentes</h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped mb-0">
+                            <thead class="bg-200">
+                                <tr>
+                                    <th>Número</th>
+                                    <th>Fecha</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var remito in remitosExistentes) {
+                                    <tr>
+                                        <td>@remito.NUMERO</td>
+                                        <td>@string.Format("{0:dd/MM/yyyy HH:mm}", remito.FECHA_CREACION)</td>
+                                        <td>
+                                            <span class="badge bg-@(remito.ESTADO == "PENDIENTE" ? "warning" : 
+                                                                  remito.ESTADO == "EN PREPARACION" ? "info" : 
+                                                                  remito.ESTADO == "ENVIADO" ? "primary" : 
+                                                                  remito.ESTADO == "ENTREGADO" ? "success" : "secondary")">
+                                                @remito.ESTADO
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <a href="~/Planta/VerRemito.cshtml?id=@remito.ID" class="btn btn-sm btn-falcon-primary">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-footer bg-light">
+                    <p class="fs--1 mb-0 text-danger">Ya existen remitos para este pedido. Tenga cuidado al generar uno nuevo para evitar duplicidades.</p>
+                </div>
+            </div>
+        }
+        
+        <form method="post" id="formRemito" class="needs-validation" novalidate>
+            @AntiForgery.GetHtml()
+            
+            <div class="card mb-3">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0">Datos del Remito</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label" for="idPlanta">Planta de Destino *</label>
+                            <select class="form-select" id="idPlanta" name="idPlanta" required>
+                                <option value="">Seleccione una planta</option>
+                                @foreach (var planta in plantas) {
+                                    <option value="@planta.ID" @(pedido.PLANTA == planta.ID ? "selected" : "")>@planta.NOMBRE</option>
+                                }
+                            </select>
+                            <div class="invalid-feedback">Este campo es obligatorio</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="cantidad">Cantidad *</label>
+                            <input type="number" class="form-control" id="cantidad" name="cantidad" min="0.01" step="0.01" value="@pedido.CANTIDAD" required>
+                            <div class="invalid-feedback">Este campo es obligatorio</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="transportista">Transportista</label>
+                            <input type="text" class="form-control" id="transportista" name="transportista">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="dominioCamion">Dominio del Camión</label>
+                            <input type="text" class="form-control" id="dominioCamion" name="dominioCamion">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label" for="observaciones">Observaciones</label>
+                            <textarea class="form-control" id="observaciones" name="observaciones" rows="3"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-light d-flex justify-content-between">
+                    <a href="~/Pedidos/DetallePedido.cshtml?id=@idPedido" class="btn btn-falcon-default">
+                        <i class="fas fa-arrow-left me-1"></i>Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-falcon-success">
+                        <i class="fas fa-file-invoice me-1"></i>Generar Remito
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card mb-3">
+            <div class="card-header bg-light">
+                <h6 class="mb-0">Información del Proceso</h6>
+            </div>
+            <div class="card-body">
+                <div class="timeline timeline-vertical">
+                    <div class="timeline-item position-relative">
+                        <div class="timeline-icon icon-item bg-primary">1</div>
+                        <div class="row">
+                            <div class="col-lg-12 timeline-item-content">
+                                <div class="timeline-item-card">
+                                    <h5 class="mb-1 text-primary">Crear Remito</h5>
+                                    <p class="fs--1 mb-0">Complete la información requerida para el remito</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="timeline-item position-relative">
+                        <div class="timeline-icon icon-item bg-secondary">2</div>
+                        <div class="row">
+                            <div class="col-lg-12 timeline-item-content">
+                                <div class="timeline-item-card">
+                                    <h5 class="mb-1 text-secondary">Enviar a Planta</h5>
+                                    <p class="fs--1 mb-0">El pedido cambiará a estado "ENVIADO A PLANTA"</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="timeline-item position-relative">
+                        <div class="timeline-icon icon-item bg-secondary">3</div>
+                        <div class="row">
+                            <div class="col-lg-12 timeline-item-content">
+                                <div class="timeline-item-card">
+                                    <h5 class="mb-1 text-secondary">Seguimiento</h5>
+                                    <p class="fs--1 mb-0">Podrá hacer seguimiento desde el módulo de Planta</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header bg-light">
+                <h6 class="mb-0">Información Adicional</h6>
+            </div>
+            <div class="card-body">
+                <p class="fs--1 mb-2">Una vez generado el remito:</p>
+                <ul class="fs--1">
+                    <li>El pedido pasará automáticamente a estado "ENVIADO A PLANTA"</li>
+                    <li>El remito quedará en estado "PENDIENTE" a la espera de que planta lo procese</li>
+                    <li>Podrá visualizar y dar seguimiento al remito desde el módulo de Planta</li>
+                    <li>Cuando el remito sea entregado, el pedido pasará a estado "ENTREGADO"</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Inicializar Select2
+            $('#idPlanta').select2({
+                theme: 'bootstrap-5',
+                placeholder: "Seleccione una planta",
+                allowClear: false
+            });
+            
+            // Validación del formulario
+            $('#formRemito').submit(function(event) {
+                if (!this.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                $(this).addClass('was-validated');
+            });
+        });
+    </script>
+}

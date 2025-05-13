@@ -1,0 +1,301 @@
+@{
+    var Usuario = WebSecurity.CurrentUserName;
+    
+    Layout = "~/Inicio/_ConfluenciaLayout.cshtml";
+    var db = Database.Open("IntranetConnectionNew");
+    var title = "Listado de Remitos";
+
+    // Filtros de búsqueda
+    var fechaDesde = Request.QueryString["fechaDesde"] ?? DateTime.Now.AddDays(-30).ToString("yyyy-MM-dd");
+    var fechaHasta = Request.QueryString["fechaHasta"] ?? DateTime.Now.ToString("yyyy-MM-dd");
+    var estado = Request.QueryString["estado"] ?? "";
+    
+    // Consulta
+    var sqlRemitos = @"
+        SELECT r.ID, r.NUMERO, r.FECHA_CREACION, r.ESTADO, 
+               p.IDPEDIDO, p.APELLIDO_NOMBRE AS CLIENTE, p.ARTICULO,
+               pl.NOMBRE AS PLANTA_NOMBRE
+        FROM REMITOS r
+        INNER JOIN PEDIDOS p ON r.IDPEDIDO = p.IDPEDIDO
+        LEFT JOIN PLANTAS pl ON r.ID_PLANTA = pl.ID
+        WHERE r.FECHA_CREACION BETWEEN @0 AND @1";
+    
+    if (!string.IsNullOrEmpty(estado)) {
+        sqlRemitos += " AND r.ESTADO = @2";
+    }
+    
+    sqlRemitos += " ORDER BY r.FECHA_CREACION DESC";
+    
+    var remitos = string.IsNullOrEmpty(estado)
+        ? db.Query(sqlRemitos, fechaDesde, DateTime.Parse(fechaHasta).AddDays(1).AddSeconds(-1))
+        : db.Query(sqlRemitos, fechaDesde, DateTime.Parse(fechaHasta).AddDays(1).AddSeconds(-1), estado);
+    
+    // Estadísticas
+    var totalRemitos = db.QueryValue("SELECT COUNT(*) FROM REMITOS WHERE FECHA_CREACION BETWEEN @0 AND @1", 
+                                  fechaDesde, DateTime.Parse(fechaHasta).AddDays(1).AddSeconds(-1));
+    
+    var remitosPendientes = db.QueryValue("SELECT COUNT(*) FROM REMITOS WHERE ESTADO = 'PENDIENTE' AND FECHA_CREACION BETWEEN @0 AND @1", 
+                                      fechaDesde, DateTime.Parse(fechaHasta).AddDays(1).AddSeconds(-1));
+    
+    var remitosEnPreparacion = db.QueryValue("SELECT COUNT(*) FROM REMITOS WHERE ESTADO = 'EN PREPARACION' AND FECHA_CREACION BETWEEN @0 AND @1", 
+                                         fechaDesde, DateTime.Parse(fechaHasta).AddDays(1).AddSeconds(-1));
+    
+    var remitosEnviados = db.QueryValue("SELECT COUNT(*) FROM REMITOS WHERE ESTADO = 'ENVIADO' AND FECHA_CREACION BETWEEN @0 AND @1", 
+                                     fechaDesde, DateTime.Parse(fechaHasta).AddDays(1).AddSeconds(-1));
+    
+    var remitosEntregados = db.QueryValue("SELECT COUNT(*) FROM REMITOS WHERE ESTADO = 'ENTREGADO' AND FECHA_CREACION BETWEEN @0 AND @1", 
+                                      fechaDesde, DateTime.Parse(fechaHasta).AddDays(1).AddSeconds(-1));
+}
+
+<div class="toast-container position-fixed top-0 end-0 p-3" id="toast-container">
+    <!-- Las notificaciones se agregarán dinámicamente aquí -->
+</div>
+
+<script>
+    // Función para mostrar notificaciones
+    function showNotification(title, message, type) {
+        var toastId = 'toast-' + Date.now();
+        var html = '<div class="toast" role="alert" aria-live="assertive" aria-atomic="true" id="' + toastId + '">' +
+            '<div class="toast-header bg-' + type + ' text-white">' +
+            '<strong class="me-auto">' + title + '</strong>' +
+            '<small>Ahora</small>' +
+            '<button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>' +
+            '</div>' +
+            '<div class="toast-body">' + message + '</div>' +
+            '</div>';
+        
+        $('#toast-container').append(html);
+        var toast = new bootstrap.Toast(document.getElementById(toastId));
+        toast.show();
+        
+        // Auto-eliminar después de 5 segundos
+        setTimeout(function() {
+            $('#' + toastId).remove();
+        }, 5000);
+    }
+</script>
+
+<div class="d-flex mb-2">
+    <span class="fa-stack me-2 ms-n1">
+        <i class="fas fa-circle fa-stack-2x text-300"></i>
+        <i class="fa-inverse fa-stack-1x text-primary fas fa-truck-loading"></i>
+    </span>
+    <div class="col">
+        <h5 class="mb-0 text-primary position-relative">
+            <span class="bg-200 dark__bg-1100 pe-3">Gestión de Remitos</span>
+            <span class="border position-absolute top-50 translate-middle-y w-100 start-0 z-n1"></span>
+        </h5>
+        <p class="mb-0">Administración y seguimiento de remitos</p>
+    </div>
+</div>
+
+<!-- Tarjetas de estadísticas -->
+<div class="row mb-3 g-3">
+    <div class="col-md-6 col-lg-3">
+        <div class="card h-md-100 metric-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <h6 class="mb-0">Total Remitos</h6>
+                        <h2 class="mb-0 mt-2 text-dark">@totalRemitos</h2>
+                    </div>
+                    <span class="fa-stack fa-2x text-200">
+                        <i class="fas fa-circle fa-stack-2x"></i>
+                        <i class="fas fa-file-invoice fa-stack-1x fa-inverse"></i>
+                    </span>
+                </div>
+                <div class="progress" style="height: 4px;">
+                    <div class="progress-bar bg-dark" role="progressbar" style="width: 100%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 col-lg-3">
+        <div class="card h-md-100 metric-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <h6 class="mb-0">Pendientes</h6>
+                        <h2 class="mb-0 mt-2 text-warning">@remitosPendientes</h2>
+                    </div>
+                    <span class="fa-stack fa-2x text-warning-soft">
+                        <i class="fas fa-circle fa-stack-2x"></i>
+                        <i class="fas fa-clock fa-stack-1x fa-inverse"></i>
+                    </span>
+                </div>
+                <div class="progress" style="height: 4px;">
+                    <div class="progress-bar bg-warning" role="progressbar" style="width: @(totalRemitos > 0 ? (remitosPendientes * 100 / (int)totalRemitos) : 0)%"></div>
+                </div>
+                <p class="fs--1 text-500 mt-2 mb-0">Esperando ser procesados</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 col-lg-3">
+        <div class="card h-md-100 metric-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <h6 class="mb-0">En Preparación</h6>
+                        <h2 class="mb-0 mt-2 text-info">@remitosEnPreparacion</h2>
+                    </div>
+                    <span class="fa-stack fa-2x text-info-soft">
+                        <i class="fas fa-circle fa-stack-2x"></i>
+                        <i class="fas fa-box fa-stack-1x fa-inverse"></i>
+                    </span>
+                </div>
+                <div class="progress" style="height: 4px;">
+                    <div class="progress-bar bg-info" role="progressbar" style="width: @(totalRemitos > 0 ? (remitosEnPreparacion * 100 / (int)totalRemitos) : 0)%"></div>
+                </div>
+                <p class="fs--1 text-500 mt-2 mb-0">Siendo preparados</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 col-lg-3">
+        <div class="card h-md-100 metric-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <h6 class="mb-0">Enviados</h6>
+                        <h2 class="mb-0 mt-2 text-primary">@remitosEnviados</h2>
+                    </div>
+                    <span class="fa-stack fa-2x text-primary-soft">
+                        <i class="fas fa-circle fa-stack-2x"></i>
+                        <i class="fas fa-truck fa-stack-1x fa-inverse"></i>
+                    </span>
+                </div>
+                <div class="progress" style="height: 4px;">
+                    <div class="progress-bar bg-primary" role="progressbar" style="width: @(totalRemitos > 0 ? (remitosEnviados * 100 / (int)totalRemitos) : 0)%"></div>
+                </div>
+                <p class="fs--1 text-500 mt-2 mb-0">En tránsito</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filtros de búsqueda -->
+<div class="card mb-3">
+    <div class="card-body">
+        <form method="get" class="row align-items-center g-3">
+            <div class="col-md-3">
+                <label class="form-label" for="fechaDesde">Desde</label>
+                <input type="date" id="fechaDesde" name="fechaDesde" class="form-control" value="@fechaDesde" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label" for="fechaHasta">Hasta</label>
+                <input type="date" id="fechaHasta" name="fechaHasta" class="form-control" value="@fechaHasta" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label" for="estado">Estado</label>
+                <select id="estado" name="estado" class="form-select">
+                    <option value="">Todos</option>
+                    <option value="PENDIENTE" @(estado == "PENDIENTE" ? "selected" : "")>Pendiente</option>
+                    <option value="EN PREPARACION" @(estado == "EN PREPARACION" ? "selected" : "")>En Preparación</option>
+                    <option value="ENVIADO" @(estado == "ENVIADO" ? "selected" : "")>Enviado</option>
+                    <option value="ENTREGADO" @(estado == "ENTREGADO" ? "selected" : "")>Entregado</option>
+                </select>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary me-2">
+                    <i class="fas fa-search me-1"></i>Buscar
+                </button>
+                <a href="~/Planta/RemitosLista.cshtml" class="btn btn-outline-secondary">
+                    <i class="fas fa-redo-alt me-1"></i>Limpiar
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Tabla de remitos -->
+<div class="card mb-3">
+    <div class="card-header">
+        <div class="row flex-between-center">
+            <div class="col-auto">
+                <h6 class="mb-0">Lista de Remitos</h6>
+            </div>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive scrollbar">
+            <table class="table table-hover table-striped table-sm fs--1 mb-0">
+                <thead class="bg-200 text-900">
+                    <tr>
+                        <th class="sort">Nº Remito</th>
+                        <th class="sort">Fecha</th>
+                        <th class="sort">Cliente</th>
+                        <th class="sort">Artículo</th>
+                        <th class="sort">Planta</th>
+                        <th class="sort">Estado</th>
+                        <th class="text-end">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var remito in remitos) {
+                        string estadoClass = "secondary";
+                        
+                        if (remito.ESTADO == "PENDIENTE") {
+                            estadoClass = "warning";
+                        } 
+                        else if (remito.ESTADO == "EN PREPARACION") {
+                            estadoClass = "info";
+                        }
+                        else if (remito.ESTADO == "ENVIADO") {
+                            estadoClass = "primary";
+                        }
+                        else if (remito.ESTADO == "ENTREGADO") {
+                            estadoClass = "success";
+                        }
+                        
+                        <tr class="fade-in">
+                            <td><strong>@remito.NUMERO</strong></td>
+                            <td>@string.Format("{0:dd/MM/yyyy HH:mm}", remito.FECHA_CREACION)</td>
+                            <td>@remito.CLIENTE</td>
+                            <td>@remito.ARTICULO</td>
+                            <td>@remito.PLANTA_NOMBRE</td>
+                            <td>
+                                <span class="badge bg-@estadoClass">@remito.ESTADO</span>
+                            </td>
+                            <td class="text-end">
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a href="~/Planta/VerRemito.cshtml?id=@remito.ID" class="btn btn-falcon-default" data-bs-toggle="tooltip" title="Ver detalle">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="~/Planta/DespacharRemito.cshtml?id=@remito.ID" class="btn btn-falcon-primary" data-bs-toggle="tooltip" title="Gestionar">
+                                        <i class="fas fa-truck-loading"></i>
+                                    </a>
+                                    <a href="~/Pedidos/DetallePedido.cshtml?id=@remito.IDPEDIDO" class="btn btn-falcon-info" data-bs-toggle="tooltip" title="Ver pedido">
+                                        <i class="fas fa-clipboard-list"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Inicializar DataTable
+            var table = $('.table').DataTable({
+                language: {
+                    url: '//cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json'
+                },
+                dom: "<'row'<'col-sm-12 col-md-6'l><'col-sm-12 col-md-6'f>>" +
+                     "<'row'<'col-sm-12'tr>>" +
+                     "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+                lengthMenu: [10, 25, 50, 100],
+                order: [[1, 'desc']]
+            });
+            
+            // Inicializar tooltips
+            $('[data-bs-toggle="tooltip"]').tooltip();
+        });
+    </script>
+}

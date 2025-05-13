@@ -1,0 +1,43 @@
+@{
+    Response.ContentType = "application/json";
+    var db = Database.Open("IntranetConnectionNew");
+    
+    var estado = Request.QueryString["estado"];
+    var fechaDesde = Request.QueryString["fechaDesde"];
+    var fechaHasta = Request.QueryString["fechaHasta"];
+    
+    // Construir consulta SQL
+    var sql = @"
+        SELECT r.ID, r.NUMERO, r.FECHA_CREACION, r.ESTADO, 
+               p.IDPEDIDO, p.APELLIDO_NOMBRE AS CLIENTE, p.ARTICULO,
+               pl.NOMBRE AS PLANTA
+        FROM REMITOS r
+        INNER JOIN PEDIDOS p ON r.IDPEDIDO = p.IDPEDIDO
+        LEFT JOIN PLANTAS pl ON r.ID_PLANTA = pl.ID
+        WHERE 1=1";
+    
+    var parametros = new List<object>();
+    
+    if (!string.IsNullOrEmpty(estado)) {
+        sql += " AND r.ESTADO = @" + parametros.Count;
+        parametros.Add(estado);
+    }
+    
+    if (!string.IsNullOrEmpty(fechaDesde)) {
+        sql += " AND r.FECHA_CREACION >= @" + parametros.Count;
+        parametros.Add(DateTime.Parse(fechaDesde));
+    }
+    
+    if (!string.IsNullOrEmpty(fechaHasta)) {
+        sql += " AND r.FECHA_CREACION <= @" + parametros.Count;
+        parametros.Add(DateTime.Parse(fechaHasta).AddDays(1).AddSeconds(-1)); // Hasta final del día
+    }
+    
+    sql += " ORDER BY r.FECHA_CREACION DESC";
+    
+    // Ejecutar consulta
+    var remitos = db.Query(sql, parametros.ToArray());
+    
+    // Formatear la respuesta en JSON
+    Json.Write(remitos, Response.Output);
+}

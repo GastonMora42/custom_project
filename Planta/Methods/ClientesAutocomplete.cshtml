@@ -1,0 +1,19 @@
+@{
+    Response.ContentType = "application/json";
+    var db = Database.Open("IntranetConnectionNew");
+    var term = Request.QueryString["term"];
+    
+    // Obtener clientes que coincidan con el término de búsqueda
+    var clientes = db.Query(@"
+        SELECT TOP 10 
+               APELLIDO_NOMBRE AS value, 
+               CELULAR AS telefono, 
+               LOCALIDAD AS localidad
+        FROM PEDIDOS 
+        WHERE APELLIDO_NOMBRE LIKE @0 
+        GROUP BY APELLIDO_NOMBRE, CELULAR, LOCALIDAD
+        ORDER BY APELLIDO_NOMBRE", "%" + term + "%");
+    
+    // Formatear la respuesta en JSON
+    Json.Write(clientes, Response.Output);
+}

@@ -1,0 +1,67 @@
+@{
+    Response.ContentType = "application/json";
+    var db = Database.Open("IntranetConnectionNew");
+    
+    var idRemito = Request.Form["idRemito"].AsInt();
+    var transportista = Request.Form["transportista"];
+    var dominioCamion = Request.Form["dominioCamion"];
+    var fechaDespacho = Request.Form["fechaDespacho"];
+    var observaciones = Request.Form["observaciones"];
+    
+    var exito = false;
+    var mensaje = "";
+    var error = "";
+    
+    try {
+        // Verificar que el remito existe
+        var remito = db.QuerySingle("SELECT ID, ESTADO FROM REMITOS WHERE ID = @0", idRemito);
+        
+        if (remito == null) {
+            error = "El remito no existe";
+        }
+        else if (remito.ESTADO != "EN PREPARACION") {
+            error = "El remito debe estar en estado EN PREPARACION para poder despacharlo";
+        }
+        else {
+            // Obtener ID del usuario
+            var Usuario = WebSecurity.CurrentUserName;
+            int idUsuario = 0;
+            if (!string.IsNullOrEmpty(Usuario)) {
+                idUsuario = db.QueryValue("SELECT ID FROM USERS_TABLE WHERE LOWER(Usuario) = LOWER(@0)", Usuario) ?? 0;
+            }
+            
+            // Fecha de despacho
+            DateTime fechaDespachoReal;
+            if (string.IsNullOrEmpty(fechaDespacho)) {
+                fechaDespachoReal = DateTime.Now;
+            } else {
+                fechaDespachoReal = DateTime.Parse(fechaDespacho);
+            }
+            
+            // Actualizar remito
+            db.Execute(@"UPDATE REMITOS SET 
+                        ESTADO = 'ENVIADO', 
+                        TRANSPORTISTA = @0, 
+                        DOMINIO_CAMION = @1, 
+                        FECHA_DESPACHO = @2, 
+                        ID_USUARIO_DESPACHO = @3, 
+                        OBSERVACIONES = @4 
+                        WHERE ID = @5", 
+                      transportista, dominioCamion, fechaDespachoReal, idUsuario, observaciones, idRemito);
+            
+            exito = true;
+            mensaje = "Remito despachado correctamente";
+        }
+    }
+    catch (Exception ex) {
+        error = ex.Message;
+    }
+    
+    var respuesta = new {
+        exito = exito,
+        mensaje = mensaje,
+        error = error
+    };
+    
+    Json.Write(respuesta, Response.Output);
+}

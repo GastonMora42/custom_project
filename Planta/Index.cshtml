@@ -142,34 +142,41 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach (var remito in remitosRecientes) {
-                                string estadoClass = remito.ESTADO switch {
-                                    "PENDIENTE" => "warning",
-                                    "EN PREPARACION" => "info",
-                                    "ENVIADO" => "primary",
-                                    "ENTREGADO" => "success",
-                                    _ => "secondary"
-                                };
-                                
-                                <tr>
-                                    <td><strong>@remito.NUMERO</strong></td>
-                                    <td>@string.Format("{0:dd/MM/yyyy HH:mm}", remito.FECHA_CREACION)</td>
-                                    <td>@remito.CLIENTE</td>
-                                    <td>@remito.NUMERO_INTERNO</td>
-                                    <td>@remito.PLANTA</td>
-                                    <td>
-                                        <span class="badge badge-soft-@estadoClass">@remito.ESTADO</span>
-                                    </td>
-                                    <td class="text-end">
-                                        <a href="~/Planta/VerRemito.cshtml?id=@remito.ID" class="btn btn-falcon-default btn-sm me-1" data-bs-toggle="tooltip" title="Ver detalle">
-                                            <i class="fas fa-eye"></i>
-                                        </a>
-                                        <a href="~/Planta/DespacharRemito.cshtml?id=@remito.ID" class="btn btn-falcon-success btn-sm" data-bs-toggle="tooltip" title="Gestionar">
-                                            <i class="fas fa-truck-loading"></i>
-                                        </a>
-                                    </td>
-                                </tr>
-                            }
+@foreach (var remito in remitosRecientes) {
+    string estadoClass = "secondary";
+    
+    if (remito.ESTADO == "PENDIENTE") {
+        estadoClass = "warning";
+    } 
+    else if (remito.ESTADO == "EN PREPARACION") {
+        estadoClass = "info";
+    }
+    else if (remito.ESTADO == "ENVIADO") {
+        estadoClass = "primary";
+    }
+    else if (remito.ESTADO == "ENTREGADO") {
+        estadoClass = "success";
+    }
+    
+    <tr>
+        <td><strong>@remito.NUMERO</strong></td>
+        <td>@string.Format("{0:dd/MM/yyyy HH:mm}", remito.FECHA_CREACION)</td>
+        <td>@remito.CLIENTE</td>
+        <td>@remito.NUMERO_INTERNO</td>
+        <td>@remito.PLANTA</td>
+        <td>
+            <span class="badge badge-soft-@estadoClass">@remito.ESTADO</span>
+        </td>
+        <td class="text-end">
+            <a href="~/Planta/VerRemito.cshtml?id=@remito.ID" class="btn btn-falcon-default btn-sm me-1" data-bs-toggle="tooltip" title="Ver detalle">
+                <i class="fas fa-eye"></i>
+            </a>
+            <a href="~/Planta/DespacharRemito.cshtml?id=@remito.ID" class="btn btn-falcon-success btn-sm" data-bs-toggle="tooltip" title="Gestionar">
+                <i class="fas fa-truck-loading"></i>
+            </a>
+        </td>
+    </tr>
+}
                         </tbody>
                     </table>
                 </div>
