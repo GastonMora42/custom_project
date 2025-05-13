@@ -127,16 +127,24 @@ var articulos = db.Query("SELECT ID, CODIGO, DESCRIPCION, UNIDAD_MEDIDA FROM ART
         </div>
         <div class="card-body">
             <div class="row g-3">
-                <div class="col-md-6">
-                    <label class="form-label" for="apellidoNombre">Cliente *</label>
-                    <input type="text" class="form-control" id="apellidoNombre" name="apellidoNombre" required>
-                    <div class="invalid-feedback">Este campo es obligatorio</div>
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label" for="celular">Teléfono de Contacto *</label>
-                    <input type="text" class="form-control" id="celular" name="celular" required>
-                    <div class="invalid-feedback">Este campo es obligatorio</div>
-                </div>
+<div class="col-md-6">
+    <label class="form-label" for="idCliente">Cliente *</label>
+    <select class="form-select select2" id="idCliente" name="idCliente" required>
+        <option value="">Seleccione un cliente</option>
+        @{
+            var clientes = db.Query("SELECT ID, RAZON_SOCIAL, CUIT, TELEFONO FROM CLIENTES WHERE ESTADO = 1 ORDER BY RAZON_SOCIAL");
+            foreach (var cliente in clientes) {
+                <option value="@cliente.ID" data-telefono="@cliente.TELEFONO">@cliente.RAZON_SOCIAL @(string.IsNullOrEmpty(cliente.CUIT) ? "" : "(" + cliente.CUIT + ")")</option>
+            }
+        }
+    </select>
+    <div class="invalid-feedback">Este campo es obligatorio</div>
+</div>
+<div class="col-md-6">
+    <label class="form-label" for="telefono">Teléfono de Contacto *</label>
+    <input type="text" class="form-control" id="telefono" name="telefono" required>
+    <div class="invalid-feedback">Este campo es obligatorio</div>
+</div>
                 <div class="col-md-6">
                     <label class="form-label" for="localidad">Localidad</label>
                     <input type="text" class="form-control" id="localidad" name="localidad">
@@ -277,6 +285,18 @@ var articulos = db.Query("SELECT ID, CODIGO, DESCRIPCION, UNIDAD_MEDIDA FROM ART
                         $('#localidad').val(ui.item.localidad);
                     }
                 });
+                // Autocompletar teléfono al seleccionar cliente
+$('#idCliente').change(function() {
+    var selected = $(this).find('option:selected');
+    $('#telefono').val(selected.data('telefono'));
+});
+
+// Inicializar Select2 para búsqueda avanzada
+$('.select2').select2({
+    theme: 'bootstrap-5',
+    placeholder: "Seleccione un cliente",
+    allowClear: true
+});
             }
 
             // Mejorar visual feedback

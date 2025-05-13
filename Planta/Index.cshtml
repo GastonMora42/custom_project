@@ -10,6 +10,19 @@
     var remitosEnPreparacion = db.QueryValue("SELECT COUNT(*) FROM REMITOS WHERE ESTADO = 'EN PREPARACION'");
     var remitosEnviados = db.QueryValue("SELECT COUNT(*) FROM REMITOS WHERE ESTADO = 'ENVIADO'");
     
+    var estadisticasPorPlanta = db.Query(@"
+    SELECT p.NOMBRE AS planta, 
+           COUNT(CASE WHEN r.ESTADO = 'PENDIENTE' THEN 1 END) AS pendientes,
+           COUNT(CASE WHEN r.ESTADO = 'EN PREPARACION' THEN 1 END) AS en_preparacion,
+           COUNT(CASE WHEN r.ESTADO = 'ENVIADO' THEN 1 END) AS enviados,
+           COUNT(CASE WHEN r.ESTADO = 'ENTREGADO' THEN 1 END) AS entregados,
+           COUNT(*) AS total
+    FROM REMITOS r
+    JOIN PLANTAS p ON r.ID_PLANTA = p.ID
+    WHERE r.FECHA_CREACION >= DATEADD(month, -1, GETDATE())
+    GROUP BY p.NOMBRE
+");
+
 var remitosRecientes = db.Query(@"
     SELECT TOP 5 r.ID, r.NUMERO, r.FECHA_CREACION, r.ESTADO, 
     p.CODIGO AS NUMERO_INTERNO, p.APELLIDO_NOMBRE AS CLIENTE, 
@@ -35,6 +48,51 @@ var remitosRecientes = db.Query(@"
 </div>
 
 <!-- Tarjetas de métricas -->
+
+<div class="card mb-3">
+    <div class="card-header">
+        <h6 class="mb-0">Estadísticas por Planta (último mes)</h6>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-sm table-striped">
+                <thead>
+                    <tr>
+                        <th>Planta</th>
+                        <th class="text-center">Pendientes</th>
+                        <th class="text-center">En Preparación</th>
+                        <th class="text-center">Enviados</th>
+                        <th class="text-center">Entregados</th>
+                        <th class="text-center">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var est in estadisticasPorPlanta) {
+                        <tr>
+                            <td><strong>@est.planta</strong></td>
+                            <td class="text-center">
+                                <span class="badge bg-warning rounded-pill">@est.pendientes</span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-info rounded-pill">@est.en_preparacion</span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-primary rounded-pill">@est.enviados</span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-success rounded-pill">@est.entregados</span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-secondary rounded-pill">@est.total</span>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
 <div class="row mb-3 g-3">
     <div class="col-md-6 col-xxl-3">
         <div class="card h-md-100 ecommerce-card-min-width">

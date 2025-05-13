@@ -1,0 +1,139 @@
+@{
+    var Usuario = WebSecurity.CurrentUserName;
+    
+    Layout = "~/Inicio/_ConfluenciaLayout.cshtml";
+    var db = Database.Open("IntranetConnectionNew");
+    
+    // Verificar si existe la tabla CLIENTES
+    var tablaExiste = db.QueryValue("SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'CLIENTES'");
+    
+    if (tablaExiste == 0) {
+        // Crear la tabla CLIENTES si no existe
+        db.Execute(@"
+            CREATE TABLE dbo.CLIENTES (
+                ID INT IDENTITY(1,1) PRIMARY KEY,
+                CODIGO VARCHAR(20),
+                RAZON_SOCIAL VARCHAR(100) NOT NULL,
+                NOMBRE_COMERCIAL VARCHAR(100),
+                CUIT VARCHAR(20),
+                DIRECCION VARCHAR(200),
+                LOCALIDAD VARCHAR(100),
+                PROVINCIA VARCHAR(100),
+                TELEFONO VARCHAR(50),
+                EMAIL VARCHAR(100),
+                TIPO_CLIENTE VARCHAR(50),
+                CONDICION_IVA VARCHAR(50),
+                CONDICION_PAGO VARCHAR(50),
+                CONTACTO_NOMBRE VARCHAR(100),
+                CONTACTO_TELEFONO VARCHAR(50),
+                CONTACTO_EMAIL VARCHAR(100),
+                LIMITE_CREDITO DECIMAL(18,2) DEFAULT 0,
+                ESTADO BIT DEFAULT 1,
+                FECHA_ALTA DATETIME DEFAULT GETDATE(),
+                USUARIO_ALTA INT,
+                FECHA_MODIFICACION DATETIME,
+                USUARIO_MODIFICACION INT,
+                OBSERVACIONES VARCHAR(500)
+            )
+        ");
+    }
+    
+    // Consulta para obtener clientes
+    var clientes = db.Query("SELECT * FROM CLIENTES ORDER BY RAZON_SOCIAL");
+}
+
+<div class="d-flex mb-2">
+    <span class="fa-stack me-2 ms-n1">
+        <i class="fas fa-circle fa-stack-2x text-300"></i>
+        <i class="fa-inverse fa-stack-1x text-primary fas fa-users"></i>
+    </span>
+    <div class="col">
+        <h5 class="mb-0 text-primary position-relative">
+            <span class="bg-200 dark__bg-1100 pe-3">Gestión de Clientes</span>
+            <span class="border position-absolute top-50 translate-middle-y w-100 start-0 z-n1"></span>
+        </h5>
+        <p class="mb-0">Administre los clientes del sistema</p>
+    </div>
+</div>
+
+<div class="card mb-3">
+    <div class="card-header">
+        <div class="row flex-between-center">
+            <div class="col-auto">
+                <h6 class="mb-0">Lista de Clientes</h6>
+            </div>
+            <div class="col-auto">
+                <a href="~/Pedidos/Clientes/NuevoCliente.cshtml" class="btn btn-falcon-success btn-sm">
+                    <i class="fas fa-plus me-1"></i>Nuevo Cliente
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive scrollbar">
+            <table class="table table-hover table-striped table-sm fs--1 mb-0">
+                <thead class="bg-200 text-900">
+                    <tr>
+                        <th>Código</th>
+                        <th>Razón Social</th>
+                        <th>CUIT</th>
+                        <th>Teléfono</th>
+                        <th>Localidad</th>
+                        <th>Estado</th>
+                        <th class="text-end">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var cliente in clientes) {
+                        <tr>
+                            <td>@cliente.CODIGO</td>
+                            <td><strong>@cliente.RAZON_SOCIAL</strong></td>
+                            <td>@cliente.CUIT</td>
+                            <td>@cliente.TELEFONO</td>
+                            <td>@cliente.LOCALIDAD</td>
+                            <td>
+                                <span class="badge bg-@(cliente.ESTADO == true ? "success" : "danger")">
+                                    @(cliente.ESTADO == true ? "Activo" : "Inactivo")
+                                </span>
+                            </td>
+                            <td class="text-end">
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a href="~/Pedidos/Clientes/DetalleCliente.cshtml?id=@cliente.ID" class="btn btn-falcon-info" data-bs-toggle="tooltip" title="Ver detalle">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="~/Pedidos/Clientes/EditarCliente.cshtml?id=@cliente.ID" class="btn btn-falcon-default" data-bs-toggle="tooltip" title="Editar">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="~/Pedidos/Clientes/CambiarEstadoCliente.cshtml?id=@cliente.ID" class="btn btn-falcon-@(cliente.ESTADO == true ? "warning" : "success")" data-bs-toggle="tooltip" title="@(cliente.ESTADO == true ? "Desactivar" : "Activar")">
+                                        <i class="fas fa-@(cliente.ESTADO == true ? "toggle-off" : "toggle-on")"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Inicializar DataTable
+            var table = $('.table').DataTable({
+                language: {
+                    url: '//cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json'
+                },
+                dom: "<'row'<'col-sm-12 col-md-6'l><'col-sm-12 col-md-6'f>>" +
+                     "<'row'<'col-sm-12'tr>>" +
+                     "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+                lengthMenu: [10, 25, 50, 100],
+                order: [[1, 'asc']]
+            });
+            
+            // Tooltips
+            $('[data-bs-toggle="tooltip"]').tooltip();
+        });
+    </script>
+}

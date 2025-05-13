@@ -1,0 +1,277 @@
+@{
+    var Usuario = WebSecurity.CurrentUserName;
+    
+    Layout = "~/Inicio/_ConfluenciaLayout.cshtml";
+    var db = Database.Open("IntranetConnectionNew");
+    
+    var mensaje = "";
+    var tipoMensaje = "";
+    var idCliente = 0;
+    
+    if(IsPost) {
+        AntiForgery.Validate();
+        
+        try {
+            // Obtener datos del formulario
+            var codigo = Request.Form["codigo"];
+            var razonSocial = Request.Form["razonSocial"];
+            var nombreComercial = Request.Form["nombreComercial"];
+            var cuit = Request.Form["cuit"];
+            var direccion = Request.Form["direccion"];
+            var localidad = Request.Form["localidad"];
+            var provincia = Request.Form["provincia"];
+            var telefono = Request.Form["telefono"];
+            var email = Request.Form["email"];
+            var tipoCliente = Request.Form["tipoCliente"];
+            var condicionIva = Request.Form["condicionIva"];
+            var condicionPago = Request.Form["condicionPago"];
+            var contactoNombre = Request.Form["contactoNombre"];
+            var contactoTelefono = Request.Form["contactoTelefono"];
+            var contactoEmail = Request.Form["contactoEmail"];
+            var limiteCredito = Request.Form["limiteCredito"].AsDecimal();
+            var observaciones = Request.Form["observaciones"];
+            
+            // Validar datos obligatorios
+            if (string.IsNullOrEmpty(razonSocial)) {
+                throw new Exception("La razón social es obligatoria");
+            }
+            
+            // Verificar si ya existe un cliente con el mismo CUIT (si no está vacío)
+            if (!string.IsNullOrEmpty(cuit)) {
+                var clienteExistente = db.QueryValue("SELECT COUNT(*) FROM CLIENTES WHERE CUIT = @0", cuit);
+                if (clienteExistente > 0) {
+                    throw new Exception("Ya existe un cliente con el CUIT " + cuit);
+                }
+            }
+            
+            // Obtener ID del usuario
+            int idUsuario = 0;
+            if (!string.IsNullOrEmpty(Usuario)) {
+                idUsuario = db.QueryValue("SELECT ID FROM USERS_TABLE WHERE LOWER(Usuario) = LOWER(@0)", Usuario) ?? 0;
+            }
+            
+            // Insertar cliente
+            string sqlCliente = @"INSERT INTO CLIENTES (
+                                  CODIGO, RAZON_SOCIAL, NOMBRE_COMERCIAL, CUIT, 
+                                  DIRECCION, LOCALIDAD, PROVINCIA, TELEFONO, 
+                                  EMAIL, TIPO_CLIENTE, CONDICION_IVA, CONDICION_PAGO, 
+                                  CONTACTO_NOMBRE, CONTACTO_TELEFONO, CONTACTO_EMAIL, 
+                                  LIMITE_CREDITO, ESTADO, FECHA_ALTA, USUARIO_ALTA, OBSERVACIONES) 
+                                  VALUES (
+                                  @0, @1, @2, @3, @4, @5, @6, @7, @8, @9, @10, @11, @12, @13, @14, @15, @16, @17, @18, @19);
+                                  SELECT SCOPE_IDENTITY();";
+            
+            idCliente = db.QueryValue(sqlCliente, 
+                codigo, razonSocial, nombreComercial, cuit,
+                direccion, localidad, provincia, telefono,
+                email, tipoCliente, condicionIva, condicionPago,
+                contactoNombre, contactoTelefono, contactoEmail,
+                limiteCredito, true, DateTime.Now, idUsuario, observaciones);
+            
+            mensaje = "Cliente creado correctamente";
+            tipoMensaje = "success";
+        }
+        catch (Exception ex) {
+            mensaje = "Error al crear el cliente: " + ex.Message;
+            tipoMensaje = "danger";
+        }
+    }
+}
+
+<div class="d-flex mb-2">
+    <span class="fa-stack me-2 ms-n1">
+        <i class="fas fa-circle fa-stack-2x text-300"></i>
+        <i class="fa-inverse fa-stack-1x text-primary fas fa-user-plus"></i>
+    </span>
+    <div class="col">
+        <h5 class="mb-0 text-primary position-relative">
+            <span class="bg-200 dark__bg-1100 pe-3">Nuevo Cliente</span>
+            <span class="border position-absolute top-50 translate-middle-y w-100 start-0 z-n1"></span>
+        </h5>
+        <p class="mb-0">Complete la información del cliente</p>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(mensaje)) {
+    <div class="alert alert-@tipoMensaje alert-dismissible fade show" role="alert">
+        <strong>@(tipoMensaje == "success" ? "¡Éxito!" : "¡Error!")</strong> @mensaje
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    
+    if (tipoMensaje == "success") {
+        <div class="mb-3">
+            <a href="~/Pedidos/Clientes/Index.cshtml" class="btn btn-falcon-primary me-2">
+                <i class="fas fa-list me-1"></i>Volver a la lista
+            </a>
+            <a href="~/Pedidos/Clientes/DetalleCliente.cshtml?id=@idCliente" class="btn btn-falcon-info me-2">
+                <i class="fas fa-eye me-1"></i>Ver cliente
+            </a>
+            <a href="~/Pedidos/Clientes/NuevoCliente.cshtml" class="btn btn-falcon-success">
+                <i class="fas fa-plus me-1"></i>Crear otro cliente
+            </a>
+        </div>
+    }
+}
+
+<form method="post" id="formCliente" class="needs-validation" novalidate>
+    @AntiForgery.GetHtml()
+    
+    <div class="card mb-3">
+        <div class="card-header bg-light">
+            <h6 class="mb-0">Información Básica</h6>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label" for="codigo">Código</label>
+                    <input type="text" class="form-control" id="codigo" name="codigo">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="razonSocial">Razón Social *</label>
+                    <input type="text" class="form-control" id="razonSocial" name="razonSocial" required>
+                    <div class="invalid-feedback">Este campo es obligatorio</div>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="cuit">CUIT</label>
+                    <input type="text" class="form-control" id="cuit" name="cuit">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="nombreComercial">Nombre Comercial</label>
+                    <input type="text" class="form-control" id="nombreComercial" name="nombreComercial">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="email">Email</label>
+                    <input type="email" class="form-control" id="email" name="email">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="telefono">Teléfono</label>
+                    <input type="text" class="form-control" id="telefono" name="telefono">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="tipoCliente">Tipo de Cliente</label>
+                    <select class="form-select" id="tipoCliente" name="tipoCliente">
+                        <option value="">Seleccione...</option>
+                        <option value="Consumidor Final">Consumidor Final</option>
+                        <option value="Empresa">Empresa</option>
+                        <option value="Gobierno">Gobierno</option>
+                        <option value="Distribuidor">Distribuidor</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card mb-3">
+        <div class="card-header bg-light">
+            <h6 class="mb-0">Dirección y Facturación</h6>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label" for="direccion">Dirección</label>
+                    <input type="text" class="form-control" id="direccion" name="direccion">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="localidad">Localidad</label>
+                    <input type="text" class="form-control" id="localidad" name="localidad">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="provincia">Provincia</label>
+                    <input type="text" class="form-control" id="provincia" name="provincia">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="condicionIva">Condición IVA</label>
+                    <select class="form-select" id="condicionIva" name="condicionIva">
+                        <option value="">Seleccione...</option>
+                        <option value="Responsable Inscripto">Responsable Inscripto</option>
+                        <option value="Monotributista">Monotributista</option>
+                        <option value="Exento">Exento</option>
+                        <option value="Consumidor Final">Consumidor Final</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="condicionPago">Condición de Pago</label>
+                    <select class="form-select" id="condicionPago" name="condicionPago">
+                        <option value="">Seleccione...</option>
+                        <option value="Contado">Contado</option>
+                        <option value="30 días">30 días</option>
+                        <option value="60 días">60 días</option>
+                        <option value="90 días">90 días</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="limiteCredito">Límite de Crédito</label>
+                    <div class="input-group">
+                        <span class="input-group-text">$</span>
+                        <input type="number" class="form-control" id="limiteCredito" name="limiteCredito" min="0" step="0.01" value="0">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card mb-3">
+        <div class="card-header bg-light">
+            <h6 class="mb-0">Contacto y Observaciones</h6>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label" for="contactoNombre">Nombre del Contacto</label>
+                    <input type="text" class="form-control" id="contactoNombre" name="contactoNombre">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="contactoTelefono">Teléfono del Contacto</label>
+                    <input type="text" class="form-control" id="contactoTelefono" name="contactoTelefono">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="contactoEmail">Email del Contacto</label>
+                    <input type="email" class="form-control" id="contactoEmail" name="contactoEmail">
+                </div>
+                <div class="col-12">
+                    <label class="form-label" for="observaciones">Observaciones</label>
+                    <textarea class="form-control" id="observaciones" name="observaciones" rows="3"></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-between mb-3">
+        <a href="~/Pedidos/Clientes/Index.cshtml" class="btn btn-falcon-default">
+            <i class="fas fa-arrow-left me-1"></i>Cancelar
+        </a>
+        <button type="submit" class="btn btn-falcon-success">
+            <i class="fas fa-save me-1"></i>Guardar Cliente
+        </button>
+    </div>
+</form>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Validación del formulario
+            $('#formCliente').submit(function(event) {
+                if (!this.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                $(this).addClass('was-validated');
+            });
+            
+            // Formatear CUIT
+            $('#cuit').on('input', function() {
+                var value = $(this).val().replace(/[^\d]/g, '');
+                if (value.length > 11) value = value.substring(0, 11);
+                
+                if (value.length > 2) {
+                    value = value.substring(0, 2) + '-' + value.substring(2);
+                }
+                if (value.length > 11) {
+                    value = value.substring(0, 11) + '-' + value.substring(11);
+                }
+                
+                $(this).val(value);
+            });
+        });
+    </script>
+}
