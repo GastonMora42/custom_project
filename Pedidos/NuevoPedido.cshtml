@@ -5,97 +5,12 @@
     var db = Database.Open("IntranetConnectionNew");
     
     // Obteniendo lista de artículos (adaptado a tu sistema)
-    var articulos = db.Query("SELECT DISTINCT ARTICULO FROM PEDIDOS WHERE ARTICULO IS NOT NULL ORDER BY ARTICULO");
-    
+var articulos = db.Query("SELECT ID, CODIGO, DESCRIPCION, UNIDAD_MEDIDA FROM ARTICULOS WHERE ACTIVO = 1 ORDER BY DESCRIPCION");
+
     var mensaje = "";
     var tipoMensaje = "";
     var idPedido = 0;
     
-    // Añadir a los scripts existentes
-// Validación en tiempo real
-function setupRealTimeValidation() {
-    $('.form-control, .form-select').on('blur change', function() {
-        const $this = $(this);
-        if ($this.prop('required') && !$this.val()) {
-            $this.addClass('is-invalid');
-        } else {
-            $this.removeClass('is-invalid');
-        }
-    });
-}
-
-// Autocompletar cliente desde API
-function setupClienteAutocomplete() {
-    $('#apellidoNombre').autocomplete({
-        source: function(request, response) {
-            $.ajax({
-                url: "/Pedidos/Methods/ClientesAutocomplete.cshtml",
-                dataType: "json",
-                data: { term: request.term },
-                success: function(data) {
-                    response(data);
-                }
-            });
-        },
-        minLength: 2,
-        select: function(event, ui) {
-            $('#celular').val(ui.item.telefono);
-            $('#localidad').val(ui.item.localidad);
-        }
-    });
-}
-
-// Mejorar visual feedback
-function setupVisualFeedback() {
-    $('#formPedido').on('change', 'input, select, textarea', function() {
-        $(this).closest('.form-group').addClass('was-changed');
-    });
-}
-
-// Inicializar cuando el documento esté listo
-$(document).ready(function() {
-    setupRealTimeValidation();
-    setupClienteAutocomplete();
-    setupVisualFeedback();
-    
-    // Guardar borrador automáticamente
-    let formTimer;
-    $('#formPedido').on('change', 'input, select, textarea', function() {
-        clearTimeout(formTimer);
-        formTimer = setTimeout(function() {
-            // Guardar en localStorage
-            saveFormDraft();
-            
-            // Mostrar indicador
-            showSavedIndicator();
-        }, 2000);
-    });
-});
-
-// Guardar borrador
-function saveFormDraft() {
-    const formData = $('#formPedido').serializeArray();
-    const draftData = {};
-    
-    // Convert to object
-    $.each(formData, function(index, field) {
-        draftData[field.name] = field.value;
-    });
-    
-    // Save to localStorage
-    localStorage.setItem('pedidoDraft', JSON.stringify(draftData));
-}
-
-// Mostrar indicador de guardado
-function showSavedIndicator() {
-    const $indicator = $('<div class="saved-indicator">Borrador guardado</div>');
-    $('body').append($indicator);
-    
-    $indicator.fadeIn(300).delay(2000).fadeOut(300, function() {
-        $(this).remove();
-    });
-}
-
     if(IsPost) {
         AntiForgery.Validate();
         
@@ -136,7 +51,7 @@ function showSavedIndicator() {
                                 SELECT SCOPE_IDENTITY();";
             
             DateTime fechaActual = DateTime.Now;
-            TimeSpan horaActual = fechaActual.TimeOfDay;
+            string horaActual = fechaActual.ToString("HH:mm");
             
             idPedido = db.QueryValue(sqlPedido, 
                 apellidoNombre, celular, cantidad, corte, articulo,
@@ -146,10 +61,14 @@ function showSavedIndicator() {
             
             // Registrar en historial de estados (si existe esa tabla)
             if (db.QueryValue("SELECT OBJECT_ID('PEDIDOS_ESTADOS')") != null) {
+                int idUsuario = 0;
+                if (!string.IsNullOrEmpty(Usuario)) {
+                    idUsuario = db.QueryValue("SELECT ID FROM USERS_TABLE WHERE LOWER(Usuario) = LOWER(@0)", Usuario) ?? 0;
+                }
+                
                 db.Execute(@"INSERT INTO PEDIDOS_ESTADOS (IDPEDIDO, ESTADO, FECHA_CAMBIO, USUARIO_CAMBIO) 
                              VALUES (@0, @1, @2, @3)", 
-                           idPedido, estado, DateTime.Now, 
-                           db.QueryValue("SELECT ID FROM USERS_TABLE WHERE LOWER(Usuario) = LOWER(@0)", Usuario));
+                           idPedido, estado, DateTime.Now, idUsuario);
             }
             
             mensaje = "Pedido creado correctamente con ID: " + idPedido;
@@ -247,12 +166,12 @@ function showSavedIndicator() {
             <div class="row g-3">
                 <div class="col-md-4">
                     <label class="form-label" for="articulo">Artículo *</label>
-                    <select class="form-select" id="articulo" name="articulo" required>
-                        <option value="">Seleccione un artículo</option>
-                        @foreach (var art in articulos) {
-                            <option value="@art.ARTICULO">@art.ARTICULO</option>
-                        }
-                    </select>
+<select class="form-select" id="articulo" name="articulo" required>
+    <option value="">Seleccione un artículo</option>
+    @foreach (var art in articulos) {
+        <option value="@art.CODIGO">@art.DESCRIPCION (@art.CODIGO) - @art.UNIDAD_MEDIDA</option>
+    }
+</select>
                     <div class="invalid-feedback">Este campo es obligatorio</div>
                 </div>
                 <div class="col-md-4">
@@ -326,6 +245,88 @@ function showSavedIndicator() {
                 }
                 $(this).addClass('was-validated');
             });
+            
+            // Validación en tiempo real
+            function setupRealTimeValidation() {
+                $('.form-control, .form-select').on('blur change', function() {
+                    const $this = $(this);
+                    if ($this.prop('required') && !$this.val()) {
+                        $this.addClass('is-invalid');
+                    } else {
+                        $this.removeClass('is-invalid');
+                    }
+                });
+            }
+
+            // Autocompletar cliente desde API
+            function setupClienteAutocomplete() {
+                $('#apellidoNombre').autocomplete({
+                    source: function(request, response) {
+                        $.ajax({
+                            url: "/Pedidos/Methods/ClientesAutocomplete.cshtml",
+                            dataType: "json",
+                            data: { term: request.term },
+                            success: function(data) {
+                                response(data);
+                            }
+                        });
+                    },
+                    minLength: 2,
+                    select: function(event, ui) {
+                        $('#celular').val(ui.item.telefono);
+                        $('#localidad').val(ui.item.localidad);
+                    }
+                });
+            }
+
+            // Mejorar visual feedback
+            function setupVisualFeedback() {
+                $('#formPedido').on('change', 'input, select, textarea', function() {
+                    $(this).closest('.form-group').addClass('was-changed');
+                });
+            }
+
+            // Guardar borrador automáticamente
+            let formTimer;
+            $('#formPedido').on('change', 'input, select, textarea', function() {
+                clearTimeout(formTimer);
+                formTimer = setTimeout(function() {
+                    // Guardar en localStorage
+                    saveFormDraft();
+                    
+                    // Mostrar indicador
+                    showSavedIndicator();
+                }, 2000);
+            });
+
+            // Guardar borrador
+            function saveFormDraft() {
+                const formData = $('#formPedido').serializeArray();
+                const draftData = {};
+                
+                // Convert to object
+                $.each(formData, function(index, field) {
+                    draftData[field.name] = field.value;
+                });
+                
+                // Save to localStorage
+                localStorage.setItem('pedidoDraft', JSON.stringify(draftData));
+            }
+
+            // Mostrar indicador de guardado
+            function showSavedIndicator() {
+                const $indicator = $('<div class="saved-indicator">Borrador guardado</div>');
+                $('body').append($indicator);
+                
+                $indicator.fadeIn(300).delay(2000).fadeOut(300, function() {
+                    $(this).remove();
+                });
+            }
+            
+            // Inicializar las funciones
+            setupRealTimeValidation();
+            //setupClienteAutocomplete(); // Comentado porque puede requerir jQuery UI
+            setupVisualFeedback();
         });
     </script>
 }

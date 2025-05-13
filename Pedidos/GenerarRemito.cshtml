@@ -50,10 +50,7 @@
                 idUsuario = db.QueryValue("SELECT ID FROM USERS_TABLE WHERE LOWER(Usuario) = LOWER(@0)", Usuario) ?? 0;
             }
             
-            // Comenzar transacción
-            db.BeginTransaction();
-            
-            // Insertar remito
+            // Insertar remito (sin transacción)
             string sqlRemito = @"INSERT INTO REMITOS (
                                NUMERO, FECHA_CREACION, IDPEDIDO, ID_PLANTA, 
                                ID_USUARIO_CREACION, ESTADO, TRANSPORTISTA, 
@@ -82,14 +79,10 @@
                        VALUES (@0, @1, @2, @3, @4)", 
                        idPedido, "ENVIADO A PLANTA", DateTime.Now, idUsuario, "Remito generado: " + nuevoNumero);
             
-            // Commit transacción
-            db.CommitTransaction();
-            
             mensaje = "Remito generado correctamente con número: " + nuevoNumero;
             tipoMensaje = "success";
         }
         catch (Exception ex) {
-            db.RollbackTransaction();
             mensaje = "Error al generar el remito: " + ex.Message;
             tipoMensaje = "danger";
         }

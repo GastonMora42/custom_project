@@ -10,16 +10,14 @@
     var remitosEnPreparacion = db.QueryValue("SELECT COUNT(*) FROM REMITOS WHERE ESTADO = 'EN PREPARACION'");
     var remitosEnviados = db.QueryValue("SELECT COUNT(*) FROM REMITOS WHERE ESTADO = 'ENVIADO'");
     
-    // Obtener remitos recientes
-    var remitosRecientes = db.Query(@"
-        SELECT TOP 5 r.ID, r.NUMERO, r.FECHA_CREACION, r.ESTADO, 
-        p.NUMERO_INTERNO, c.NOMBRE_APELLIDO AS CLIENTE, pl.NOMBRE AS PLANTA
-        FROM REMITOS r
-        INNER JOIN PEDIDOS p ON r.ID_PEDIDO = p.ID
-        INNER JOIN CLIENTES c ON p.ID_CLIENTE = c.ID
-        INNER JOIN PLANTAS pl ON r.ID_PLANTA = pl.ID
-        ORDER BY r.FECHA_CREACION DESC
-    ");
+var remitosRecientes = db.Query(@"
+    SELECT TOP 5 r.ID, r.NUMERO, r.FECHA_CREACION, r.ESTADO, 
+    p.CODIGO AS NUMERO_INTERNO, p.APELLIDO_NOMBRE AS CLIENTE, 
+    CAST(r.ID_PLANTA AS VARCHAR(10)) AS PLANTA
+    FROM REMITOS r
+    INNER JOIN PEDIDOS p ON r.IDPEDIDO = p.IDPEDIDO
+    ORDER BY r.FECHA_CREACION DESC
+");
 }
 
 <div class="d-flex mb-2">
