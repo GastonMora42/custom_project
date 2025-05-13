@@ -1,0 +1,133 @@
+@{
+    var db = Database.Open("IntranetConnectionNew");
+    string mensaje = "";
+    List<string> pasos = new List<string>();
+    
+    try {
+        // 1. Identificar todas las restricciones de clave foránea que apuntan a REMITOS_DETALLE
+        var fksDesde = db.Query(@"
+            SELECT f.name as foreign_key_name, OBJECT_NAME(f.parent_object_id) as referencing_table
+            FROM sys.foreign_keys AS f
+            INNER JOIN sys.tables AS t ON f.referenced_object_id = t.object_id
+            WHERE t.name = 'REMITOS_DETALLE'
+        ");
+        
+        // 2. Eliminar las restricciones encontradas
+        foreach (var fk in fksDesde) {
+            db.Execute("ALTER TABLE [" + fk.referencing_table + "] DROP CONSTRAINT [" + fk.foreign_key_name + "]");
+            pasos.Add("Eliminada la restricción " + fk.foreign_key_name + " de la tabla " + fk.referencing_table);
+        }
+        
+        // 3. Identificar las claves foráneas de REMITOS_DETALLE hacia otras tablas
+        var fksHacia = db.Query(@"
+            SELECT f.name as foreign_key_name
+            FROM sys.foreign_keys AS f
+            INNER JOIN sys.tables AS t ON f.parent_object_id = t.object_id
+            WHERE t.name = 'REMITOS_DETALLE'
+        ");
+        
+        // 4. Eliminar esas restricciones
+        foreach (var fk in fksHacia) {
+            db.Execute("ALTER TABLE REMITOS_DETALLE DROP CONSTRAINT [" + fk.foreign_key_name + "]");
+            pasos.Add("Eliminada la restricción " + fk.foreign_key_name + " de REMITOS_DETALLE");
+        }
+        
+        // 5. Verificar si existe la columna ID_REMITO en REMITOS_DETALLE
+        var columnaIDRemito = db.QueryValue(@"
+            SELECT COUNT(*) 
+            FROM INFORMATION_SCHEMA.COLUMNS 
+            WHERE TABLE_NAME = 'REMITOS_DETALLE' AND COLUMN_NAME = 'ID_REMITO'
+        ");
+        
+        // 6. Verificar si existe la columna IDREMITO en REMITOS_DETALLE
+        var columnaIDREMITO = db.QueryValue(@"
+            SELECT COUNT(*) 
+            FROM INFORMATION_SCHEMA.COLUMNS 
+            WHERE TABLE_NAME = 'REMITOS_DETALLE' AND COLUMN_NAME = 'IDREMITO'
+        ");
+        
+        // 7. Si existe ID_REMITO pero no IDREMITO, renombrar la columna
+        if (columnaIDRemito > 0 && columnaIDREMITO == 0) {
+            // SQL Server no tiene una sintaxis directa para renombrar columnas
+            // Tenemos que usar sp_rename
+            db.Execute("EXEC sp_rename 'REMITOS_DETALLE.ID_REMITO', 'IDREMITO', 'COLUMN'");
+            pasos.Add("Columna ID_REMITO renombrada a IDREMITO");
+            
+            // A continuación recreamos la clave foránea con el nombre correcto
+            db.Execute(@"
+                ALTER TABLE REMITOS_DETALLE
+                ADD CONSTRAINT FK_REMITOS_DETALLE_REMITO FOREIGN KEY (IDREMITO)
+                REFERENCES REMITOS(ID)
+            ");
+            pasos.Add("Recreada la restricción FK_REMITOS_DETALLE_REMITO");
+            
+            mensaje = "¡La columna ha sido renombrada correctamente!";
+        } 
+        // 8. Si no existe la columna IDREMITO ni ID_REMITO, hay un problema más serio
+        else if (columnaIDREMITO == 0 && columnaIDRemito == 0) {
+            // Necesitamos verificar la estructura completa
+            var columnas = db.Query("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'REMITOS_DETALLE'");
+            string columnasExistentes = "";
+            foreach (var col in columnas) {
+                columnasExistentes += col.COLUMN_NAME + ", ";
+            }
+            
+            // Agregar la columna IDREMITO
+            db.Execute("ALTER TABLE REMITOS_DETALLE ADD IDREMITO INT");
+            pasos.Add("Columna IDREMITO agregada a REMITOS_DETALLE");
+            
+            // Agregar la restricción de clave foránea
+            db.Execute(@"
+                ALTER TABLE REMITOS_DETALLE
+                ADD CONSTRAINT FK_REMITOS_DETALLE_REMITO FOREIGN KEY (IDREMITO)
+                REFERENCES REMITOS(ID)
+            ");
+            pasos.Add("Agregada la restricción FK_REMITOS_DETALLE_REMITO");
+            
+            mensaje = "¡La columna IDREMITO ha sido añadida correctamente! Columnas existentes: " + columnasExistentes;
+        }
+        else if (columnaIDREMITO > 0) {
+            mensaje = "¡La columna IDREMITO ya existe! No es necesario hacer cambios.";
+        }
+    } catch (Exception ex) {
+        mensaje = "Error: " + ex.Message;
+    }
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Reconstruir REMITOS_DETALLE</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .message { padding: 15px; margin-bottom: 20px; border-radius: 5px; }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .warn { background-color: #fff3cd; color: #856404; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        ul.steps { background-color: #f8f9fa; padding: 15px 15px 15px 35px; border-radius: 5px; }
+        .btn { display: inline-block; padding: 8px 16px; background-color: #007bff; color: white; text-decoration: none; border-radius: 4px; margin-right: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Reconstruir REMITOS_DETALLE</h1>
+    
+    <div class="message @(mensaje.StartsWith("Error") ? "error" : mensaje.StartsWith("¡La columna") ? "success" : "info")">
+        @mensaje
+    </div>
+    
+    @if (pasos.Count > 0) {
+        <h2>Pasos Realizados</h2>
+        <ul class="steps">
+            @foreach (var paso in pasos) {
+                <li>@paso</li>
+            }
+        </ul>
+    }
+    
+    <div style="margin-top: 20px;">
+        <a href="~/Planta/VerRemito.cshtml?id=1" class="btn">Intentar Ver Remito</a>
+        <a href="~/Pedidos/GenerarRemito.cshtml" class="btn">Generar Remito</a>
+    </div>
+</body>
+</html>

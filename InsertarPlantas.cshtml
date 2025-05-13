@@ -1,0 +1,86 @@
+@{
+    var db = Database.Open("IntranetConnectionNew");
+    string mensaje = "";
+    
+    try {
+        // Actualizar las plantas existentes o eliminarlas y crear nuevas
+        db.Execute("DELETE FROM dbo.PLANTAS"); // Eliminar plantas existentes
+        
+        // Insertar nuevas plantas con datos correctos
+        db.Execute(@"
+            INSERT INTO dbo.PLANTAS (NOMBRE, ESTADO, UBICACION, TELEFONO, OBSERVACIONES) VALUES
+            ('Planta Central', 1, 'Neuquén PIN', '299-4456789', 'Planta principal'),
+            ('Planta Norte', 1, 'Plottier', '299-4123456', 'Sector norte'),
+            ('Planta Sur', 1, 'Centenario', '299-4789456', 'Sector sur'),
+            ('Planta Alto Valle', 1, 'Roca', '298-4567890', 'Planta regional')
+        ");
+        
+        mensaje = "Las plantas han sido actualizadas correctamente.";
+    } catch (Exception ex) {
+        mensaje = "Error al actualizar las plantas: " + ex.Message;
+    }
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Actualizar Plantas</title>
+    <link href="~/assets/css/theme.css" rel="stylesheet" id="style-default">
+    <style>
+        body { padding: 20px; font-family: 'Arial', sans-serif; }
+        .alert { padding: 15px; margin-bottom: 20px; border: 1px solid transparent; border-radius: 4px; }
+        .alert-success { color: #155724; background-color: #d4edda; border-color: #c3e6cb; }
+        .alert-danger { color: #721c24; background-color: #f8d7da; border-color: #f5c6cb; }
+        table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+    </style>
+</head>
+<body>
+    <h1>Actualizar Datos de Plantas</h1>
+    
+    <div class="alert @(mensaje.StartsWith("Error") ? "alert-danger" : "alert-success")">
+        @mensaje
+    </div>
+    
+    <h2>Plantas Actualizadas</h2>
+    <table>
+        <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Ubicación</th>
+            <th>Teléfono</th>
+            <th>Estado</th>
+            <th>Observaciones</th>
+        </tr>
+        @{
+            var plantas = db.Query("SELECT ID, NOMBRE, UBICACION, TELEFONO, ESTADO, OBSERVACIONES FROM dbo.PLANTAS");
+            foreach (var planta in plantas) {
+                <tr>
+                    <td>@planta.ID</td>
+                    <td>@planta.NOMBRE</td>
+                    <td>@planta.UBICACION</td>
+                    <td>@planta.TELEFONO</td>
+                    <td>@(planta.ESTADO == true ? "Activo" : "Inactivo")</td>
+                    <td>@planta.OBSERVACIONES</td>
+                </tr>
+            }
+        }
+    </table>
+    
+    <div style="margin-top: 20px;">
+        <a href="~/Pedidos/GenerarRemito.cshtml" class="btn btn-primary">Ir a Generar Remito</a>
+        <a href="~/Pedidos/EnviarAPlanta.cshtml" class="btn btn-primary" style="margin-left: 10px;">Ir a Enviar a Planta</a>
+        <a href="#" id="crearPaginaAdmin" class="btn btn-success" style="margin-left: 10px;">Crear Página de Administración</a>
+    </div>
+    
+    <script>
+        document.getElementById('crearPaginaAdmin').addEventListener('click', function(e) {
+            e.preventDefault();
+            if (confirm('¿Deseas crear la página de administración de plantas?')) {
+                window.location.href = "CrearPaginaAdminPlantas.cshtml";
+            }
+        });
+    </script>
+</body>
+</html>

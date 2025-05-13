@@ -25,8 +25,7 @@
         Response.Redirect("~/Planta/RemitosLista.cshtml");
     }
     
-    // Obtener detalle del remito
-    var detalles = db.Query("SELECT * FROM REMITOS_DETALLE WHERE ID_REMITO = @0", idRemito);
+var detalles = db.Query("SELECT * FROM REMITOS_DETALLE WHERE IDREMITO = @0", idRemito);
 }
 
 <div class="d-flex mb-2">

@@ -44,11 +44,21 @@
                 // Obtener datos del pedido
                 var pedido = db.QuerySingle("SELECT * FROM PEDIDOS WHERE IDPEDIDO = @0", idPedido);
                 
-                // Generar número de remito
-                var formatoNumeroRemito = db.QueryValue("SELECT VALOR FROM SISTEMA_CONFIG WHERE CLAVE = 'FORMATO_NUMERO_REMITO'") ?? "R-{0:00000000}";
-                var ultimoNumero = db.QueryValue("SELECT MAX(CAST(REPLACE(REPLACE(NUMERO, 'R-', ''), ' ', '') AS INT)) FROM REMITOS") ?? 0;
-                var nuevoNumero = string.Format(formatoNumeroRemito, ultimoNumero + 1);
-                
+// Generar número de remito
+var formatoNumeroRemito = db.QueryValue("SELECT VALOR FROM SISTEMA_CONFIG WHERE CLAVE = 'FORMATO_NUMERO_REMITO'") ?? "R-{0:00000000}";
+
+// Obtener el último número - con protección contra nulos
+var ultimoNumeroObj = db.QueryValue("SELECT MAX(CAST(REPLACE(REPLACE(NUMERO, 'R-', ''), ' ', '') AS INT)) FROM REMITOS");
+int ultimoNumero = 0;
+
+// Verificar si el valor es nulo
+if (ultimoNumeroObj != null && ultimoNumeroObj != DBNull.Value)
+{
+    ultimoNumero = Convert.ToInt32(ultimoNumeroObj);
+}
+
+var nuevoNumero = string.Format(formatoNumeroRemito, ultimoNumero + 1);
+
                 // Insertar remito
                 int idRemito = db.QueryValue(@"INSERT INTO REMITOS (
                                            NUMERO, FECHA_CREACION, IDPEDIDO, ID_PLANTA, 
@@ -59,11 +69,11 @@
                                         nuevoNumero, DateTime.Now, idPedido, idPlanta,
                                         idUsuario, "PENDIENTE", "Generado automáticamente");
                 
-                // Insertar detalle del remito
-                db.Execute(@"INSERT INTO REMITOS_DETALLE (
-                          ID_REMITO, ARTICULO, CANTIDAD, USO_HORMIGON)
-                          VALUES (@0, @1, @2, @3)",
-                        idRemito, pedido.ARTICULO, pedido.CANTIDAD, pedido.USO_HORMIGON);
+// Insertar detalle del remito
+db.Execute(@"INSERT INTO REMITOS_DETALLE (
+          IDREMITO, ARTICULO, CANTIDAD, USO_HORMIGON)
+          VALUES (@0, @1, @2, @3)",
+        idRemito, pedido.ARTICULO, pedido.CANTIDAD, pedido.USO_HORMIGON);
                 
                 // Actualizar estado del pedido
                 db.Execute("UPDATE PEDIDOS SET ESTADO = 'ENVIADO A PLANTA', FECHA_ULT_MOD = @0 WHERE IDPEDIDO = @1", DateTime.Now, idPedido);
@@ -86,7 +96,7 @@
     }
     
     // Obtener plantas disponibles
-    var plantas = db.Query("SELECT ID, NOMBRE FROM PLANTAS WHERE ESTADO = 1 ORDER BY NOMBRE");
+var plantas = db.Query("SELECT ID, NOMBRE FROM PLANTAS WHERE CAST(ESTADO AS INT) = 1 ORDER BY NOMBRE");
 }
 
 <div class="d-flex mb-2">

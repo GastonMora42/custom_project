@@ -14,8 +14,8 @@
     }
     
     // Obtener plantas disponibles
-    var plantas = db.Query("SELECT ID, NOMBRE FROM PLANTAS WHERE ESTADO = 1 ORDER BY NOMBRE");
-    
+var plantas = db.Query("SELECT ID, NOMBRE FROM PLANTAS WHERE CAST(ESTADO AS INT) = 1 ORDER BY NOMBRE");
+
     // Verificar si tiene remitos asociados
     var remitosExistentes = db.Query("SELECT ID, NUMERO, FECHA_CREACION, ESTADO FROM REMITOS WHERE IDPEDIDO = @0", idPedido);
     
@@ -39,11 +39,21 @@
                 throw new Exception("Debe seleccionar una planta");
             }
             
-            // Generar número de remito (formato configurable en SISTEMA_CONFIG)
-            var formatoNumeroRemito = db.QueryValue("SELECT VALOR FROM SISTEMA_CONFIG WHERE CLAVE = 'FORMATO_NUMERO_REMITO'") ?? "R-{0:00000000}";
-            var ultimoNumero = db.QueryValue("SELECT MAX(CAST(REPLACE(REPLACE(NUMERO, 'R-', ''), ' ', '') AS INT)) FROM REMITOS") ?? 0;
-            var nuevoNumero = string.Format(formatoNumeroRemito, ultimoNumero + 1);
-            
+// Generar número de remito (formato configurable en SISTEMA_CONFIG)
+var formatoNumeroRemito = db.QueryValue("SELECT VALOR FROM SISTEMA_CONFIG WHERE CLAVE = 'FORMATO_NUMERO_REMITO'") ?? "R-{0:00000000}";
+
+// Obtener el último número - con protección contra nulos
+var ultimoNumeroObj = db.QueryValue("SELECT MAX(CAST(REPLACE(REPLACE(NUMERO, 'R-', ''), ' ', '') AS INT)) FROM REMITOS");
+int ultimoNumero = 0;
+
+// Verificar si el valor es nulo
+if (ultimoNumeroObj != null && ultimoNumeroObj != DBNull.Value)
+{
+    ultimoNumero = Convert.ToInt32(ultimoNumeroObj);
+}
+
+var nuevoNumero = string.Format(formatoNumeroRemito, ultimoNumero + 1);
+
             // Obtener ID del usuario
             int idUsuario = 0;
             if (!string.IsNullOrEmpty(Usuario)) {
@@ -64,12 +74,12 @@
                 idUsuario, "PENDIENTE", transportista,
                 dominioCamion, observaciones);
             
-            // Insertar detalle del remito
-            string sqlDetalle = @"INSERT INTO REMITOS_DETALLE (
-                                ID_REMITO, ARTICULO, CANTIDAD, USO_HORMIGON)
-                                VALUES (@0, @1, @2, @3)";
-            
-            db.Execute(sqlDetalle, idRemito, pedido.ARTICULO, cantidad, pedido.USO_HORMIGON);
+// Insertar detalle del remito
+string sqlDetalle = @"INSERT INTO REMITOS_DETALLE (
+                    IDREMITO, ARTICULO, CANTIDAD, USO_HORMIGON)
+                    VALUES (@0, @1, @2, @3)";
+
+db.Execute(sqlDetalle, idRemito, pedido.ARTICULO, cantidad, pedido.USO_HORMIGON);
             
             // Actualizar estado del pedido
             db.Execute("UPDATE PEDIDOS SET ESTADO = 'ENVIADO A PLANTA' WHERE IDPEDIDO = @0", idPedido);

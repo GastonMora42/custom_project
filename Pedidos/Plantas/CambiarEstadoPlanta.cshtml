@@ -1,0 +1,22 @@
+@{
+    var Usuario = WebSecurity.CurrentUserName;
+    
+    Layout = "~/Inicio/_ConfluenciaLayout.cshtml";
+    var db = Database.Open("IntranetConnectionNew");
+    
+    var idPlanta = Request.QueryString["id"].AsInt();
+    
+    // Obtener datos de la planta
+    var planta = db.QuerySingle("SELECT * FROM PLANTAS WHERE ID = @0", idPlanta);
+    
+    if (planta == null) {
+        Response.Redirect("~/Pedidos/Plantas/Index.cshtml");
+    }
+    
+    // Cambiar estado
+    var nuevoEstado = planta.ESTADO == true ? false : true;
+    db.Execute("UPDATE PLANTAS SET ESTADO = @0 WHERE ID = @1", nuevoEstado, idPlanta);
+    
+    // Redirigir a la lista
+    Response.Redirect("~/Pedidos/Plantas/Index.cshtml");
+}
