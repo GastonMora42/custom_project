@@ -1,0 +1,230 @@
+@{
+    var Usuario = WebSecurity.CurrentUserName;
+    
+    Layout = "~/Inicio/_ConfluenciaLayout.cshtml";
+    var db = Database.Open("IntranetConnectionNew");
+    var title = "Gestión de Pedidos";
+
+    // Filtros de búsqueda
+    var fechaDesde = Request.QueryString["fechaDesde"] ?? DateTime.Now.AddDays(-30).ToString("yyyy-MM-dd");
+    var fechaHasta = Request.QueryString["fechaHasta"] ?? DateTime.Now.ToString("yyyy-MM-dd");
+    var estado = Request.QueryString["estado"] ?? "";
+    var cliente = Request.QueryString["cliente"] ?? "";
+    
+    // Consulta adaptada a la estructura actual
+    var sqlPedidos = @"SELECT 
+                      p.IDPEDIDO, p.FECHA, p.HORA, p.CODIGO AS NUMERO_INTERNO, 
+                      p.APELLIDO_NOMBRE AS CLIENTE, p.CELULAR,  
+                      p.DESTINO, p.CANTIDAD, p.ARTICULO,
+                      ISNULL(p.ESTADO, 'CAMPOS FALTANTES') AS ESTADO
+                      FROM PEDIDOS p
+                      WHERE p.FECHA BETWEEN @0 AND @1";
+    
+    if (!string.IsNullOrEmpty(estado)) {
+        sqlPedidos += " AND ISNULL(p.ESTADO, 'CAMPOS FALTANTES') = @2";
+    }
+    
+    if (!string.IsNullOrEmpty(cliente)) {
+        sqlPedidos += " AND p.APELLIDO_NOMBRE LIKE @3";
+        cliente = "%" + cliente + "%";
+    }
+    
+    sqlPedidos += " ORDER BY p.FECHA DESC, p.HORA DESC";
+    
+    var pedidos = string.IsNullOrEmpty(estado) && string.IsNullOrEmpty(cliente) 
+        ? db.Query(sqlPedidos, fechaDesde, fechaHasta)
+        : string.IsNullOrEmpty(cliente)
+            ? db.Query(sqlPedidos, fechaDesde, fechaHasta, estado)
+            : string.IsNullOrEmpty(estado)
+                ? db.Query(sqlPedidos, fechaDesde, fechaHasta, cliente)
+                : db.Query(sqlPedidos, fechaDesde, fechaHasta, estado, cliente);
+    
+    // Estadísticas adaptadas
+    var totalPedidos = db.QueryValue("SELECT COUNT(*) FROM PEDIDOS WHERE FECHA BETWEEN @0 AND @1", fechaDesde, fechaHasta);
+    var camposFaltantes = db.QueryValue("SELECT COUNT(*) FROM PEDIDOS WHERE ISNULL(ESTADO, 'CAMPOS FALTANTES') = 'CAMPOS FALTANTES' AND FECHA BETWEEN @0 AND @1", fechaDesde, fechaHasta);
+    var listoParaPlanta = db.QueryValue("SELECT COUNT(*) FROM PEDIDOS WHERE ESTADO = 'LISTO PARA PLANTA' AND FECHA BETWEEN @0 AND @1", fechaDesde, fechaHasta);
+    var enviadoAPlanta = db.QueryValue("SELECT COUNT(*) FROM PEDIDOS WHERE ESTADO = 'ENVIADO A PLANTA' AND FECHA BETWEEN @0 AND @1", fechaDesde, fechaHasta);
+}
+
+<div class="d-flex mb-2">
+    <span class="fa-stack me-2 ms-n1">
+        <i class="fas fa-circle fa-stack-2x text-300"></i>
+        <i class="fa-inverse fa-stack-1x text-primary fas fa-clipboard-list"></i>
+    </span>
+    <div class="col">
+        <h5 class="mb-0 text-primary position-relative">
+            <span class="bg-200 dark__bg-1100 pe-3">Sistema de Gestión de Pedidos</span>
+            <span class="border position-absolute top-50 translate-middle-y w-100 start-0 z-n1"></span>
+        </h5>
+        <p class="mb-0">Administre, registre y controle sus pedidos</p>
+    </div>
+</div>
+
+<!-- Tarjetas de métricas -->
+<div class="row mb-3">
+    <div class="col-md-3">
+        <div class="card overflow-hidden">
+            <div class="bg-holder bg-card" style="background-image:url(../assets/img/icons/spot-illustrations/corner-1.png);"></div>
+            <div class="card-body position-relative">
+                <h6>Total Pedidos</h6>
+                <div class="display-4 fs-4 mb-2 fw-normal font-sans-serif text-primary">@totalPedidos</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card overflow-hidden">
+            <div class="bg-holder bg-card" style="background-image:url(../assets/img/icons/spot-illustrations/corner-2.png);"></div>
+            <div class="card-body position-relative">
+                <h6>Campos Faltantes</h6>
+                <div class="display-4 fs-4 mb-2 fw-normal font-sans-serif text-warning">@camposFaltantes</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card overflow-hidden">
+            <div class="bg-holder bg-card" style="background-image:url(../assets/img/icons/spot-illustrations/corner-3.png);"></div>
+            <div class="card-body position-relative">
+                <h6>Listo para Planta</h6>
+                <div class="display-4 fs-4 mb-2 fw-normal font-sans-serif text-info">@listoParaPlanta</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card overflow-hidden">
+            <div class="bg-holder bg-card" style="background-image:url(../assets/img/icons/spot-illustrations/corner-4.png);"></div>
+            <div class="card-body position-relative">
+                <h6>Enviado a Planta</h6>
+                <div class="display-4 fs-4 mb-2 fw-normal font-sans-serif text-success">@enviadoAPlanta</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filtros de búsqueda adaptados -->
+<div class="card mb-3">
+    <div class="card-body">
+        <form method="get" class="row align-items-center g-3">
+            <div class="col-md-3">
+                <label class="form-label" for="fechaDesde">Desde</label>
+                <input type="date" id="fechaDesde" name="fechaDesde" class="form-control" value="@fechaDesde" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label" for="fechaHasta">Hasta</label>
+                <input type="date" id="fechaHasta" name="fechaHasta" class="form-control" value="@fechaHasta" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label" for="estado">Estado</label>
+                <select id="estado" name="estado" class="form-select">
+                    <option value="">Todos</option>
+                    <option value="CAMPOS FALTANTES" @(estado == "CAMPOS FALTANTES" ? "selected" : "")>Campos Faltantes</option>
+                    <option value="LISTO PARA PLANTA" @(estado == "LISTO PARA PLANTA" ? "selected" : "")>Listo para Planta</option>
+                    <option value="ENVIADO A PLANTA" @(estado == "ENVIADO A PLANTA" ? "selected" : "")>Enviado a Planta</option>
+                    <option value="ENTREGADO" @(estado == "ENTREGADO" ? "selected" : "")>Entregado</option>
+                </select>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary me-2">
+                    <i class="fas fa-search me-1"></i>Buscar
+                </button>
+                <a href="~/Pedidos/Index.cshtml" class="btn btn-outline-secondary">
+                    <i class="fas fa-redo-alt me-1"></i>Limpiar
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Tabla de pedidos adaptada -->
+<div class="card mb-3">
+    <div class="card-header">
+        <div class="row flex-between-center">
+            <div class="col-auto">
+                <h6 class="mb-0">Lista de Pedidos</h6>
+            </div>
+            <div class="col-auto">
+                <a href="~/Pedidos/NuevoPedido.cshtml" class="btn btn-falcon-success btn-sm">
+                    <i class="fas fa-plus me-1"></i>Nuevo Pedido
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive scrollbar">
+            <table class="table table-hover table-striped table-sm fs--1 mb-0">
+                <thead class="bg-200 text-900">
+                    <tr>
+                        <th class="sort">ID</th>
+                        <th class="sort">Fecha</th>
+                        <th class="sort">Nº Interno</th>
+                        <th class="sort">Cliente</th>
+                        <th class="sort">Artículo</th>
+                        <th class="sort">Cantidad</th>
+                        <th class="sort">Destino</th>
+                        <th class="sort">Estado</th>
+                        <th class="text-end">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var pedido in pedidos) {
+                        string estadoClass = pedido.ESTADO switch {
+                            "CAMPOS FALTANTES" => "warning",
+                            "LISTO PARA PLANTA" => "info",
+                            "ENVIADO A PLANTA" => "success",
+                            "ENTREGADO" => "primary",
+                            _ => "secondary"
+                        };
+                        
+                        <tr>
+                            <td>@pedido.IDPEDIDO</td>
+                            <td>@string.Format("{0:dd/MM/yyyy}", pedido.FECHA) @pedido.HORA</td>
+                            <td>@pedido.NUMERO_INTERNO</td>
+                            <td><strong>@pedido.CLIENTE</strong></td>
+                            <td>@pedido.ARTICULO</td>
+                            <td>@pedido.CANTIDAD</td>
+                            <td>@pedido.DESTINO</td>
+                            <td>
+                                <span class="badge badge-soft-@estadoClass">@pedido.ESTADO</span>
+                            </td>
+                            <td class="text-end">
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a href="~/Pedidos/DetallePedido.cshtml?id=@pedido.IDPEDIDO" class="btn btn-falcon-default" data-bs-toggle="tooltip" title="Ver detalle">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="~/Pedidos/EditarPedido.cshtml?id=@pedido.IDPEDIDO" class="btn btn-falcon-default" data-bs-toggle="tooltip" title="Editar">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    @if (pedido.ESTADO == "LISTO PARA PLANTA") {
+                                        <a href="~/Pedidos/GenerarRemito.cshtml?id=@pedido.IDPEDIDO" class="btn btn-falcon-info" data-bs-toggle="tooltip" title="Generar Remito">
+                                            <i class="fas fa-file-invoice"></i>
+                                        </a>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Inicializar DataTable
+            var table = $('.table').DataTable({
+                language: {
+                    url: '//cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json'
+                },
+                dom: "<'row'<'col-sm-12 col-md-6'l><'col-sm-12 col-md-6'f>>" +
+                     "<'row'<'col-sm-12'tr>>" +
+                     "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+                lengthMenu: [10, 25, 50, 100],
+                order: [[0, 'desc']]
+            });
+            
+            // Tooltips
+            $('[data-bs-toggle="tooltip"]').tooltip();
+        });
+    </script>
+}

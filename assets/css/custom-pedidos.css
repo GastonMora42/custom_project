@@ -1,0 +1,71 @@
+/* Estilos para los badges de estado */
+.badge-estado-campos-faltantes {
+    background-color: #f5c242;
+    color: #333;
+}
+
+.badge-estado-listo-para-planta {
+    background-color: #4dabf7;
+    color: #fff;
+}
+
+.badge-estado-enviado-a-planta {
+    background-color: #39d353;
+    color: #fff;
+}
+
+.badge-estado-entregado {
+    background-color: #6a4c93;
+    color: #fff;
+}
+
+/* Mejoras para las tarjetas de métricas */
+.metric-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.metric-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+/* Efecto hover en filas de tablas */
+.table-hover tbody tr:hover {
+    background-color: rgba(0, 135, 223, 0.05);
+}
+
+/* Estilos para los botones de acciones */
+.btn-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+/* Personalizaciones para el formulario de pedidos */
+.articulo-row {
+    transition: background-color 0.2s ease;
+}
+
+.articulo-row:hover {
+    background-color: #f8f9fa;
+}
+
+/* Animación para notificaciones */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translate3d(0, 20px, 0);
+    }
+    to {
+        opacity: 1;
+        transform: translate3d(0, 0, 0);
+    }
+}
+
+.alert {
+    animation: fadeInUp 0.4s ease;
+}

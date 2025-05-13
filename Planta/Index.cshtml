@@ -1,0 +1,240 @@
+@{
+    var Usuario = WebSecurity.CurrentUserName;
+    
+    Layout = "~/Inicio/_ConfluenciaLayout.cshtml";
+    var db = Database.Open("IntranetConnectionNew");
+    
+    // Estadísticas de remitos
+    var totalRemitos = db.QueryValue("SELECT COUNT(*) FROM REMITOS WHERE CONVERT(DATE, FECHA_CREACION) = CONVERT(DATE, GETDATE())");
+    var remitosPendientes = db.QueryValue("SELECT COUNT(*) FROM REMITOS WHERE ESTADO = 'PENDIENTE'");
+    var remitosEnPreparacion = db.QueryValue("SELECT COUNT(*) FROM REMITOS WHERE ESTADO = 'EN PREPARACION'");
+    var remitosEnviados = db.QueryValue("SELECT COUNT(*) FROM REMITOS WHERE ESTADO = 'ENVIADO'");
+    
+    // Obtener remitos recientes
+    var remitosRecientes = db.Query(@"
+        SELECT TOP 5 r.ID, r.NUMERO, r.FECHA_CREACION, r.ESTADO, 
+        p.NUMERO_INTERNO, c.NOMBRE_APELLIDO AS CLIENTE, pl.NOMBRE AS PLANTA
+        FROM REMITOS r
+        INNER JOIN PEDIDOS p ON r.ID_PEDIDO = p.ID
+        INNER JOIN CLIENTES c ON p.ID_CLIENTE = c.ID
+        INNER JOIN PLANTAS pl ON r.ID_PLANTA = pl.ID
+        ORDER BY r.FECHA_CREACION DESC
+    ");
+}
+
+<div class="d-flex mb-2">
+    <span class="fa-stack me-2 ms-n1">
+        <i class="fas fa-circle fa-stack-2x text-300"></i>
+        <i class="fa-inverse fa-stack-1x text-primary fas fa-industry"></i>
+    </span>
+    <div class="col">
+        <h5 class="mb-0 text-primary position-relative">
+            <span class="bg-200 dark__bg-1100 pe-3">Dashboard de Planta</span>
+            <span class="border position-absolute top-50 translate-middle-y w-100 start-0 z-n1"></span>
+        </h5>
+        <p class="mb-0">Monitoreo y gestión de remitos</p>
+    </div>
+</div>
+
+<!-- Tarjetas de métricas -->
+<div class="row mb-3 g-3">
+    <div class="col-md-6 col-xxl-3">
+        <div class="card h-md-100 ecommerce-card-min-width">
+            <div class="card-header pb-0 d-flex justify-content-between">
+                <h6 class="mb-0 mt-2">Remitos Pendientes</h6>
+                <i class="fas fa-hourglass-start text-warning fs-3"></i>
+            </div>
+            <div class="card-body d-flex flex-column justify-content-end">
+                <div class="row justify-content-between">
+                    <div class="col-auto">
+                        <h4 class="fs-3 fw-normal font-sans-serif text-warning mb-0">@remitosPendientes</h4>
+                        <p class="mb-0 fs--1 text-500">Esperando preparación</p>
+                    </div>
+                    <div class="col-auto ps-0">
+                        <a href="~/Planta/RemitosLista.cshtml?estado=PENDIENTE" class="fs--1 fw-bold">Ver detalles</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 col-xxl-3">
+        <div class="card h-md-100 ecommerce-card-min-width">
+            <div class="card-header pb-0 d-flex justify-content-between">
+                <h6 class="mb-0 mt-2">En Preparación</h6>
+                <i class="fas fa-box text-info fs-3"></i>
+            </div>
+            <div class="card-body d-flex flex-column justify-content-end">
+                <div class="row justify-content-between">
+                    <div class="col-auto">
+                        <h4 class="fs-3 fw-normal font-sans-serif text-info mb-0">@remitosEnPreparacion</h4>
+                        <p class="mb-0 fs--1 text-500">Actualmente procesando</p>
+                    </div>
+                    <div class="col-auto ps-0">
+                        <a href="~/Planta/RemitosLista.cshtml?estado=EN PREPARACION" class="fs--1 fw-bold">Ver detalles</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 col-xxl-3">
+        <div class="card h-md-100 ecommerce-card-min-width">
+            <div class="card-header pb-0 d-flex justify-content-between">
+                <h6 class="mb-0 mt-2">Enviados</h6>
+                <i class="fas fa-truck text-primary fs-3"></i>
+            </div>
+            <div class="card-body d-flex flex-column justify-content-end">
+                <div class="row justify-content-between">
+                    <div class="col-auto">
+                        <h4 class="fs-3 fw-normal font-sans-serif text-primary mb-0">@remitosEnviados</h4>
+                        <p class="mb-0 fs--1 text-500">Esperando confirmación</p>
+                    </div>
+                    <div class="col-auto ps-0">
+                        <a href="~/Planta/RemitosLista.cshtml?estado=ENVIADO" class="fs--1 fw-bold">Ver detalles</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 col-xxl-3">
+        <div class="card h-md-100 ecommerce-card-min-width">
+            <div class="card-header pb-0 d-flex justify-content-between">
+                <h6 class="mb-0 mt-2">Remitos Hoy</h6>
+                <i class="fas fa-calendar-day text-success fs-3"></i>
+            </div>
+            <div class="card-body d-flex flex-column justify-content-end">
+                <div class="row justify-content-between">
+                    <div class="col-auto">
+                        <h4 class="fs-3 fw-normal font-sans-serif text-success mb-0">@totalRemitos</h4>
+                        <p class="mb-0 fs--1 text-500">Total del día</p>
+                    </div>
+                    <div class="col-auto ps-0">
+                        <a href="~/Planta/RemitosLista.cshtml" class="fs--1 fw-bold">Ver todos</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-3">
+    <!-- Remitos recientes -->
+    <div class="col-lg-8">
+        <div class="card h-100">
+            <div class="card-header d-flex flex-between-center">
+                <h6 class="mb-0">Remitos Recientes</h6>
+                <a href="~/Planta/RemitosLista.cshtml" class="btn btn-link btn-sm px-0">Ver todos<i class="fas fa-angle-right ms-1"></i></a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive scrollbar">
+                    <table class="table table-hover table-striped table-sm fs--1 mb-0">
+                        <thead class="bg-200 text-900">
+                            <tr>
+                                <th>Nº Remito</th>
+                                <th>Fecha</th>
+                                <th>Cliente</th>
+                                <th>Nº Interno</th>
+                                <th>Planta</th>
+                                <th>Estado</th>
+                                <th class="text-end">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var remito in remitosRecientes) {
+                                string estadoClass = remito.ESTADO switch {
+                                    "PENDIENTE" => "warning",
+                                    "EN PREPARACION" => "info",
+                                    "ENVIADO" => "primary",
+                                    "ENTREGADO" => "success",
+                                    _ => "secondary"
+                                };
+                                
+                                <tr>
+                                    <td><strong>@remito.NUMERO</strong></td>
+                                    <td>@string.Format("{0:dd/MM/yyyy HH:mm}", remito.FECHA_CREACION)</td>
+                                    <td>@remito.CLIENTE</td>
+                                    <td>@remito.NUMERO_INTERNO</td>
+                                    <td>@remito.PLANTA</td>
+                                    <td>
+                                        <span class="badge badge-soft-@estadoClass">@remito.ESTADO</span>
+                                    </td>
+                                    <td class="text-end">
+                                        <a href="~/Planta/VerRemito.cshtml?id=@remito.ID" class="btn btn-falcon-default btn-sm me-1" data-bs-toggle="tooltip" title="Ver detalle">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="~/Planta/DespacharRemito.cshtml?id=@remito.ID" class="btn btn-falcon-success btn-sm" data-bs-toggle="tooltip" title="Gestionar">
+                                            <i class="fas fa-truck-loading"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Accesos rápidos -->
+    <div class="col-lg-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h6 class="mb-0">Acciones Rápidas</h6>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-6">
+                        <a href="~/Planta/RemitosLista.cshtml?estado=PENDIENTE" class="text-decoration-none">
+                            <div class="border rounded-3 p-3 text-center h-100">
+                                <i class="fas fa-hourglass-start fs-3 text-warning mb-2"></i>
+                                <h6 class="mb-1 text-700">Pendientes</h6>
+                                <p class="mb-0 fs--1 text-500">Remitos por procesar</p>
+                            </div>
+                        </a>
+                    </div>
+                    
+                    <div class="col-6">
+                        <a href="~/Planta/RemitosLista.cshtml?estado=EN PREPARACION" class="text-decoration-none">
+                            <div class="border rounded-3 p-3 text-center h-100">
+                                <i class="fas fa-box fs-3 text-info mb-2"></i>
+                                <h6 class="mb-1 text-700">Preparación</h6>
+                                <p class="mb-0 fs--1 text-500">En proceso</p>
+                            </div>
+                        </a>
+                    </div>
+                    
+                    <div class="col-6">
+                        <a href="~/Planta/RemitosLista.cshtml?estado=ENVIADO" class="text-decoration-none">
+                            <div class="border rounded-3 p-3 text-center h-100">
+                                <i class="fas fa-truck fs-3 text-primary mb-2"></i>
+                                <h6 class="mb-1 text-700">Enviados</h6>
+                                <p class="mb-0 fs--1 text-500">Confirmar entregas</p>
+                            </div>
+                        </a>
+                    </div>
+                    
+                    <div class="col-6">
+                        <a href="~/Planta/RemitosLista.cshtml?estado=ENTREGADO" class="text-decoration-none">
+                            <div class="border rounded-3 p-3 text-center h-100">
+                                <i class="fas fa-clipboard-check fs-3 text-success mb-2"></i>
+                                <h6 class="mb-1 text-700">Entregados</h6>
+                                <p class="mb-0 fs--1 text-500">Historial completo</p>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Inicializar tooltips
+            $('[data-bs-toggle="tooltip"]').tooltip();
+        });
+    </script>
+}
