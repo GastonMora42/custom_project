@@ -269,7 +269,7 @@
                 </div>
                 <div class="card-body">
                     <p class="fs--1"><strong>Creado:</strong> @string.Format("{0:dd/MM/yyyy}", pedido.FECHA) @pedido.HORA</p>
-                    <p class="fs--1"><strong>Última Modificación:</strong> @(pedido.FECHA_ULT_MOD != null ? string.Format("{0:dd/MM/yyyy HH:mm}", pedido.FECHA_ULT_MOD) : "No registrada")</p>
+                   <p class="fs--1"><strong>Última Modificación:</strong> No registrada</p>
                     <p class="fs--1"><strong>Usuario:</strong> @(pedido.USUARIO_CREACION != null ? db.QueryValue("SELECT Usuario FROM USERS_TABLE WHERE ID = @0", pedido.USUARIO_CREACION) : "No registrado")</p>
                 </div>
             </div>
